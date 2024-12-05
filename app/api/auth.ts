@@ -8,8 +8,7 @@ export interface User {
     password: string;
     firstname: string;
     lastname: string;
-    country: string;
-    role: string; // Añadido para el rol del usuario
+    role: 'ADMIN' | 'TEACHER' | 'STUDENT'; // Añadido para el rol del usuario
 }
 
 // Interfaz para la respuesta del inicio de sesión
@@ -19,8 +18,14 @@ export interface LoginResponse {
 
 // Función para registrar un usuario
 export const registerUser = async (userData: User): Promise<any> => {
-    const response = await axios.post(`${API_URL}/register`, userData);
+    try {
+        const response = await axios.post(`${API_URL}/register`, userData);
+    console.log(response);
     return response.data;
+    } catch (error) {
+        console.log(error)
+    }
+    
 };
 
 // Función para iniciar sesión

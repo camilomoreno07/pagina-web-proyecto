@@ -1,12 +1,28 @@
+"use client";
 import React from 'react';
+import { useRouter } from "next/navigation";
+import Cookies from 'js-cookie';
 
 const Page = () => {
+  const router = useRouter();
+
+  const handleLogout = () => {
+    Cookies.remove('token'); // Eliminar el token de las cookies
+    router.push('/auth/login'); // Redirigir a la página de inicio de sesión
+  };
+
   return (
     <div className="flex flex-col min-h-screen p-6 bg-gray-100">
-      <header className="bg-white shadow-md rounded-lg p-4 mb-6">
+      <header className="bg-white shadow-md rounded-lg p-4 mb-6 flex justify-between items-center">
         <h1 className="text-2xl font-bold">Dashboard Estudiantil</h1>
+        <button
+          onClick={handleLogout}
+          className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600"
+        >
+          Cerrar Sesión
+        </button>
       </header>
-      
+
       <main className="flex flex-1 space-x-6">
         {/* Sidebar */}
         <aside className="w-1/4 bg-white shadow-md rounded-lg p-4">

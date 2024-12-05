@@ -12,7 +12,6 @@ const login = () => {
     password: '',
     firstname: '',
     lastname: '',
-    country: 'Colombia',
     role: 'USER', // Asumiendo que el rol es siempre 'USER'
   });
 
