@@ -1,8 +1,17 @@
 "use client";
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import Cookies from 'js-cookie';
-import { FaBook, FaEnvelope, FaCalendarAlt, FaPlus, FaBars, FaEdit, FaTimes } from 'react-icons/fa'; // Añadí FaTimes
+import Cookies from "js-cookie";
+import Card from "../components/Card";
+import {
+  FaBook,
+  FaEnvelope,
+  FaCalendarAlt,
+  FaPlus,
+  FaBars,
+  FaEdit,
+  FaTimes,
+} from "react-icons/fa"; // Añadí FaTimes
 
 const Dashboard = () => {
   const router = useRouter();
@@ -21,11 +30,11 @@ const Dashboard = () => {
         const data = [
           "Curso de Anatomía",
           "Curso de Fisiología",
-          "Curso de Patología"
+          "Curso de Patología",
         ];
         setCourses(data);
       } catch (error) {
-        setError('Failed to load courses');
+        setError("Failed to load courses");
       } finally {
         setLoading(false);
       }
@@ -36,8 +45,8 @@ const Dashboard = () => {
 
   const handleLogout = () => {
     try {
-      Cookies.remove('token'); // Eliminar el token de las cookies
-      router.push('/auth/login'); // Redirigir a la página de inicio de sesión
+      Cookies.remove("token"); // Eliminar el token de las cookies
+      router.push("/auth/login"); // Redirigir a la página de inicio de sesión
     } catch (err) {
       console.error("Logout failed", err);
       // Handle logout error (e.g., show a message to the user)
@@ -59,9 +68,10 @@ const Dashboard = () => {
       {/* Header */}
       <header className="bg-primary text-white p-4 flex justify-between items-center">
         <h1 className="text-xl font-bold">Plataforma Educativa</h1>
+        {/* Botón de cerrar sesión en pantalla web */}
         <button
           onClick={handleLogout}
-          className="px-4 py-2 bg-red-500 hover:bg-red-600 rounded"
+          className="px-4 py-2 bg-red-500 hover:bg-red-600 rounded hidden sm:block"
         >
           Cerrar Sesión
         </button>
@@ -70,7 +80,11 @@ const Dashboard = () => {
           onClick={() => setIsSidebarOpen(!isSidebarOpen)}
           className="block sm:hidden px-4 py-2 text-white"
         >
-          {isSidebarOpen ? <FaTimes className="text-2xl" /> : <FaBars className="text-2xl" />}
+          {isSidebarOpen ? (
+            <FaTimes className="text-2xl" />
+          ) : (
+            <FaBars className="text-2xl" />
+          )}
         </button>
       </header>
 
@@ -78,7 +92,7 @@ const Dashboard = () => {
         {/* Sidebar */}
         <aside
           className={`${
-            isSidebarOpen ? 'fixed inset-0 z-50 bg-white shadow-md' : 'hidden'
+            isSidebarOpen ? "fixed inset-0 z-50 bg-white shadow-md" : "hidden"
           } sm:block sm:relative sm:inset-auto sm:z-auto w-full sm:w-64 bg-white shadow-md p-4 space-y-6`}
         >
           {/* Close Button for Mobile */}
@@ -107,6 +121,16 @@ const Dashboard = () => {
               </li>
             </ul>
           </nav>
+
+          {/* Add Logout button inside sidebar for mobile */}
+          <div className="mt-4 sm:hidden">
+            <button
+              onClick={handleLogout}
+              className="w-full px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded"
+            >
+              Cerrar Sesión
+            </button>
+          </div>
         </aside>
 
         {/* Content Area */}
@@ -114,29 +138,31 @@ const Dashboard = () => {
           <h2 className="text-2xl font-bold mb-4">¡Hola, profesor!</h2>
 
           {/* Courses Section */}
-          <section className="bg-white shadow-md rounded-lg p-4">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-lg font-bold">Mis Cursos</h2>
+          <section>
+            <div className="flex flex-wrap gap-4 p-6">
+              <Card
+                image="https://cdn-prod.medicalnewstoday.com/content/images/articles/248/248743/anatomy-class.jpg"
+                title="Curso de Anatomía"
+                date="Febrero 2, 2025"
+              />
+              <Card
+                image="https://media.istockphoto.com/id/1369379344/photo/diverse-students-stand-around-professor-lecturing-on-human-skeletal-system.jpg?s=2048x2048&w=is&k=20&c=nKCP0PBUVjK_xiDPf_W0PsWZuPwmxkr1U73dbi7vdQc="
+                title="Curso de Fisiología"
+                date="Febrero 3, 2025"
+              />
+              <Card
+                image="https://ce.mayo.edu/sites/default/files/pulmonology.png"
+                title="Curso de Patología"
+                date="Febrero 4, 2025"
+              />
             </div>
-
-            {loading && <p>Loading courses...</p>}
-            {error && <p className="text-red-500">{error}</p>}
-            {!loading && !error && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {courses.map((course, index) => (
-                  <div key={index} className="bg-primary/10 p-4 rounded shadow hover:bg-primary/20 cursor-pointer">
-                    {course}
-                  </div>
-                ))}
-              </div>
-            )}
           </section>
         </div>
       </main>
 
       {/* Footer */}
       <footer className="bg-gray-800 text-white p-4 text-center">
-        <p>&copy; 2024 Plataforma Educativa. Todos los derechos reservados.</p>
+        <p>&copy; 2025 Plataforma Educativa. Todos los derechos reservados.</p>
       </footer>
 
       {/* Floating Button */}

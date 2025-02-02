@@ -8,7 +8,7 @@ export function middleware(request: NextRequest) {
   // Rutas públicas que no requieren autenticación
   const publicPaths = ['/auth/login', '/auth/register', '/'];
 
-  const publicAuthPaths = ['/auth/login', '/auth/register'];
+  const publicAuthPaths = ['/auth/login'];
 
   if (token) {
     // Si hay un token y el usuario intenta acceder a una ruta pública, redirige a /home
