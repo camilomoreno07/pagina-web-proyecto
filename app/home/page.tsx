@@ -67,7 +67,7 @@ const Dashboard = () => {
     <div className="flex flex-col min-h-screen bg-gray-100">
       {/* Header */}
       <header className="bg-primary text-white p-4 flex justify-between items-center">
-        <h1 className="text-xl font-bold">Plataforma Educativa</h1>
+        <h1 className="text-xl font-bold">EduLMS</h1>
         {/* Botón de cerrar sesión en pantalla web */}
         <button
           onClick={handleLogout}
