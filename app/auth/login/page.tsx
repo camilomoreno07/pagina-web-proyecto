@@ -1,18 +1,19 @@
-'use client'
+'use client';
 import { useState } from 'react';
-import { useRouter } from 'next/navigation'; 
+import { useRouter } from 'next/navigation';
 import { loginUser, User } from '../../api/auth';
 import Link from 'next/link';
+import { FaChalkboardTeacher, FaUserGraduate, FaUserCog } from 'react-icons/fa';
 
-const login = () => {
-  const router = useRouter(); // Inicializa useRouter
+const Login = () => {
+  const router = useRouter();
 
   const [formData, setFormData] = useState<User>({
     username: '',
     password: '',
     firstname: '',
     lastname: '',
-    role: 'USER', // Asumiendo que el rol es siempre 'USER'
+    role: 'STUDENT',
   });
 
   const [error, setError] = useState<string | null>(null);
@@ -30,75 +31,118 @@ const login = () => {
     e.preventDefault();
     setError(null);
     setSuccess(null);
-    
+
     try {
       const response = await loginUser(formData);
-      setSuccess('Registro exitoso!'); // Muestra mensaje de éxito
-      console.log('Registro exitoso:', response);
-      
-      // Redirige a otra página después de recibir el token
+      setSuccess('Inicio de sesión exitoso!');
+      console.log('Inicio de sesión exitoso:', response);
+
       if (response.token) {
-        // Almacena el token como cookie
-        document.cookie = `token=${response.token}; path=/`; // Guarda el token en una cookie
-        router.push('/home'); // Cambia '/home' a tu ruta deseada
+        document.cookie = `token=${response.token}; path=/`;
+        router.push('/home');
       }
     } catch (error: any) {
-      setError('Error al registrar: ' + error.response.data.message || error.message); // Muestra mensaje de error
-      console.error('Error al registrar:', error);
+      setError('Error al iniciar sesión: ' + error.response.data.message || error.message);
+      console.error('Error al iniciar sesión:', error);
     }
   };
 
   return (
-    <div className="mx-auto h-screen">
-      <div className="flex h-full">
-        {/* Left side with title and form, centered vertically */}
-        <div className="w-2/5 flex flex-col justify-center items-center pb-10 relative">
-          {/* Title at the top left */}
-          <h1 className="absolute top-4 left-4 text-2xl font-bold text-blue-500">Plataforma VR</h1>
-          
-          {/* Form centered vertically */}
-          <form onSubmit={handleSubmit} className="flex flex-col space-y-4 w-full max-w-md">
-            <h2 className="text-2xl font-bold text-center mb-4">Iniciar Sesión</h2>
+    <div className="h-screen flex flex-col bg-gray-100">
+      {/* Navbar */}
+      <nav className="bg-white shadow-md p-4">
+        <div className="container mx-auto flex justify-between items-center">
+          {/* Logotipo */}
+          <div className="text-xl font-bold text-primary">MiApp</div>
+
+          {/* Texto y botón "Contáctanos" */}
+          <div className="flex items-center space-x-4">
+            <span className="text-gray-700">¿No tienes cuenta?</span>
+            <button className="bg-primary text-white px-4 py-2 rounded-md hover:bg-primary-dark">
+              Contáctanos
+            </button>
+          </div>
+        </div>
+      </nav>
+
+      {/* Formulario de Login */}
+      <div className="flex-grow flex items-center justify-center">
+        <div className="bg-white shadow-lg rounded-lg p-8 max-w-md w-full">
+          <h1 className="text-3xl font-bold text-center mb-6">¡Bienvenido!</h1>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="block text-gray-700 mb-1">Selecciona un rol</label>
+              <div className="flex justify-between">
+                {/* Botón Profesor con Icono */}
+                <button
+                  type="button"
+                  className="flex flex-col items-center justify-center flex-1 py-2 px-4 border rounded-l-md border-gray-300 focus:ring focus:ring-primary/50"
+                >
+                  <FaChalkboardTeacher className="text-2xl mb-2" />
+                  Profesor
+                </button>
+
+                {/* Botón Estudiante con Icono */}
+                <button
+                  type="button"
+                  className="flex flex-col items-center justify-center flex-1 py-2 px-4 border-t border-b border-gray-300 focus:ring focus:ring-primary/50"
+                >
+                  <FaUserGraduate className="text-2xl mb-2" />
+                  Estudiante
+                </button>
+
+                {/* Botón Administrador con Icono */}
+                <button
+                  type="button"
+                  className="flex flex-col items-center justify-center flex-1 py-2 px-4 border rounded-r-md border-gray-300 focus:ring focus:ring-primary/50"
+                >
+                  <FaUserCog className="text-2xl mb-2" />
+                  Administrador
+                </button>
+              </div>
+            </div>
+
             <input
-              type="text"
+              type="email"
               name="username"
               onChange={handleChange}
-              placeholder="Codigo Estudiantil"
-              className="p-2 border border-gray-300 rounded-md"
+              placeholder="Correo Electrónico"
+              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring focus:ring-primary/50"
             />
             <input
               type="password"
               name="password"
               onChange={handleChange}
               placeholder="Contraseña"
-              className="p-2 border border-gray-300 rounded-md"
+              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring focus:ring-primary/50"
             />
-            <button
-              type="submit"
-              className="p-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
-            >
-              Ingresar
-            </button>
-
-            {/* Link to register page, centered */}
-            <div className="flex justify-center mt-4">
-              <Link href="/auth/register" className="text-blue-500 underline hover:text-blue-700">
-                ¿No estás registrado? Registrar
+            <div className="flex items-center justify-between">
+              <label className="flex items-center">
+                <input type="checkbox" className="mr-2" /> Recuérdame
+              </label>
+              <Link href="#" className="text-primary hover:underline">
+                Olvidé mi contraseña
               </Link>
             </div>
+            <button
+              type="submit"
+              className="w-full py-2 px-4 bg-primary text-white rounded-md hover:bg-primary-dark focus:ring focus:ring-primary/50"
+            >
+              Iniciar sesión
+            </button>
           </form>
-        </div>
-
-        {/* Right side with a full background image */}
-        <div
-          className="w-3/5 bg-cover bg-center"
-          style={{ backgroundImage: "url('https://visualise.com/wp-content/uploads/2017/09/medical-mr.jpg')" }}
-        >
+          {error && <p className="text-red-500 text-sm mt-4">{error}</p>}
+          {success && <p className="text-green-500 text-sm mt-4">{success}</p>}
+          <p className="text-center mt-6">
+            ¿No tienes cuenta?{' '}
+            <Link href="#" className="text-primary hover:underline">
+              Contáctanos
+            </Link>
+          </p>
         </div>
       </div>
     </div>
   );
-  
-}
+};
 
-export default login
+export default Login;
