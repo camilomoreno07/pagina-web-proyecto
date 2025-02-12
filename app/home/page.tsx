@@ -59,16 +59,16 @@ const Dashboard = () => {
   return (
     <div className="flex flex-col min-h-screen bg-gray-100">
       {/* Header */}
-      <header className="bg-primary text-white p-4 flex justify-between items-center">
+      <header className="bg-primary-40 text-white p-4 flex justify-between items-center">
         <h1 className="text-xl font-bold">EduLMS</h1>
         {/* Botón de cerrar sesión en pantalla web */}
         <div className="flex items-center space-x-4">
           {/* Ícono de campana para notificaciones */}
-          <button className="p-2 hover:bg-primary/20 rounded-full">
+          <button className="p-2 hover:bg-primary-30 rounded-full">
             <FaBell className="text-xl" />
           </button>
           {/* Círculo de perfil */}
-          <div className="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center hover:bg-primary/20 cursor-pointer">
+          <div className="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center hover:bg-primary-30 cursor-pointer">
             <FaUser className="text-xl text-gray-700" />
           </div>
           {/* Botón de cerrar sesión */}
@@ -111,17 +111,17 @@ const Dashboard = () => {
 
           <nav>
             <ul className="space-y-2">
-              <li className="p-2 flex flex-row items-center rounded hover:bg-primary/20 cursor-pointer">
-                <FaBook className="text-primary text-xl mr-2" />
-                <span className="text-primary font-medium">Cursos</span>
+              <li className="p-2 flex flex-row items-center rounded hover:bg-primary-95 cursor-pointer">
+                <FaBook className="text-primary-40 text-xl mr-2" />
+                <span className="text-primary-40 font-medium">Cursos</span>
               </li>
-              <li className="p-2 flex flex-row items-center rounded hover:bg-primary/20 cursor-pointer">
-                <FaEnvelope className="text-primary text-xl mr-2" />
-                <span className="text-primary font-medium">Mensajes</span>
+              <li className="p-2 flex flex-row items-center rounded hover:bg-primary-95 cursor-pointer">
+                <FaEnvelope className="text-primary-40 text-xl mr-2" />
+                <span className="text-primary-40 font-medium">Mensajes</span>
               </li>
-              <li className="p-2 flex flex-row items-center rounded hover:bg-primary/20 cursor-pointer">
-                <FaCalendarAlt className="text-primary text-xl mr-2" />
-                <span className="text-primary font-medium">Calendario</span>
+              <li className="p-2 flex flex-row items-center rounded hover:bg-primary-95 cursor-pointer">
+                <FaCalendarAlt className="text-primary-40 text-xl mr-2" />
+                <span className="text-primary-40 font-medium">Calendario</span>
               </li>
             </ul>
           </nav>
@@ -143,7 +143,7 @@ const Dashboard = () => {
           {/* Botón para crear nuevo curso */}
           <button
             onClick={() => setShowWizard(true)}
-            className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded"
+            className="px-4 py-2 bg-primary-40 hover:bg-primary-50 text-white rounded"
           >
             Crear Nuevo Curso
           </button>
@@ -347,7 +347,7 @@ const CreateCourseWizard = ({ onClose }) => {
         {step < 4 ? (
           <button
             onClick={nextStep}
-            className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded"
+            className="px-4 py-2 bg-primary-40 hover:bg-primary-50 text-white rounded"
           >
             Siguiente
             <FaArrowRight className="inline-block ml-2" />
