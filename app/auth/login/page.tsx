@@ -145,11 +145,11 @@ const Login = () => {
             </div>
   
             <input
-              type="email"
+              type="text"
               name="username"
               value={formData.username}
               onChange={handleChange}
-              placeholder="Correo Electrónico"
+              placeholder="Codigo o correo electrónico"
               className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring focus:ring-primary-40/50" /* Usamos el color primary-40 */
             />
             <input

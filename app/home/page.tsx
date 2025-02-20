@@ -3,57 +3,74 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Cookies from "js-cookie";
 import Card from "../components/Card";
-import {
-  FaBook,
-  FaEnvelope,
-  FaCalendarAlt,
-  FaBars,
-  FaEdit,
-  FaTimes,
-  FaBell,
-  FaUser,
-  FaArrowLeft,
-  FaArrowRight,
-  FaCheck,
-} from "react-icons/fa";
+import Wizard from "../components/Wizard";
+import { FaBook, FaEnvelope, FaCalendarAlt, FaBars, FaTimes, FaBell, FaUser } from "react-icons/fa";
+import { Course } from "../interfaces/Course";
 
 const Dashboard = () => {
   const router = useRouter();
-  const [courses, setCourses] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [showWizard, setShowWizard] = useState(false); // Estado para controlar el wizard
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+  const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
+  const [showWizard, setShowWizard] = useState<boolean>(false);
+  const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
 
   useEffect(() => {
-    // Simulating fetching data for courses
     const fetchCourses = async () => {
       try {
-        // Replace with actual API call to fetch courses
-        const data = [
-          "Curso de Anatomía",
-          "Curso de Fisiología",
-          "Curso de Patología",
-        ];
+        const token = Cookies.get("token");
+        if (!token) {
+          throw new Error("No token found");
+        }
+
+        const response = await fetch("http://localhost:8081/api/courses", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch courses");
+        }
+
+        const data: Course[] = await response.json();
         setCourses(data);
       } catch (error) {
-        setError("Failed to load courses");
+        setError(error instanceof Error ? error.message : "An error occurred");
       } finally {
         setLoading(false);
       }
     };
 
     fetchCourses();
+
+    const intervalId = setInterval(fetchCourses, 5000);
+    return () => clearInterval(intervalId);
   }, []);
 
   const handleLogout = () => {
     try {
-      Cookies.remove("token"); // Eliminar el token de las cookies
-      router.push("/auth/login"); // Redirigir a la página de inicio de sesión
+      Cookies.remove("token");
+      router.push("/auth/login");
     } catch (err) {
       console.error("Logout failed", err);
-      // Handle logout error (e.g., show a message to the user)
     }
+  };
+
+  const handleCourseClick = (course: Course) => {
+    setShowWizard(true);
+    setSelectedCourse(course);
+  };
+
+  const handleWizardComplete = (data: WizardData) => {
+    console.log("Datos del curso:", data);
+    setShowWizard(false);
+    // Aquí puedes enviar los datos al backend
+  };
+
+  const handleWizardCancel = () => {
+    setShowWizard(false);
   };
 
   return (
@@ -61,17 +78,13 @@ const Dashboard = () => {
       {/* Header */}
       <header className="bg-primary-40 text-white p-4 flex justify-between items-center">
         <h1 className="text-xl font-bold">EduLMS</h1>
-        {/* Botón de cerrar sesión en pantalla web */}
         <div className="flex items-center space-x-4">
-          {/* Ícono de campana para notificaciones */}
           <button className="p-2 hover:bg-primary-30 rounded-full">
             <FaBell className="text-xl" />
           </button>
-          {/* Círculo de perfil */}
           <div className="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center hover:bg-primary-30 cursor-pointer">
             <FaUser className="text-xl text-gray-700" />
           </div>
-          {/* Botón de cerrar sesión */}
           <button
             onClick={handleLogout}
             className="px-4 py-2 bg-red-500 hover:bg-red-600 rounded hidden sm:block"
@@ -79,16 +92,11 @@ const Dashboard = () => {
             Cerrar Sesión
           </button>
         </div>
-        {/* Hamburger Menu Icon for Mobile */}
         <button
           onClick={() => setIsSidebarOpen(!isSidebarOpen)}
           className="block sm:hidden px-4 py-2 text-white"
         >
-          {isSidebarOpen ? (
-            <FaTimes className="text-2xl" />
-          ) : (
-            <FaBars className="text-2xl" />
-          )}
+          {isSidebarOpen ? <FaTimes className="text-2xl" /> : <FaBars className="text-2xl" />}
         </button>
       </header>
 
@@ -99,7 +107,6 @@ const Dashboard = () => {
             isSidebarOpen ? "fixed inset-0 z-50 bg-white shadow-md" : "hidden"
           } sm:block sm:relative sm:inset-auto sm:z-auto w-full sm:w-48 bg-white shadow-md p-4 space-y-6`}
         >
-          {/* Close Button for Mobile */}
           <div className="flex justify-end sm:hidden">
             <button
               onClick={() => setIsSidebarOpen(false)}
@@ -126,7 +133,6 @@ const Dashboard = () => {
             </ul>
           </nav>
 
-          {/* Add Logout button inside sidebar for mobile */}
           <div className="mt-4 sm:hidden">
             <button
               onClick={handleLogout}
@@ -140,39 +146,36 @@ const Dashboard = () => {
         {/* Content Area */}
         <div className="flex-1 p-6 space-y-6">
           <h2 className="text-2xl font-bold mb-4">¡Hola, profesor!</h2>
-          {/* Botón para crear nuevo curso */}
-          <button
-            onClick={() => setShowWizard(true)}
-            className="px-4 py-2 bg-primary-40 hover:bg-primary-50 text-white rounded"
-          >
-            Crear Nuevo Curso
-          </button>
-
-          {/* Wizard para crear nuevo curso */}
-          {showWizard && (
-            <CreateCourseWizard onClose={() => setShowWizard(false)} />
-          )}
 
           {/* Courses Section */}
-          <section>
-            <div className="flex flex-wrap gap-4 p-6">
-              <Card
-                image="https://cdn-prod.medicalnewstoday.com/content/images/articles/248/248743/anatomy-class.jpg"
-                title="Curso de Anatomía"
-                date="Febrero 2, 2025"
-              />
-              <Card
-                image="https://media.istockphoto.com/id/1369379344/photo/diverse-students-stand-around-professor-lecturing-on-human-skeletal-system.jpg?s=2048x2048&w=is&k=20&c=nKCP0PBUVjK_xiDPf_W0PsWZuPwmxkr1U73dbi7vdQc="
-                title="Curso de Fisiología"
-                date="Febrero 3, 2025"
-              />
-              <Card
-                image="https://ce.mayo.edu/sites/default/files/pulmonology.png"
-                title="Curso de Patología"
-                date="Febrero 4, 2025"
-              />
-            </div>
-          </section>
+          {showWizard ? (
+            <Wizard
+              course={selectedCourse}
+              onComplete={handleWizardComplete}
+              onCancel={handleWizardCancel}
+            />
+          ) : (
+            <section>
+              <div className="flex flex-wrap gap-4 p-6">
+                {loading ? (
+                  <p>Cargando cursos...</p>
+                ) : error ? (
+                  <p className="text-red-500">{error}</p>
+                ) : (
+                  courses.map((course) => (
+                    <Card
+                      key={course.courseId}
+                      id={course.courseId}
+                      image=""
+                      title={course.courseName}
+                      date="Fecha no disponible"
+                      onClick={() => handleCourseClick(course)}
+                    />
+                  ))
+                )}
+              </div>
+            </section>
+          )}
         </div>
       </main>
 
@@ -180,188 +183,6 @@ const Dashboard = () => {
       <footer className="bg-gray-800 text-white p-4 text-center">
         <p>&copy; 2025 Plataforma Educativa. Todos los derechos reservados.</p>
       </footer>
-    </div>
-  );
-};
-
-// Componente del Wizard
-const CreateCourseWizard = ({ onClose }) => {
-  const [step, setStep] = useState(1); // Paso actual del wizard
-  const [courseData, setCourseData] = useState({
-    name: "",
-    description: "",
-    category: "",
-    startDate: "",
-    duration: "",
-    difficulty: "beginner",
-    image: null,
-    files: [],
-  });
-
-  // Manejar cambios en los inputs
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setCourseData({ ...courseData, [name]: value });
-  };
-
-  // Manejar subida de archivos
-  const handleFileUpload = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setCourseData({ ...courseData, image: file });
-    }
-  };
-
-  // Avanzar al siguiente paso
-  const nextStep = () => {
-    if (step < 4) setStep(step + 1);
-  };
-
-  // Retroceder al paso anterior
-  const prevStep = () => {
-    if (step > 1) setStep(step - 1);
-  };
-
-  // Enviar los datos del curso
-  const handleSubmit = () => {
-    console.log("Curso creado:", courseData);
-    onClose(); // Cerrar el wizard después de enviar
-  };
-
-  return (
-    <div className="bg-white p-6 rounded-lg shadow-lg mb-6">
-      <h2 className="text-2xl font-bold mb-4">Crear Nuevo Curso</h2>
-
-      {/* Paso 1: Información básica */}
-      {step === 1 && (
-        <div>
-          <h3 className="text-xl font-semibold mb-4">Paso 1: Información Básica</h3>
-          <div className="space-y-4">
-            <input
-              type="text"
-              name="name"
-              placeholder="Nombre del curso"
-              value={courseData.name}
-              onChange={handleInputChange}
-              className="w-full p-2 border rounded"
-            />
-            <textarea
-              name="description"
-              placeholder="Descripción del curso"
-              value={courseData.description}
-              onChange={handleInputChange}
-              className="w-full p-2 border rounded"
-            />
-            <input
-              type="text"
-              name="category"
-              placeholder="Categoría"
-              value={courseData.category}
-              onChange={handleInputChange}
-              className="w-full p-2 border rounded"
-            />
-          </div>
-        </div>
-      )}
-
-      {/* Paso 2: Configuración del curso */}
-      {step === 2 && (
-        <div>
-          <h3 className="text-xl font-semibold mb-4">Paso 2: Configuración</h3>
-          <div className="space-y-4">
-            <input
-              type="date"
-              name="startDate"
-              value={courseData.startDate}
-              onChange={handleInputChange}
-              className="w-full p-2 border rounded"
-            />
-            <input
-              type="text"
-              name="duration"
-              placeholder="Duración (ej: 4 semanas)"
-              value={courseData.duration}
-              onChange={handleInputChange}
-              className="w-full p-2 border rounded"
-            />
-            <select
-              name="difficulty"
-              value={courseData.difficulty}
-              onChange={handleInputChange}
-              className="w-full p-2 border rounded"
-            >
-              <option value="beginner">Principiante</option>
-              <option value="intermediate">Intermedio</option>
-              <option value="advanced">Avanzado</option>
-            </select>
-          </div>
-        </div>
-      )}
-
-      {/* Paso 3: Subida de materiales */}
-      {step === 3 && (
-        <div>
-          <h3 className="text-xl font-semibold mb-4">Paso 3: Materiales</h3>
-          <div className="space-y-4">
-            <input
-              type="file"
-              accept="image/*"
-              onChange={handleFileUpload}
-              className="w-full p-2 border rounded"
-            />
-            <p className="text-sm text-gray-600">
-              Sube una imagen representativa del curso.
-            </p>
-          </div>
-        </div>
-      )}
-
-      {/* Paso 4: Resumen y confirmación */}
-      {step === 4 && (
-        <div>
-          <h3 className="text-xl font-semibold mb-4">Paso 4: Resumen</h3>
-          <div className="space-y-4">
-            <p><strong>Nombre:</strong> {courseData.name}</p>
-            <p><strong>Descripción:</strong> {courseData.description}</p>
-            <p><strong>Categoría:</strong> {courseData.category}</p>
-            <p><strong>Fecha de inicio:</strong> {courseData.startDate}</p>
-            <p><strong>Duración:</strong> {courseData.duration}</p>
-            <p><strong>Dificultad:</strong> {courseData.difficulty}</p>
-            {courseData.image && (
-              <p><strong>Imagen:</strong> {courseData.image.name}</p>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Controles del wizard */}
-      <div className="flex justify-between mt-6">
-        <button
-          onClick={prevStep}
-          disabled={step === 1}
-          className="px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded disabled:opacity-50"
-        >
-          <FaArrowLeft className="inline-block mr-2" />
-          Anterior
-        </button>
-        {step < 4 ? (
-          <button
-            onClick={nextStep}
-            className="px-4 py-2 bg-primary-40 hover:bg-primary-50 text-white rounded"
-          >
-            Siguiente
-            <FaArrowRight className="inline-block ml-2" />
-          </button>
-        ) : (
-          <button
-            onClick={handleSubmit}
-            className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded"
-          >
-            Crear Curso
-            <FaCheck className="inline-block ml-2" />
-          </button>
-        )}
-      </div>
     </div>
   );
 };
