@@ -10,6 +10,7 @@ interface WizardProps {
 }
 
 const Wizard = ({ course, onComplete, onCancel }: WizardProps) => {
+  const [previewImage, setPreviewImage] = useState(null);
   const [step, setStep] = useState<number>(1);
   const [instructionSteps, setInstructionSteps] = useState([]);
   const [courseData, setCourseData] = useState<WizardData>({
@@ -37,7 +38,6 @@ const Wizard = ({ course, onComplete, onCancel }: WizardProps) => {
   const removeStep = (index) => {
     setInstructionSteps((prevSteps) => prevSteps.filter((_, i) => i !== index));
   };
-  
 
   const updateStep = (index, value) => {
     const newSteps = [...instructionSteps];
@@ -71,80 +71,144 @@ const Wizard = ({ course, onComplete, onCancel }: WizardProps) => {
     onComplete(courseData);
   };
 
+  const handleImageUpload = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setPreviewImage(e.target.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const renderStepper = () => {
+    const steps = ["Información", "Actividad", "Contenido", "Finalizar"];
+
+    return (
+      <div className="flex items-center justify-between mb-6 w-full">
+        {steps.map((label, index) => {
+          const isActive = step === index + 1;
+          const isCompleted = step > index + 1;
+
+          return (
+            <div
+              key={index}
+              className={`flex items-center ${
+                index < steps.length - 1 ? "w-full" : ""
+              }`}
+            >
+              {/* Icono del paso */}
+              <div
+                className={`w-10 h-10 flex items-center justify-center rounded-full text-sm font-bold transition-all duration-300
+                  ${
+                    isCompleted
+                      ? "bg-green-500 text-white"
+                      : isActive
+                      ? "bg-primary-40 text-white"
+                      : "bg-gray-300 text-gray-600"
+                  }`}
+              >
+                {isCompleted ? "✔" : index + 1}
+              </div>
+
+              {/* Línea de conexión entre pasos, solo si NO es el último paso */}
+              {index < steps.length - 1 && (
+                <div
+                  className={`h-1 transition-all duration-300 mx-2 flex-1 ${
+                    step > index + 1 ? "bg-green-500" : "bg-gray-300"
+                  }`}
+                ></div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
   const renderStep = () => {
     switch (step) {
       case 1:
         return (
           <div>
-            <h3 className="text-3xl font-semibold mb-4">
-              Identificación del curso
-            </h3>
-            <hr className="mb-4 border-gray-300"/>
-            <div className="space-y-3">
-              {/*<input
-                type="text"
-                name="name"
-                placeholder="Nombre del curso"
-                value={courseData.name}
-                onChange={handleInputChange} 
-                className="w-full p-2 border rounded"
-              />*/}
-              <label className="block font-medium mb-1">Descripción del curso</label>
-              <textarea
-                name="description"
-                placeholder="Dile a tus estudiantes de que tratará este curso"
-                value={courseData.description}
-                onChange={handleInputChange}
-                className="w-full p-2 border border-gray-300 rounded-lg bg-gray-50"
-              />
-              <div className="flex items-center space-x-4">
-                <label htmlFor="privacy-switch" className="text-gray-700">
-                  Privacidad del Curso
-                </label>
-                <div className="relative inline-block w-10 align-middle select-none transition duration-200 ease-in">
-                  <input
-                    type="checkbox"
-                    name="isPublic"
-                    id="privacy-switch"
-                    checked={courseData.isPublic}
-                    onChange={(e) =>
-                      setCourseData({
-                        ...courseData,
-                        isPublic: e.target.checked,
-                      })
-                    }
-                    className={`toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-2 border-gray-300 appearance-none cursor-pointer transition-transform duration-200 ease-in-out ${
-                      courseData.isPublic ? "translate-x-4" : "translate-x-0"
-                    }`}
-                    aria-checked={courseData.isPublic}
-                    aria-labelledby="privacy-label"
-                  />
-                  <div
-                    className={`toggle-label block overflow-hidden h-6 rounded-full cursor-pointer ${
-                      courseData.isPublic ? "bg-green-500" : "bg-gray-300"
-                    }`}
-                    id="privacy-label"
-                  ></div>
+            <h3 className="text-3xl font-semibold mb-4">Identificación del curso</h3>
+            <hr className="mb-4 border-gray-300" />
+      
+            {/* Banner del curso */}
+            <div className="w-full rounded-lg bg-gray-200 flex items-center justify-center overflow-hidden relative">
+              {previewImage ? (
+                <img
+                  src={previewImage}
+                  alt="Banner del curso"
+                  className="w-full max-h-48 object-cover rounded-lg"
+                />
+              ) : (
+                <div className="w-full h-48 flex items-center justify-center text-gray-500">
+                  No hay imagen
                 </div>
-                <span className="text-gray-700">
-                  {courseData.isPublic ? "Público" : "Privado"}
-                </span>
-              </div>
-              <p className="text-sm text-gray-500">
-                {courseData.isPublic
-                  ? "Este curso se visualizará en la biblioteca pública."
-                  : "Este curso no será visible en la biblioteca pública."}
-              </p>
+              )}
             </div>
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleImageUpload}
+              className="mt-2 w-full"
+            />
+      
+            {/* Descripción del curso */}
+            <label className="block font-medium mt-4 mb-1">Descripción del curso</label>
+            <textarea
+              name="description"
+              placeholder="Dile a tus estudiantes de qué tratará este curso"
+              value={courseData.description}
+              onChange={(e) => setCourseData({ ...courseData, description: e.target.value })}
+              className="w-full p-2 border border-gray-300 rounded-lg bg-gray-50"
+            />
+      
+            {/* Privacidad */}
+            <div className="flex items-center space-x-4 mt-4">
+              <label htmlFor="privacy-switch" className="text-gray-700">
+                Privacidad del Curso
+              </label>
+              <div className="relative inline-block w-10 align-middle select-none transition duration-200 ease-in">
+                <input
+                  type="checkbox"
+                  name="isPublic"
+                  id="privacy-switch"
+                  checked={courseData.isPublic}
+                  onChange={(e) => setCourseData({ ...courseData, isPublic: e.target.checked })}
+                  className={`toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-2 border-gray-300 appearance-none cursor-pointer transition-transform duration-200 ease-in-out ${
+                    courseData.isPublic ? "translate-x-4" : "translate-x-0"
+                  }`}
+                  aria-checked={courseData.isPublic}
+                  aria-labelledby="privacy-label"
+                />
+                <div
+                  className={`toggle-label block overflow-hidden h-6 rounded-full cursor-pointer ${
+                    courseData.isPublic ? "bg-green-500" : "bg-gray-300"
+                  }`}
+                  id="privacy-label"
+                ></div>
+              </div>
+              <span className="text-gray-700">{courseData.isPublic ? "Público" : "Privado"}</span>
+            </div>
+            <p className="text-sm text-gray-500">
+              {courseData.isPublic
+                ? "Este curso se visualizará en la biblioteca pública."
+                : "Este curso no será visible en la biblioteca pública."}
+            </p>
           </div>
         );
       case 2:
         return (
           <div>
             <h3 className="text-3xl font-medium mb-4">Crear instrucciones</h3>
-            <hr className="mb-4 border-gray-300"/>
+            <hr className="mb-4 border-gray-300" />
             <div className="space-y-3">
-              <label className="block font-medium mb-1">Nombre de la actividad</label>
+              <label className="block font-medium mb-1">
+                Nombre de la actividad
+              </label>
               <input
                 type="text"
                 name="activityName"
@@ -153,8 +217,10 @@ const Wizard = ({ course, onComplete, onCancel }: WizardProps) => {
                 onChange={handleInputChange}
                 className="w-full p-2 border border-gray-300 rounded-lg bg-gray-50"
               />
-              
-              <label className="block font-medium mb-1">Descripción de la actividad</label>
+
+              <label className="block font-medium mb-1">
+                Descripción de la actividad
+              </label>
               <input
                 type="text"
                 name="activityDescription"
@@ -163,7 +229,7 @@ const Wizard = ({ course, onComplete, onCancel }: WizardProps) => {
                 onChange={handleInputChange}
                 className="w-full p-2 border border-gray-300 rounded-lg bg-gray-50"
               />
-              
+
               <div>
                 <label className="block font-medium mb-1">Paso a paso</label>
                 {instructionSteps.map((step, index) => (
@@ -177,20 +243,20 @@ const Wizard = ({ course, onComplete, onCancel }: WizardProps) => {
                       className="w-full p-2 border border-gray-300 rounded-lg bg-gray-50"
                     />
                     <button
-                type="button"
-                onClick={() => removeStep(index)}
-                className="p-2 bg-red-500 text-white rounded-lg"
-              >
-                ×
-              </button>
+                      type="button"
+                      onClick={() => removeStep(index)}
+                      className="p-2 bg-red-500 text-white rounded-lg"
+                    >
+                      ×
+                    </button>
                   </div>
                 ))}
                 <button
                   type="button"
                   onClick={addStep}
-                  className="mt-2 p-2 bg-blue-500 text-white rounded-lg"
+                  className="mt-2 p-2 border-2 border-primary-40 text-primary-40 bg-white rounded-lg font-semibold flex items-center justify-center"
                 >
-                  + Agregar paso
+                  <span className="text-2xl leading-none">+</span> Agregar paso
                 </button>
               </div>
             </div>
@@ -200,10 +266,12 @@ const Wizard = ({ course, onComplete, onCancel }: WizardProps) => {
         return (
           <div>
             <h3 className="text-3xl font-medium mb-4">Subir Contenido</h3>
-            <hr className="mb-4 border-gray-300"/>
+            <hr className="mb-4 border-gray-300" />
             <div className="space-y-3">
-            <label className="block font-medium mb-1">Titulo del contenido</label>
-            <input
+              <label className="block font-medium mb-1">
+                Titulo del contenido
+              </label>
+              <input
                 type="text"
                 name="contentTitle"
                 placeholder="¿Cómo se llamará el tema?"
@@ -211,7 +279,9 @@ const Wizard = ({ course, onComplete, onCancel }: WizardProps) => {
                 onChange={handleInputChange}
                 className="w-full p-2 border border-gray-300 rounded-lg bg-gray-50"
               />
-              <label className="block font-medium mb-1">Descripción del contenido</label>
+              <label className="block font-medium mb-1">
+                Descripción del contenido
+              </label>
               <input
                 type="text"
                 name="contentDescription"
@@ -220,7 +290,9 @@ const Wizard = ({ course, onComplete, onCancel }: WizardProps) => {
                 onChange={handleInputChange}
                 className="w-full p-2 border border-gray-300 rounded-lg bg-gray-50"
               />
-              <label className="block font-medium mb-1">Sube el contenido de apoyo</label>
+              <label className="block font-medium mb-1">
+                Sube el contenido de apoyo
+              </label>
               <input
                 type="file"
                 accept="image/*"
@@ -234,10 +306,10 @@ const Wizard = ({ course, onComplete, onCancel }: WizardProps) => {
         return (
           <div>
             <h3 className="text-3xl font-medium mb-4">Crear Evaluación</h3>
-            <hr className="mb-4 border-gray-300"/>
+            <hr className="mb-4 border-gray-300" />
             <div className="space-y-3">
-            <label className="block font-medium mb-1">Pregunta 1</label>
-            <input
+              <label className="block font-medium mb-1">Pregunta 1</label>
+              <input
                 type="text"
                 name="firstQuestion"
                 placeholder="Escribe la pregunta"
@@ -245,7 +317,9 @@ const Wizard = ({ course, onComplete, onCancel }: WizardProps) => {
                 onChange={handleInputChange}
                 className="w-full p-2 border border-gray-300 rounded-lg bg-gray-50"
               />
-              <label className="block font-medium mb-1">Respuesta correcta</label>
+              <label className="block font-medium mb-1">
+                Respuesta correcta
+              </label>
               <textarea
                 name="questionDescription"
                 placeholder="Escribe la respuesta correcta"
@@ -263,47 +337,57 @@ const Wizard = ({ course, onComplete, onCancel }: WizardProps) => {
 
   return (
     <div className="bg-white p-6 rounded-lg shadow-lg">
-      {/*<h2 className="text-2xl font-bold mb-4">Crear Nuevo Curso</h2>*/}
-      {renderStep()}
-      <div className="flex flex-col sm:flex-row justify-between mt-6 gap-4">
-        <div className="w-full sm:w-auto">
-          <button
-            onClick={onCancel}
-            className="w-full sm:w-auto px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded"
-          >
-            <FaTimes className="inline-block mr-2" />
-            Volver a Cursos
-          </button>
-        </div>
-        <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
-          <button
-            onClick={prevStep}
-            disabled={step === 1}
-            className="w-full sm:w-auto px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded disabled:opacity-50"
-          >
-            <FaArrowLeft className="inline-block mr-2" />
-            Anterior
-          </button>
-          {step < 4 ? (
-            <button
-              onClick={nextStep}
-              className="w-full sm:w-auto px-4 py-2 bg-primary-40 hover:bg-primary-50 text-white rounded"
-            >
-              Siguiente
-              <FaArrowRight className="inline-block ml-2" />
-            </button>
-          ) : (
-            <button
-              onClick={handleSubmit}
-              className="w-full sm:w-auto px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded"
-            >
-              Crear Curso
-              <FaCheck className="inline-block ml-2" />
-            </button>
-          )}
-        </div>
-      </div>
+  {/* Stepper */}
+  <div className="mb-6">{renderStepper()}</div>
+
+  {/* Contenido del Wizard */}
+  {renderStep()}
+
+  {/* Footer del Wizard */}
+  <div className="flex flex-col sm:flex-row justify-between mt-6 gap-4">
+    {/* Botón Volver a Cursos (queda al inicio en web, al final en mobile) */}
+    <div className="order-3 sm:order-1 w-full sm:w-auto">
+      <button
+        onClick={onCancel}
+        className="w-full sm:w-auto px-4 py-2 border border-primary-40 text-primary-40 bg-white rounded hover:bg-gray-100"
+      >
+        <FaTimes className="inline-block mr-2" />
+        Volver a Cursos
+      </button>
     </div>
+
+    {/* Botones Anterior y Siguiente */}
+    <div className="flex flex-col-reverse sm:flex-row gap-4 w-full sm:w-auto order-1 sm:order-2">
+      {step > 1 && ( // Oculta el botón "Anterior" si está en el paso 1
+        <button
+          onClick={prevStep}
+          className="w-full sm:w-auto px-4 py-2 border border-gray-500 text-gray-500 bg-white rounded hover:bg-gray-100"
+        >
+          <FaArrowLeft className="inline-block mr-2" />
+          Anterior
+        </button>
+      )}
+      {step < 4 ? (
+        <button
+          onClick={nextStep}
+          className="w-full sm:w-auto px-4 py-2 bg-primary-40 hover:bg-primary-50 text-white rounded"
+        >
+          Siguiente
+          <FaArrowRight className="inline-block ml-2" />
+        </button>
+      ) : (
+        <button
+          onClick={handleSubmit}
+          className="w-full sm:w-auto px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded"
+        >
+          Crear Curso
+          <FaCheck className="inline-block ml-2" />
+        </button>
+      )}
+    </div>
+  </div>
+</div>
+
   );
 };
 
