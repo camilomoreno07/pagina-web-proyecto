@@ -144,39 +144,39 @@ const Dashboard = () => {
         </aside>
 
         {/* Content Area */}
-        <div className="flex-1 p-6 space-y-6">
-          <h2 className="text-2xl font-bold mb-4">¡Hola, profesor!</h2>
+<div className="flex-1 p-6 space-y-6 bg-white shadow-none border-none">
+  <h2 className="text-2xl font-bold mb-4">¡Hola, profesor!</h2>
 
-          {/* Courses Section */}
-          {showWizard ? (
-            <Wizard
-              course={selectedCourse}
-              onComplete={handleWizardComplete}
-              onCancel={handleWizardCancel}
+  {/* Courses Section */}
+  {showWizard ? (
+    <Wizard
+      course={selectedCourse}
+      onComplete={handleWizardComplete}
+      onCancel={handleWizardCancel}
+    />
+  ) : (
+    <section>
+      <div className="flex flex-wrap gap-4 p-6">
+        {loading ? (
+          <p>Cargando cursos...</p>
+        ) : error ? (
+          <p className="text-red-500">{error}</p>
+        ) : (
+          courses.map((course) => (
+            <Card
+              key={course.courseId}
+              id={course.courseId}
+              image=""
+              title={course.courseName}
+              date="Fecha no disponible"
+              onClick={() => handleCourseClick(course)}
             />
-          ) : (
-            <section>
-              <div className="flex flex-wrap gap-4 p-6">
-                {loading ? (
-                  <p>Cargando cursos...</p>
-                ) : error ? (
-                  <p className="text-red-500">{error}</p>
-                ) : (
-                  courses.map((course) => (
-                    <Card
-                      key={course.courseId}
-                      id={course.courseId}
-                      image=""
-                      title={course.courseName}
-                      date="Fecha no disponible"
-                      onClick={() => handleCourseClick(course)}
-                    />
-                  ))
-                )}
-              </div>
-            </section>
-          )}
-        </div>
+          ))
+        )}
+      </div>
+    </section>
+  )}
+</div>
       </main>
 
       {/* Footer */}

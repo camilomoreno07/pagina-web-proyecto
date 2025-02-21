@@ -1,11 +1,12 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   FaArrowLeft,
   FaArrowRight,
   FaCheck,
   FaTimes,
   FaPencilAlt,
+  FaTrash,
 } from "react-icons/fa";
 import { Course, WizardData } from "../interfaces/Course";
 
@@ -17,8 +18,10 @@ interface WizardProps {
 
 const Wizard = ({ course, onComplete, onCancel }: WizardProps) => {
   const [previewImage, setPreviewImage] = useState(null);
+  const [showModal, setShowModal] = useState(false);
   const [step, setStep] = useState<number>(1);
   const [instructionSteps, setInstructionSteps] = useState([]);
+  const [counter, setCounter] = useState<number>(0);
   const [courseData, setCourseData] = useState<WizardData>({
     name: course ? course.courseName : "",
     description: course ? course.description || "" : "",
@@ -36,6 +39,26 @@ const Wizard = ({ course, onComplete, onCancel }: WizardProps) => {
     image: null,
     files: [],
   });
+
+  // Sincroniza el contador con el paso actual cada vez que cambie
+  useEffect(() => {
+    setCounter(step);
+  }, [step]);
+
+  // Función para disminuir el contador
+  // Función para disminuir el contador
+  const handleDecrease = () => {
+    if (counter > 1) { // Aseguramos que el contador no baje de 1
+      setCounter(counter - 1);  // Decrementa el contador
+    }
+  };
+
+  // Función para aumentar el contador
+  const handleIncrease = () => {
+    if (counter < 31) { // Aseguramos que el contador no suba de 4
+      setCounter(counter + 1);  // Incrementa el contador
+    }
+  };
 
   const addStep = () => {
     setInstructionSteps([...instructionSteps, ""]);
@@ -65,8 +88,14 @@ const Wizard = ({ course, onComplete, onCancel }: WizardProps) => {
     setCourseData({ ...courseData, image: file });
   };
 
+  // Avanzar al siguiente paso
   const nextStep = () => {
-    if (step < 4) setStep(step + 1);
+    if (step === 3) {
+      // Si estamos en el paso 3, mostramos el modal
+      setShowModal(true);
+    } else if (step < 4) {
+      setStep(step + 1);
+    }
   };
 
   const prevStep = () => {
@@ -86,6 +115,11 @@ const Wizard = ({ course, onComplete, onCancel }: WizardProps) => {
       };
       reader.readAsDataURL(file);
     }
+  };
+
+  const closeModal = () => {
+    setShowModal(false); // Cierra el modal y avanza al paso 4
+    setStep(step + 1);
   };
 
   const renderStepper = () => {
@@ -280,9 +314,9 @@ const Wizard = ({ course, onComplete, onCancel }: WizardProps) => {
                     <button
                       type="button"
                       onClick={() => removeStep(index)}
-                      className="p-2 bg-red-500 text-white rounded-lg"
+                      className="text-primary-40 hover:text-primary-50"
                     >
-                      ×
+                      <FaTrash className="w-5 h-5" />
                     </button>
                   </div>
                 ))}
@@ -335,8 +369,61 @@ const Wizard = ({ course, onComplete, onCancel }: WizardProps) => {
                 className="w-full p-2 border border-gray-300 rounded-lg bg-gray-50"
               />
             </div>
+
+            {/* Modal de confirmación */}
+            {showModal && (
+              <div className="fixed inset-0 flex justify-center items-center bg-gray-500 bg-opacity-50 z-50">
+              <div className="bg-white p-6 rounded-lg shadow-md max-w-xs sm:max-w-sm md:max-w-md w-full">
+                {/* Primer texto */}
+                <h2 className="text-xl mb-4 text-center">
+                  ¿Cuantos minutos aproximadamente demorará el estudiante en completar este módulo?
+                </h2>
+        
+                {/* Contador con botones menos y más */}
+                <div className="flex items-center justify-center mb-4">
+                  <button
+                    onClick={handleDecrease}
+                    className="px-4 py-2 bg-gray-300 text-black rounded-l"
+                    disabled={counter <= 1} // Deshabilita el botón cuando está en el paso 1
+                  >
+                    -
+                  </button>
+                  <span className="px-6 py-2 text-lg">{counter}</span>
+                  <button
+                    onClick={handleIncrease}
+                    className="px-4 py-2 bg-gray-300 text-black rounded-r"
+                    disabled={counter >= 30} // Deshabilita el botón cuando está en el paso 4
+                  >
+                    +
+                  </button>
+                </div>
+        
+                {/* Segundo texto */}
+                <p className="text-center mb-6">
+                  No pueden ser más de 30 minutos.
+                </p>
+        
+                {/* Botones de Volver y Continuar */}
+                <div className="flex justify-between">
+                  <button
+                    onClick={() => setShowModal(false)}
+                    className="px-4 py-2 bg-gray-500 text-white rounded"
+                  >
+                    Volver
+                  </button>
+                  <button
+                    onClick={closeModal}
+                    className="px-4 py-2 bg-green-500 text-white rounded"
+                  >
+                    Continuar
+                  </button>
+                </div>
+              </div>
+            </div>
+            )}
           </div>
         );
+
       case 4:
         return (
           <div>
@@ -371,15 +458,15 @@ const Wizard = ({ course, onComplete, onCancel }: WizardProps) => {
   };
 
   return (
-    <div className="bg-white p-6 rounded-lg shadow-lg">
+    <div className="bg-white p-6">
       {/* Stepper */}
-      <div className="mb-6">{renderStepper()}</div>
+      <div className="mb-6 w-full">{renderStepper()}</div>
 
       {/* Contenido del Wizard */}
-      {renderStep()}
+      <div className="max-w-2xl mx-auto w-full">{renderStep()}</div>
 
       {/* Footer del Wizard */}
-      <div className="flex flex-col sm:flex-row justify-between mt-6 gap-4">
+      <div className="max-w-2xl mx-auto w-full flex flex-col sm:flex-row justify-between mt-6 gap-4">
         {/* Botón Cancelar (queda al inicio en web, al final en mobile) */}
         <div className="order-3 sm:order-1 w-full sm:w-auto">
           <button
