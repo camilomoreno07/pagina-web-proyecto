@@ -1,6 +1,12 @@
 "use client";
 import { useState } from "react";
-import { FaArrowLeft, FaArrowRight, FaCheck, FaTimes } from "react-icons/fa";
+import {
+  FaArrowLeft,
+  FaArrowRight,
+  FaCheck,
+  FaTimes,
+  FaPencilAlt,
+} from "react-icons/fa";
 import { Course, WizardData } from "../interfaces/Course";
 
 interface WizardProps {
@@ -132,40 +138,65 @@ const Wizard = ({ course, onComplete, onCancel }: WizardProps) => {
       case 1:
         return (
           <div>
-            <h3 className="text-3xl font-semibold mb-4">Identificación del curso</h3>
-            <hr className="mb-4 border-gray-300" />
-      
             {/* Banner del curso */}
-            <div className="w-full rounded-lg bg-gray-200 flex items-center justify-center overflow-hidden relative">
+            <div className="w-full rounded-lg bg-gray-200 flex items-center justify-center overflow-hidden relative group h-48">
               {previewImage ? (
                 <img
                   src={previewImage}
                   alt="Banner del curso"
-                  className="w-full max-h-48 object-cover rounded-lg"
+                  className="w-full h-full object-cover rounded-lg"
                 />
               ) : (
-                <div className="w-full h-48 flex items-center justify-center text-gray-500">
+                <div className="w-full h-full flex items-center justify-center text-gray-500">
                   No hay imagen
                 </div>
               )}
+
+              {/* Hover con lápiz siempre presente */}
+              <label className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-30 opacity-0 group-hover:opacity-100 transition-opacity duration-300 cursor-pointer">
+                <div className="bg-white p-2 rounded-full shadow-lg">
+                  <FaPencilAlt className="w-5 h-5 text-gray-700" />
+                </div>
+                {/* Input de archivo invisible pero funcional */}
+                <input
+                  id="image-upload"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                />
+              </label>
             </div>
+
+            {/* Input oculto para cargar la imagen */}
             <input
+              id="image-upload"
               type="file"
               accept="image/*"
               onChange={handleImageUpload}
-              className="mt-2 w-full"
+              className="hidden"
             />
-      
+
+            {/* Margen superior agregado al h3 */}
+            <h3 className="text-3xl font-semibold mt-6 mb-4">
+              Identificación del curso
+            </h3>
+            <hr className="mb-4 border-gray-300" />
+
             {/* Descripción del curso */}
-            <label className="block font-medium mt-4 mb-1">Descripción del curso</label>
+            <label className="block font-medium mt-4 mb-1">
+              Descripción del curso
+            </label>
             <textarea
               name="description"
               placeholder="Dile a tus estudiantes de qué tratará este curso"
               value={courseData.description}
-              onChange={(e) => setCourseData({ ...courseData, description: e.target.value })}
+              onChange={(e) =>
+                setCourseData({ ...courseData, description: e.target.value })
+              }
               className="w-full p-2 border border-gray-300 rounded-lg bg-gray-50"
             />
-      
+
             {/* Privacidad */}
             <div className="flex items-center space-x-4 mt-4">
               <label htmlFor="privacy-switch" className="text-gray-700">
@@ -177,7 +208,9 @@ const Wizard = ({ course, onComplete, onCancel }: WizardProps) => {
                   name="isPublic"
                   id="privacy-switch"
                   checked={courseData.isPublic}
-                  onChange={(e) => setCourseData({ ...courseData, isPublic: e.target.checked })}
+                  onChange={(e) =>
+                    setCourseData({ ...courseData, isPublic: e.target.checked })
+                  }
                   className={`toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-2 border-gray-300 appearance-none cursor-pointer transition-transform duration-200 ease-in-out ${
                     courseData.isPublic ? "translate-x-4" : "translate-x-0"
                   }`}
@@ -191,7 +224,9 @@ const Wizard = ({ course, onComplete, onCancel }: WizardProps) => {
                   id="privacy-label"
                 ></div>
               </div>
-              <span className="text-gray-700">{courseData.isPublic ? "Público" : "Privado"}</span>
+              <span className="text-gray-700">
+                {courseData.isPublic ? "Público" : "Privado"}
+              </span>
             </div>
             <p className="text-sm text-gray-500">
               {courseData.isPublic
@@ -337,57 +372,56 @@ const Wizard = ({ course, onComplete, onCancel }: WizardProps) => {
 
   return (
     <div className="bg-white p-6 rounded-lg shadow-lg">
-  {/* Stepper */}
-  <div className="mb-6">{renderStepper()}</div>
+      {/* Stepper */}
+      <div className="mb-6">{renderStepper()}</div>
 
-  {/* Contenido del Wizard */}
-  {renderStep()}
+      {/* Contenido del Wizard */}
+      {renderStep()}
 
-  {/* Footer del Wizard */}
-  <div className="flex flex-col sm:flex-row justify-between mt-6 gap-4">
-    {/* Botón Volver a Cursos (queda al inicio en web, al final en mobile) */}
-    <div className="order-3 sm:order-1 w-full sm:w-auto">
-      <button
-        onClick={onCancel}
-        className="w-full sm:w-auto px-4 py-2 border border-primary-40 text-primary-40 bg-white rounded hover:bg-gray-100"
-      >
-        <FaTimes className="inline-block mr-2" />
-        Volver a Cursos
-      </button>
+      {/* Footer del Wizard */}
+      <div className="flex flex-col sm:flex-row justify-between mt-6 gap-4">
+        {/* Botón Cancelar (queda al inicio en web, al final en mobile) */}
+        <div className="order-3 sm:order-1 w-full sm:w-auto">
+          <button
+            onClick={onCancel}
+            className="w-full sm:w-auto px-4 py-2 border border-primary-40 text-primary-40 bg-white rounded hover:bg-gray-100"
+          >
+            <FaTimes className="inline-block mr-2" />
+            Cancelar
+          </button>
+        </div>
+
+        {/* Botones Anterior y Siguiente */}
+        <div className="flex flex-col-reverse sm:flex-row gap-4 w-full sm:w-auto order-1 sm:order-2">
+          {step > 1 && ( // Oculta el botón "Anterior" si está en el paso 1
+            <button
+              onClick={prevStep}
+              className="w-full sm:w-auto px-4 py-2 border border-gray-500 text-gray-500 bg-white rounded hover:bg-gray-100"
+            >
+              <FaArrowLeft className="inline-block mr-2" />
+              Anterior
+            </button>
+          )}
+          {step < 4 ? (
+            <button
+              onClick={nextStep}
+              className="w-full sm:w-auto px-4 py-2 bg-primary-40 hover:bg-primary-50 text-white rounded"
+            >
+              Siguiente
+              <FaArrowRight className="inline-block ml-2" />
+            </button>
+          ) : (
+            <button
+              onClick={handleSubmit}
+              className="w-full sm:w-auto px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded"
+            >
+              Crear Curso
+              <FaCheck className="inline-block ml-2" />
+            </button>
+          )}
+        </div>
+      </div>
     </div>
-
-    {/* Botones Anterior y Siguiente */}
-    <div className="flex flex-col-reverse sm:flex-row gap-4 w-full sm:w-auto order-1 sm:order-2">
-      {step > 1 && ( // Oculta el botón "Anterior" si está en el paso 1
-        <button
-          onClick={prevStep}
-          className="w-full sm:w-auto px-4 py-2 border border-gray-500 text-gray-500 bg-white rounded hover:bg-gray-100"
-        >
-          <FaArrowLeft className="inline-block mr-2" />
-          Anterior
-        </button>
-      )}
-      {step < 4 ? (
-        <button
-          onClick={nextStep}
-          className="w-full sm:w-auto px-4 py-2 bg-primary-40 hover:bg-primary-50 text-white rounded"
-        >
-          Siguiente
-          <FaArrowRight className="inline-block ml-2" />
-        </button>
-      ) : (
-        <button
-          onClick={handleSubmit}
-          className="w-full sm:w-auto px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded"
-        >
-          Crear Curso
-          <FaCheck className="inline-block ml-2" />
-        </button>
-      )}
-    </div>
-  </div>
-</div>
-
   );
 };
 
