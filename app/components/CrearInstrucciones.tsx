@@ -15,7 +15,7 @@ export default function CrearInstrucciones({
   handleInputChange,
   name
 }: CrearInstruccionesProps) {
-  const [step, setStep] = useState<number>(0);
+  const [step, setStep] = useState<number>(1);
   const [instructionSteps, setInstructionSteps] = useState([]);
 
   useEffect(() => {

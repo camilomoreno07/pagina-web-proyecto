@@ -389,7 +389,7 @@ const Wizard = ({ course, onComplete, onCancel }: WizardProps) => {
         return (
           <div>
             <h2 className="text-lg mb-2 font-semibold">Segundo momento</h2>
-            <h3 className="text-3xl mb-2 font-medium">Durante de clase</h3>
+            <h3 className="text-3xl mb-2 font-medium">Durante la clase</h3>
             <p className="mb-4">
               Esto ayudará al estudiante a guiarse durante los espacios de
               clase.
@@ -413,8 +413,7 @@ const Wizard = ({ course, onComplete, onCancel }: WizardProps) => {
             <h2 className="text-lg mb-2 font-semibold">Tercer momento</h2>
             <h3 className="text-3xl mb-2 font-medium">Después de clase</h3>
             <p className="mb-4">
-              Esto ayudará al estudiante a guiarse durante los espacios de
-              clase.
+              Esto ayudará al estudiante a afianzar los conceptos vistos en clase.
             </p>
             <hr className="mb-4 border-gray-300" />
             <p className="mb-4">
@@ -425,6 +424,7 @@ const Wizard = ({ course, onComplete, onCancel }: WizardProps) => {
             courseData={courseData.afterClassCards} 
             setCourseData={setAfterClassCards}
             handleInputChange={handleInputChange}
+            name="afterClassCards"
             />
           </div>
         );
@@ -436,7 +436,7 @@ const Wizard = ({ course, onComplete, onCancel }: WizardProps) => {
   };
 
   return (
-    <div className="bg-white p-6">
+    <div className="bg-white p-2">
       <div className="mb-6 max-w-5xl mx-auto w-full">
         <button onClick={onCancel} className="text-primary-40">
           &lt; Salir

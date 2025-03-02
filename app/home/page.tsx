@@ -15,6 +15,7 @@ import {
 } from "react-icons/fa";
 
 const Dashboard = () => {
+  
   const router = useRouter();
   const [courses, setCourses] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(true);

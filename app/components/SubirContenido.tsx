@@ -59,26 +59,9 @@ export default function SubirContenido({
         />
 
         <label className="block font-medium mb-1">
-          Sube el contenido de apoyo
+          Tiempo de estudio
         </label>
-        <input
-          type="file"
-          accept="image/*"
-          onChange={handleFileUpload}
-          className="w-full p-2 border border-gray-300 rounded-lg bg-gray-50"
-        />
-      </div>
-
-      {/* Modal de confirmación */}
-      {showModal && (
-        <div className="fixed inset-0 flex justify-center items-center bg-gray-500 bg-opacity-50 z-50">
-          <div className="bg-white p-6 rounded-lg shadow-md max-w-xs sm:max-w-sm md:max-w-md w-full">
-            <h2 className="text-xl mb-4 text-center">
-              ¿Cuántos minutos aproximadamente demorará el estudiante en
-              completar este módulo?
-            </h2>
-
-            <div className="flex items-center justify-center mb-4">
+        <div className="flex items-center  mb-4">
               <button
                 onClick={handleDecrease}
                 className="px-4 py-2 bg-gray-300 text-black rounded-l"
@@ -96,25 +79,17 @@ export default function SubirContenido({
               </button>
             </div>
 
-            <p className="text-center mb-6">No pueden ser más de 30 minutos.</p>
+        <label className="block font-medium mb-1">
+          Sube el contenido de apoyo
+        </label>
+        <input
+          type="file"
+          accept="image/*"
+          onChange={handleFileUpload}
+          className="w-full p-2 border border-gray-300 rounded-lg bg-gray-50"
+        />
+      </div>
 
-            <div className="flex justify-between">
-              <button
-                onClick={() => setShowModal(false)}
-                className="px-4 py-2 bg-gray-500 text-white rounded"
-              >
-                Volver
-              </button>
-              <button
-                onClick={closeModal}
-                className="px-4 py-2 bg-green-500 text-white rounded"
-              >
-                Continuar
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
