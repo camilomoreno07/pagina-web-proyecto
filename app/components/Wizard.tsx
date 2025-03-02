@@ -66,12 +66,12 @@ const defaultCardList: CardList = {
   },
 };
 
-
 const Wizard = ({ course, onComplete, onCancel }: WizardProps) => {
   const [previewImage, setPreviewImage] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [step, setStep] = useState<number>(1);
   const [counter, setCounter] = useState<number>(0);
+  const [activeCardId, setActiveCardId] = useState<number | null>(null);
   const [courseData, setCourseData] = useState<any>({
     name: course ? course.courseName : "",
     description: course ? course.description || "" : "",
@@ -83,7 +83,7 @@ const Wizard = ({ course, onComplete, onCancel }: WizardProps) => {
     startDate: course ? course.startDate || "" : "",
     image: null,
     files: [],
-    beforeClassCards: course.beforeClass,  // Asegura que no sea undefined
+    beforeClassCards: course.beforeClass, // Asegura que no sea undefined
     duringClassCards: course.duringClass,
     afterClassCards: course.afterClass,
   });
@@ -129,32 +129,35 @@ const Wizard = ({ course, onComplete, onCancel }: WizardProps) => {
     }
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+  const handleInputChange = (
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >
+  ) => {
     const { name, value } = e.target;
-  
+
     // Divide el nombre en partes (por ejemplo, "beforeClassCards.instruction.instructionTitle")
-    const keys = name.split('.');
-  
+    const keys = name.split(".");
+
     // Función recursiva para actualizar el estado
     const updateNestedState = (obj: any, keys: string[], value: any): any => {
       const [currentKey, ...remainingKeys] = keys;
-  
+
       if (remainingKeys.length === 0) {
         // Si no hay más claves, actualiza el valor
         return { ...obj, [currentKey]: value };
       }
-  
+
       // Si hay más claves, sigue profundizando
       return {
         ...obj,
         [currentKey]: updateNestedState(obj[currentKey], remainingKeys, value),
       };
     };
-  
+
     // Actualiza el estado usando la función recursiva
     setCourseData((prev) => updateNestedState(prev, keys, value));
   };
-  
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] || null;
@@ -175,7 +178,11 @@ const Wizard = ({ course, onComplete, onCancel }: WizardProps) => {
   };
 
   const handleCardClick = (id: number) => {
-    console.log("Card clickeada:", id);
+    setActiveCardId(id); // Ahora sí activamos la vista de la card seleccionada
+  };
+
+  const handleCancel = () => {
+    setActiveCardId(null); // Regresar a la lista de tarjetas
   };
 
   const handleImageUpload = (event) => {
@@ -195,7 +202,7 @@ const Wizard = ({ course, onComplete, onCancel }: WizardProps) => {
       "Antes de clase",
       "Durante la clase",
       "Después de la clase",
-      "Revisión"
+      "Revisión",
     ];
 
     return (
@@ -235,10 +242,10 @@ const Wizard = ({ course, onComplete, onCancel }: WizardProps) => {
                       step === index + 1 || step > index + 1
                         ? "text-gray-800"
                         : "text-gray-500"
-                    } hidden md:block`} 
+                    } hidden md:block`}
                     style={{
-                      width: "100px", 
-                      wordWrap: "break-word", 
+                      width: "100px",
+                      wordWrap: "break-word",
                     }}
                   >
                     {label}
@@ -373,11 +380,14 @@ const Wizard = ({ course, onComplete, onCancel }: WizardProps) => {
               en el encuentro presencial.
             </p>
             <hr className="mb-4 border-gray-300" />
-            <p className="mb-4">
+            <p className="mb-2">
               Agregue los siguientes elementos al material que el estudiante
               debe consultar antes de clase.
             </p>
             <CardList
+              activeCardId={activeCardId}
+              onCardClick={handleCardClick}
+              onCancel={handleCancel}
               courseData={courseData.beforeClassCards}
               setCourseData={setBeforeClassCards}
               handleInputChange={handleInputChange}
@@ -400,10 +410,13 @@ const Wizard = ({ course, onComplete, onCancel }: WizardProps) => {
               debe consultar durante de clase.
             </p>
             <CardList
-            courseData={courseData.duringClassCards} 
-            setCourseData={setDuringClassCards}
-            handleInputChange={handleInputChange}
-            name="duringClassCards" 
+              activeCardId={activeCardId}
+              onCardClick={handleCardClick}
+              onCancel={handleCancel}
+              courseData={courseData.duringClassCards}
+              setCourseData={setDuringClassCards}
+              handleInputChange={handleInputChange}
+              name="duringClassCards"
             />
           </div>
         );
@@ -413,7 +426,8 @@ const Wizard = ({ course, onComplete, onCancel }: WizardProps) => {
             <h2 className="text-lg mb-2 font-semibold">Tercer momento</h2>
             <h3 className="text-3xl mb-2 font-medium">Después de clase</h3>
             <p className="mb-4">
-              Esto ayudará al estudiante a afianzar los conceptos vistos en clase.
+              Esto ayudará al estudiante a afianzar los conceptos vistos en
+              clase.
             </p>
             <hr className="mb-4 border-gray-300" />
             <p className="mb-4">
@@ -421,10 +435,10 @@ const Wizard = ({ course, onComplete, onCancel }: WizardProps) => {
               debe consultar después de clase.
             </p>
             <CardList
-            courseData={courseData.afterClassCards} 
-            setCourseData={setAfterClassCards}
-            handleInputChange={handleInputChange}
-            name="afterClassCards"
+              courseData={courseData.afterClassCards}
+              setCourseData={setAfterClassCards}
+              handleInputChange={handleInputChange}
+              name="afterClassCards"
             />
           </div>
         );
@@ -443,44 +457,48 @@ const Wizard = ({ course, onComplete, onCancel }: WizardProps) => {
         </button>
       </div>
 
-      {/* Stepper */}
-      <div className="mb-6 sm:mb-20 max-w-5xl mx-auto w-full">
-        {renderStepper()}
-      </div>
+      {/* Stepper (se oculta si hay una tarjeta activa) */}
+      {activeCardId === null && (
+        <div className="mb-6 sm:mb-20 max-w-5xl mx-auto w-full">
+          {renderStepper()}
+        </div>
+      )}
 
       {/* Contenido del Wizard */}
       <div className="max-w-5xl mx-auto w-full">{renderStep()}</div>
 
-      {/* Footer del Wizard */}
-      <div className="max-w-5xl mx-auto w-full flex flex-col sm:flex-row justify-between mt-6 gap-4">
-        {/* Botones Anterior y Siguiente */}
-        <div className="flex flex-col-reverse sm:flex-row gap-4 w-full sm:w-auto order-1 sm:order-2">
-          {step > 1 && (
-            <button
-              onClick={prevStep}
-              className="w-full sm:w-auto px-4 py-2 border border-gray-500 text-gray-500 bg-white rounded hover:bg-gray-100"
-            >
-              Anterior
-            </button>
-          )}
-          {step < 5 ? (
-            <button
-              onClick={nextStep}
-              className="w-full sm:w-auto px-4 py-2 bg-primary-40 hover:bg-primary-50 text-white rounded"
-            >
-              Siguiente
-            </button>
-          ) : (
-            <button
-              onClick={handleSubmit}
-              className="w-full sm:w-auto px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded"
-            >
-              Crear Curso
-              <FaCheck className="inline-block ml-2" />
-            </button>
-          )}
+      {/* Footer del Wizard (se oculta si hay una tarjeta activa) */}
+      {activeCardId === null && (
+        <div className="max-w-5xl mx-auto w-full flex flex-col sm:flex-row justify-end mt-6 gap-4">
+          {/* Botones Anterior y Siguiente */}
+          <div className="flex flex-col-reverse sm:flex-row gap-4 w-full sm:w-auto">
+            {step > 1 && (
+              <button
+                onClick={prevStep}
+                className="w-full sm:w-auto px-4 py-2 border border-gray-500 text-gray-500 bg-white rounded hover:bg-gray-100"
+              >
+                Anterior
+              </button>
+            )}
+            {step < 5 ? (
+              <button
+                onClick={nextStep}
+                className="w-full sm:w-auto px-4 py-2 bg-primary-40 hover:bg-primary-50 text-white rounded"
+              >
+                Siguiente
+              </button>
+            ) : (
+              <button
+                onClick={handleSubmit}
+                className="w-full sm:w-auto px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded"
+              >
+                Crear Curso
+                <FaCheck className="inline-block ml-2" />
+              </button>
+            )}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };

@@ -16,10 +16,9 @@ export default function CrearInstrucciones({
   name
 }: CrearInstruccionesProps) {
   const [step, setStep] = useState<number>(1);
-  const [instructionSteps, setInstructionSteps] = useState([]);
 
   useEffect(() => {
-    console.log("No entiendo", courseData); 
+    console.log("CrearInstrucciones", courseData); 
   }, [setCourseData]); 
 
   const addStep = () => {

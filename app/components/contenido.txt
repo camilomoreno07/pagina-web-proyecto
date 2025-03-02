@@ -1,0 +1,74 @@
+<div>
+      <h3 className="text-3xl font-medium mb-4">Subir Contenido</h3>
+      <hr className="mb-4 border-gray-300" />
+      <div className="space-y-3">
+        <label className="block font-medium mb-1">Título del contenido</label>
+        <input
+          type="text"
+          name="contentTitle"
+          placeholder="¿Cómo se llamará el tema?"
+          value={courseData.contentTitle}
+          onChange={handleInputChange}
+          className="w-full p-2 border border-gray-300 rounded-lg bg-gray-50"
+        />
+
+        <label className="block font-medium mb-1">
+          Descripción del contenido
+        </label>
+        <input
+          type="text"
+          name="contentDescription"
+          placeholder="Dile a tus estudiantes de qué tratará este curso"
+          value={courseData.contentDescription}
+          onChange={handleInputChange}
+          className="w-full p-2 border border-gray-300 rounded-lg bg-gray-50"
+        />
+
+        <label className="block font-medium mb-1">Tiempo de estudio</label>
+        <div className="flex items-center  mb-4">
+          <button
+            onClick={handleDecrease}
+            className="px-4 py-2 bg-gray-300 text-black rounded-l"
+            disabled={counter <= 1}
+          >
+            -
+          </button>
+          <span className="px-6 py-2 text-lg">{counter}</span>
+          <button
+            onClick={handleIncrease}
+            className="px-4 py-2 bg-gray-300 text-black rounded-r"
+            disabled={counter >= 30}
+          >
+            +
+          </button>
+        </div>
+
+        <label className="relative w-full sm:w-64 h-40 flex items-center justify-center bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:bg-gray-200 transition">
+          {previewImage ? (
+            <div className="relative w-full h-full">
+              {/* Imagen Cargada */}
+              <img
+                src={previewImage}
+                alt="Vista previa"
+                className="w-full h-full object-cover rounded-lg"
+              />
+              {/* Capa de Edición con Hover */}
+              <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity rounded-lg">
+                <FaEdit className="text-white text-3xl" />
+              </div>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center">
+              <FaCloudUploadAlt className="text-gray-500 text-3xl mb-2" />
+              <span className="text-gray-600 text-sm">Subir imagen</span>
+            </div>
+          )}
+          <input
+            type="file"
+            accept="image/*"
+            onChange={handleImageUpload}
+            className="hidden"
+          />
+        </label>
+      </div>
+    </div>

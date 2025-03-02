@@ -14,6 +14,9 @@ interface CardListProps {
   courseData: any; // Estado del curso (puedes reemplazar "any" con una interfaz específica)
   setCourseData: (data: any) => void; 
   handleInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => void;
+  onCardClick: (id: number) => void;
+  onCancel: () => void;
+  activeCardId: number | null
   name: string; 
 }
 
@@ -21,19 +24,15 @@ export default function CardList({
   courseData,
   handleInputChange,
   setCourseData,
+  onCardClick,
+  onCancel,
+  activeCardId,
   name
 }: CardListProps) {
 
   useEffect(() => {
     console.log("Este es el courseData", courseData); // ✅ Imprime courseData
   }, [courseData]); // ✅ Usa courseData como dependencia
-
-
-  const [activeCardId, setActiveCardId] = useState<number | null>(null);
-
-  const handleCardClick = (id: number) => {
-    setActiveCardId(id); // Ahora sí activamos la vista de la card seleccionada
-  };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -48,9 +47,7 @@ export default function CardList({
     alert("Datos guardados correctamente");
   };
 
-  const handleCancel = () => {
-    setActiveCardId(null); // Regresar a la lista de tarjetas
-  };
+  
 
   const cards = [
     { id: 1, title: "Crear instrucciones", status: "Pendiente", isFilled: false },
@@ -61,15 +58,15 @@ export default function CardList({
 
 
   return (
-    <div className="p-4">
+    <div className="p-2">
       {/* Mostrar la lista de tarjetas si no hay una activa */}
       {!activeCardId ? (
         <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
           {cards.map((card) => (
             <div
               key={card.id}
-              onClick={() => handleCardClick(card.id)}
-              className="flex-1 sm:w-auto px-4 py-2 border border-gray-300 text-black bg-white rounded hover:bg-gray-100 cursor-pointer"
+              onClick={() => onCardClick(card.id)}
+              className="flex-1 sm:w-auto px-4 py-2 border border-gray-300 text-black bg-white rounded-md hover:bg-gray-100 cursor-pointer"
             >
               <div className="flex justify-between items-start">
                 <div>
@@ -93,8 +90,10 @@ export default function CardList({
           ) : activeCardId === 2 ? (
             <SubirContenido
               courseData={courseData}
+              setCourseData={setCourseData}
               handleInputChange={handleInputChange}
               handleFileUpload={handleFileUpload}
+              name={name}
             />
           ) : (
             <CrearEvaluacion
@@ -106,14 +105,14 @@ export default function CardList({
           {/* Botones de Guardar y Cancelar */}
           <div className="flex justify-end space-x-4 mt-6">
             <button
-              onClick={handleCancel}
+              onClick={onCancel}
               className="px-4 py-2 border border-gray-500 text-gray-500 bg-white rounded hover:bg-gray-100"
             >
               Cancelar
             </button>
             <button
               onClick={handleSave}
-              className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+              className="px-4 py-2 bg-primary-40 hover:bg-primary-50 text-white rounded"
             >
               Guardar
             </button>

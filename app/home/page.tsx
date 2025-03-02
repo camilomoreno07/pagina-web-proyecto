@@ -15,7 +15,6 @@ import {
 } from "react-icons/fa";
 
 const Dashboard = () => {
-  
   const router = useRouter();
   const [courses, setCourses] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -159,7 +158,9 @@ const Dashboard = () => {
 
         {/* Content Area */}
         <div className="flex-1 p-6 space-y-6 bg-white shadow-none border-none">
-          <h2 className="text-2xl font-bold mb-4">¡Hola, profesor!</h2>
+          {!showWizard && (
+            <h2 className="text-2xl font-bold mb-4">¡Hola, profesor!</h2>
+          )}
 
           {/* Courses Section */}
           {showWizard ? (
@@ -195,7 +196,6 @@ const Dashboard = () => {
           )}
         </div>
       </main>
-
     </div>
   );
 };
