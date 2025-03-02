@@ -2,19 +2,26 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Cookies from "js-cookie";
-import Card from "../components/Card";
+import Activity from "../components/Activity";
 import Wizard from "../components/Wizard";
-import { FaBook, FaEnvelope, FaCalendarAlt, FaBars, FaTimes, FaBell, FaUser } from "react-icons/fa";
-import { Course } from "../interfaces/Course";
+import {
+  FaBook,
+  FaEnvelope,
+  FaCalendarAlt,
+  FaBars,
+  FaTimes,
+  FaBell,
+  FaUser,
+} from "react-icons/fa";
 
 const Dashboard = () => {
   const router = useRouter();
-  const [courses, setCourses] = useState<Course[]>([]);
+  const [courses, setCourses] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
   const [showWizard, setShowWizard] = useState<boolean>(false);
-  const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
+  const [selectedCourse, setSelectedCourse] = useState<any | null>(null);
 
   useEffect(() => {
     const fetchCourses = async () => {
@@ -35,8 +42,10 @@ const Dashboard = () => {
         }
 
         const data: Course[] = await response.json();
+        console.log("Cursos obtenidos del API:", data); // 🔍 Verifica los dato
         setCourses(data);
       } catch (error) {
+        console.error("Error al obtener cursos:", error);
         setError(error instanceof Error ? error.message : "An error occurred");
       } finally {
         setLoading(false);
@@ -96,7 +105,11 @@ const Dashboard = () => {
           onClick={() => setIsSidebarOpen(!isSidebarOpen)}
           className="block sm:hidden px-4 py-2 text-white"
         >
-          {isSidebarOpen ? <FaTimes className="text-2xl" /> : <FaBars className="text-2xl" />}
+          {isSidebarOpen ? (
+            <FaTimes className="text-2xl" />
+          ) : (
+            <FaBars className="text-2xl" />
+          )}
         </button>
       </header>
 
@@ -120,7 +133,7 @@ const Dashboard = () => {
             <ul className="space-y-2">
               <li className="p-2 flex flex-row items-center rounded hover:bg-primary-95 cursor-pointer">
                 <FaBook className="text-primary-40 text-xl mr-2" />
-                <span className="text-primary-40 font-medium">Cursos</span>
+                <span className="text-primary-40 font-medium">Temas</span>
               </li>
               <li className="p-2 flex flex-row items-center rounded hover:bg-primary-95 cursor-pointer">
                 <FaEnvelope className="text-primary-40 text-xl mr-2" />
@@ -144,45 +157,44 @@ const Dashboard = () => {
         </aside>
 
         {/* Content Area */}
-<div className="flex-1 p-6 space-y-6 bg-white shadow-none border-none">
-  <h2 className="text-2xl font-bold mb-4">¡Hola, profesor!</h2>
+        <div className="flex-1 p-6 space-y-6 bg-white shadow-none border-none">
+          <h2 className="text-2xl font-bold mb-4">¡Hola, profesor!</h2>
 
-  {/* Courses Section */}
-  {showWizard ? (
-    <Wizard
-      course={selectedCourse}
-      onComplete={handleWizardComplete}
-      onCancel={handleWizardCancel}
-    />
-  ) : (
-    <section>
-      <div className="flex flex-wrap gap-4 p-6">
-        {loading ? (
-          <p>Cargando cursos...</p>
-        ) : error ? (
-          <p className="text-red-500">{error}</p>
-        ) : (
-          courses.map((course) => (
-            <Card
-              key={course.courseId}
-              id={course.courseId}
-              image=""
-              title={course.courseName}
-              date="Fecha no disponible"
-              onClick={() => handleCourseClick(course)}
+          {/* Courses Section */}
+          {showWizard ? (
+            <Wizard
+              course={selectedCourse}
+              onComplete={handleWizardComplete}
+              onCancel={handleWizardCancel}
             />
-          ))
-        )}
-      </div>
-    </section>
-  )}
-</div>
+          ) : (
+            <section>
+              <div className="flex flex-wrap gap-4 p-6">
+                {loading ? (
+                  <p>Cargando cursos...</p>
+                ) : error ? (
+                  <p className="text-red-500">{error}</p>
+                ) : (
+                  courses.map((course) => (
+                    <Activity
+                      key={course.courseId}
+                      id={course.courseId}
+                      image=""
+                      title={course.courseName}
+                      beforeClass={course.beforeClass}
+                      duringClass={course.duringClass}
+                      afterClass={course.afterClass}
+                      date="Fecha no disponible"
+                      onClick={() => handleCourseClick(course)}
+                    />
+                  ))
+                )}
+              </div>
+            </section>
+          )}
+        </div>
       </main>
 
-      {/* Footer */}
-      <footer className="bg-gray-800 text-white p-4 text-center">
-        <p>&copy; 2025 Plataforma Educativa. Todos los derechos reservados.</p>
-      </footer>
     </div>
   );
 };

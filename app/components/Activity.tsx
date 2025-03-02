@@ -1,5 +1,5 @@
 // components/Card.tsx
-interface CardProps {
+interface ActivityProps {
   id: string;
   image: string; // La imagen es obligatoria en la interfaz, pero puede ser una cadena vacía
   title: string;
@@ -7,11 +7,11 @@ interface CardProps {
   onClick: () => void; // Prop para manejar el clic
 }
 
-const Card = ({ image, title, date, onClick }: CardProps) => {
+const Activity = ({ image, title, date, onClick }: ActivityProps) => {
   return (
     <div
       className="bg-white shadow-md rounded-lg overflow-hidden w-full max-w-sm cursor-pointer hover:shadow-lg transition-shadow"
-      onClick={onClick} // Manejar el clic en la Card
+      onClick={onClick} // Manejar el clic en la Activity
     >
       {/* Contenedor de la imagen o fondo gris */}
       <div
@@ -34,4 +34,4 @@ const Card = ({ image, title, date, onClick }: CardProps) => {
   );
 };
 
-export default Card;
+export default Activity;

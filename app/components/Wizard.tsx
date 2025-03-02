@@ -1,4 +1,4 @@
-"use client";
+// components/Wizard.tsx
 import { useState, useEffect } from "react";
 import {
   FaArrowLeft,
@@ -8,80 +8,153 @@ import {
   FaPencilAlt,
   FaTrash,
 } from "react-icons/fa";
-import { Course, WizardData } from "../interfaces/Course";
+import CardList from "../components/CardList";
+import SegundoCardList from "../components/SegundoCardList";
 
 interface WizardProps {
-  course: Course | null;
-  onComplete: (data: WizardData) => void;
+  course: any | null;
+  onComplete: (data: any) => void;
   onCancel: () => void;
+  beforeClassCards: Card[];
+  duringClassCards: Card[];
+  afterClassCards: Card[];
 }
+
+type CardList = {
+  instruccionesCard: {
+    activityName: string;
+    activityDescription: string;
+    instructionSteps: string[];
+  };
+  contenidoCard: {
+    contenidos: {
+      contentTitle: string;
+      contentDescription: string;
+      image: string | File | null; // Manejo flexible de imagen
+    }[];
+  };
+  evaluaciónCard: {
+    preguntas: {
+      question: string;
+      questionDescription: string;
+    }[];
+  };
+};
+
+const defaultCardList: CardList = {
+  instruccionesCard: {
+    activityName: "",
+    activityDescription: "",
+    instructionSteps: [],
+  },
+  contenidoCard: {
+    contenidos: [
+      {
+        contentTitle: "",
+        contentDescription: "",
+        image: null,
+      },
+    ],
+  },
+  evaluaciónCard: {
+    preguntas: [
+      {
+        question: "",
+        questionDescription: "",
+      },
+    ],
+  },
+};
+
 
 const Wizard = ({ course, onComplete, onCancel }: WizardProps) => {
   const [previewImage, setPreviewImage] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [step, setStep] = useState<number>(1);
-  const [instructionSteps, setInstructionSteps] = useState([]);
   const [counter, setCounter] = useState<number>(0);
-  const [courseData, setCourseData] = useState<WizardData>({
+  const [courseData, setCourseData] = useState<any>({
     name: course ? course.courseName : "",
     description: course ? course.description || "" : "",
     activityName: course ? course.activityName || "" : "",
     activityDescription: course ? course.activityDescription || "" : "",
     contentTitle: course ? course.contentTitle || "" : "",
     contentDescription: course ? course.contentDescription || "" : "",
-    firstQuestion: course ? course.firstQuestion || "" : "",
-    questionDescription: course ? course.questionDescription || "" : "",
     isPublic: false,
-    category: course ? course.category || "" : "",
     startDate: course ? course.startDate || "" : "",
-    duration: course ? course.duration || "" : "",
-    difficulty: course ? course.difficulty || "beginner" : "beginner",
     image: null,
     files: [],
+    beforeClassCards: course.beforeClass,  // Asegura que no sea undefined
+    duringClassCards: course.duringClass,
+    afterClassCards: course.afterClass,
   });
 
   // Sincroniza el contador con el paso actual cada vez que cambie
   useEffect(() => {
+    console.log("Wizard", setCourseData);
     setCounter(step);
   }, [step]);
 
-  // Función para disminuir el contador
+  const setBeforeClassCards = (newBeforeClassCards: any) => {
+    setCourseData((prevData) => ({
+      ...prevData,
+      beforeClassCards: newBeforeClassCards,
+    }));
+  };
+
+  const setDuringClassCards = (newDuringClassCards: any) => {
+    setCourseData((prevData) => ({
+      ...prevData,
+      duringClassCards: newDuringClassCards,
+    }));
+  };
+
+  const setAfterClassCards = (newAfterClassCards: any) => {
+    setCourseData((prevData) => ({
+      ...prevData,
+      afterClassCards: newAfterClassCards,
+    }));
+  };
+
   // Función para disminuir el contador
   const handleDecrease = () => {
-    if (counter > 1) { // Aseguramos que el contador no baje de 1
-      setCounter(counter - 1);  // Decrementa el contador
+    if (counter > 1) {
+      setCounter(counter - 1);
     }
   };
 
   // Función para aumentar el contador
   const handleIncrease = () => {
-    if (counter < 31) { // Aseguramos que el contador no suba de 4
-      setCounter(counter + 1);  // Incrementa el contador
+    if (counter < 31) {
+      setCounter(counter + 1);
     }
   };
 
-  const addStep = () => {
-    setInstructionSteps([...instructionSteps, ""]);
-  };
-
-  const removeStep = (index) => {
-    setInstructionSteps((prevSteps) => prevSteps.filter((_, i) => i !== index));
-  };
-
-  const updateStep = (index, value) => {
-    const newSteps = [...instructionSteps];
-    newSteps[index] = value;
-    setInstructionSteps(newSteps);
-  };
-
-  const handleInputChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >
-  ) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setCourseData({ ...courseData, [name]: value });
+  
+    // Divide el nombre en partes (por ejemplo, "beforeClassCards.instruction.instructionTitle")
+    const keys = name.split('.');
+  
+    // Función recursiva para actualizar el estado
+    const updateNestedState = (obj: any, keys: string[], value: any): any => {
+      const [currentKey, ...remainingKeys] = keys;
+  
+      if (remainingKeys.length === 0) {
+        // Si no hay más claves, actualiza el valor
+        return { ...obj, [currentKey]: value };
+      }
+  
+      // Si hay más claves, sigue profundizando
+      return {
+        ...obj,
+        [currentKey]: updateNestedState(obj[currentKey], remainingKeys, value),
+      };
+    };
+  
+    // Actualiza el estado usando la función recursiva
+    setCourseData((prev) => updateNestedState(prev, keys, value));
   };
+  
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] || null;
@@ -90,12 +163,7 @@ const Wizard = ({ course, onComplete, onCancel }: WizardProps) => {
 
   // Avanzar al siguiente paso
   const nextStep = () => {
-    if (step === 3) {
-      // Si estamos en el paso 3, mostramos el modal
-      setShowModal(true);
-    } else if (step < 4) {
-      setStep(step + 1);
-    }
+    if (step < 5) setStep(step + 1);
   };
 
   const prevStep = () => {
@@ -104,6 +172,10 @@ const Wizard = ({ course, onComplete, onCancel }: WizardProps) => {
 
   const handleSubmit = () => {
     onComplete(courseData);
+  };
+
+  const handleCardClick = (id: number) => {
+    console.log("Card clickeada:", id);
   };
 
   const handleImageUpload = (event) => {
@@ -117,52 +189,74 @@ const Wizard = ({ course, onComplete, onCancel }: WizardProps) => {
     }
   };
 
-  const closeModal = () => {
-    setShowModal(false); // Cierra el modal y avanza al paso 4
-    setStep(step + 1);
-  };
-
   const renderStepper = () => {
-    const steps = ["Información", "Actividad", "Contenido", "Finalizar"];
+    const steps = [
+      "Identificación del curso",
+      "Antes de clase",
+      "Durante la clase",
+      "Después de la clase",
+      "Revisión"
+    ];
 
     return (
-      <div className="flex items-center justify-between mb-6 w-full">
-        {steps.map((label, index) => {
-          const isActive = step === index + 1;
-          const isCompleted = step > index + 1;
+      <div className="flex flex-col items-center w-full mb-6">
+        {/* Contenedor de los círculos y líneas */}
+        <div className="flex items-center w-full relative">
+          {steps.map((label, index) => {
+            const isActive = step === index + 1;
+            const isCompleted = step > index + 1;
 
-          return (
-            <div
-              key={index}
-              className={`flex items-center ${
-                index < steps.length - 1 ? "w-full" : ""
-              }`}
-            >
-              {/* Icono del paso */}
+            return (
               <div
-                className={`w-10 h-10 flex items-center justify-center rounded-full text-sm font-bold transition-all duration-300
-                  ${
-                    isCompleted
-                      ? "bg-green-500 text-white"
-                      : isActive
-                      ? "bg-primary-40 text-white"
-                      : "bg-gray-300 text-gray-600"
-                  }`}
+                key={index}
+                className={`flex items-center ${
+                  index === steps.length - 1 ? "flex-none" : "flex-1"
+                }`}
               >
-                {isCompleted ? "✔" : index + 1}
-              </div>
+                {/* Contenedor del círculo */}
+                <div className="flex flex-col items-center relative">
+                  {/* Icono del paso */}
+                  <div
+                    className={`w-10 h-10 flex items-center justify-center rounded-full text-sm font-bold transition-all duration-300
+                      ${
+                        isCompleted
+                          ? "bg-primary-95 text-primary-40"
+                          : isActive
+                          ? "bg-primary-40 text-white"
+                          : "bg-gray-300 text-gray-600"
+                      }`}
+                  >
+                    {isCompleted ? "✔" : index + 1}
+                  </div>
 
-              {/* Línea de conexión entre pasos, solo si NO es el último paso */}
-              {index < steps.length - 1 && (
-                <div
-                  className={`h-1 transition-all duration-300 mx-2 flex-1 ${
-                    step > index + 1 ? "bg-green-500" : "bg-gray-300"
-                  }`}
-                ></div>
-              )}
-            </div>
-          );
-        })}
+                  {/* Texto debajo del círculo */}
+                  <span
+                    className={`absolute top-12 text-sm font-medium text-center ${
+                      step === index + 1 || step > index + 1
+                        ? "text-gray-800"
+                        : "text-gray-500"
+                    } hidden md:block`} 
+                    style={{
+                      width: "100px", 
+                      wordWrap: "break-word", 
+                    }}
+                  >
+                    {label}
+                  </span>
+                </div>
+
+                {/* Línea de conexión entre pasos, solo si NO es el último paso */}
+                {index < steps.length - 1 && (
+                  <div
+                    className={`h-1 flex-1 mx-2 transition-all duration-300 ${
+                      step > index + 1 ? "bg-primary-95" : "bg-gray-300"
+                    }`}
+                  ></div>
+                )}
+              </div>
+            );
+          })}
+        </div>
       </div>
     );
   };
@@ -272,186 +366,70 @@ const Wizard = ({ course, onComplete, onCancel }: WizardProps) => {
       case 2:
         return (
           <div>
-            <h3 className="text-3xl font-medium mb-4">Crear instrucciones</h3>
+            <h2 className="text-lg mb-2 font-semibold">Primer momento</h2>
+            <h3 className="text-3xl mb-2 font-medium">Antes de clase</h3>
+            <p className="mb-4">
+              Esto ayudará al estudiante para que lleve una idea de lo que verá
+              en el encuentro presencial.
+            </p>
             <hr className="mb-4 border-gray-300" />
-            <div className="space-y-3">
-              <label className="block font-medium mb-1">
-                Nombre de la actividad
-              </label>
-              <input
-                type="text"
-                name="activityName"
-                placeholder="¿Como se llamará el tema?"
-                value={courseData.activityName}
-                onChange={handleInputChange}
-                className="w-full p-2 border border-gray-300 rounded-lg bg-gray-50"
-              />
-
-              <label className="block font-medium mb-1">
-                Descripción de la actividad
-              </label>
-              <input
-                type="text"
-                name="activityDescription"
-                placeholder="Dile a tus estudiantes de que tratará este módulo"
-                value={courseData.activityDescription}
-                onChange={handleInputChange}
-                className="w-full p-2 border border-gray-300 rounded-lg bg-gray-50"
-              />
-
-              <div>
-                <label className="block font-medium mb-1">Paso a paso</label>
-                {instructionSteps.map((step, index) => (
-                  <div key={index} className="flex items-center space-x-2 mb-2">
-                    <span>{index + 1}.</span>
-                    <input
-                      type="text"
-                      placeholder={`Paso ${index + 1}`}
-                      value={step}
-                      onChange={(e) => updateStep(index, e.target.value)}
-                      className="w-full p-2 border border-gray-300 rounded-lg bg-gray-50"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => removeStep(index)}
-                      className="text-primary-40 hover:text-primary-50"
-                    >
-                      <FaTrash className="w-5 h-5" />
-                    </button>
-                  </div>
-                ))}
-                <button
-                  type="button"
-                  onClick={addStep}
-                  className="mt-2 p-2 border-2 border-primary-40 text-primary-40 bg-white rounded-lg font-semibold flex items-center justify-center"
-                >
-                  <span className="text-2xl leading-none">+</span> Agregar paso
-                </button>
-              </div>
-            </div>
+            <p className="mb-4">
+              Agregue los siguientes elementos al material que el estudiante
+              debe consultar antes de clase.
+            </p>
+            <CardList
+              courseData={courseData.beforeClassCards}
+              setCourseData={setBeforeClassCards}
+              handleInputChange={handleInputChange}
+              name="beforeClassCards"
+            />
           </div>
         );
       case 3:
         return (
           <div>
-            <h3 className="text-3xl font-medium mb-4">Subir Contenido</h3>
+            <h2 className="text-lg mb-2 font-semibold">Segundo momento</h2>
+            <h3 className="text-3xl mb-2 font-medium">Durante de clase</h3>
+            <p className="mb-4">
+              Esto ayudará al estudiante a guiarse durante los espacios de
+              clase.
+            </p>
             <hr className="mb-4 border-gray-300" />
-            <div className="space-y-3">
-              <label className="block font-medium mb-1">
-                Titulo del contenido
-              </label>
-              <input
-                type="text"
-                name="contentTitle"
-                placeholder="¿Cómo se llamará el tema?"
-                value={courseData.contentTitle}
-                onChange={handleInputChange}
-                className="w-full p-2 border border-gray-300 rounded-lg bg-gray-50"
-              />
-              <label className="block font-medium mb-1">
-                Descripción del contenido
-              </label>
-              <input
-                type="text"
-                name="contentDescription"
-                placeholder="Dile a tus estudiantes de que tratará este curso"
-                value={courseData.contentDescription}
-                onChange={handleInputChange}
-                className="w-full p-2 border border-gray-300 rounded-lg bg-gray-50"
-              />
-              <label className="block font-medium mb-1">
-                Sube el contenido de apoyo
-              </label>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleFileUpload}
-                className="w-full p-2 border border-gray-300 rounded-lg bg-gray-50"
-              />
-            </div>
-
-            {/* Modal de confirmación */}
-            {showModal && (
-              <div className="fixed inset-0 flex justify-center items-center bg-gray-500 bg-opacity-50 z-50">
-              <div className="bg-white p-6 rounded-lg shadow-md max-w-xs sm:max-w-sm md:max-w-md w-full">
-                {/* Primer texto */}
-                <h2 className="text-xl mb-4 text-center">
-                  ¿Cuantos minutos aproximadamente demorará el estudiante en completar este módulo?
-                </h2>
-        
-                {/* Contador con botones menos y más */}
-                <div className="flex items-center justify-center mb-4">
-                  <button
-                    onClick={handleDecrease}
-                    className="px-4 py-2 bg-gray-300 text-black rounded-l"
-                    disabled={counter <= 1} // Deshabilita el botón cuando está en el paso 1
-                  >
-                    -
-                  </button>
-                  <span className="px-6 py-2 text-lg">{counter}</span>
-                  <button
-                    onClick={handleIncrease}
-                    className="px-4 py-2 bg-gray-300 text-black rounded-r"
-                    disabled={counter >= 30} // Deshabilita el botón cuando está en el paso 4
-                  >
-                    +
-                  </button>
-                </div>
-        
-                {/* Segundo texto */}
-                <p className="text-center mb-6">
-                  No pueden ser más de 30 minutos.
-                </p>
-        
-                {/* Botones de Volver y Continuar */}
-                <div className="flex justify-between">
-                  <button
-                    onClick={() => setShowModal(false)}
-                    className="px-4 py-2 bg-gray-500 text-white rounded"
-                  >
-                    Volver
-                  </button>
-                  <button
-                    onClick={closeModal}
-                    className="px-4 py-2 bg-green-500 text-white rounded"
-                  >
-                    Continuar
-                  </button>
-                </div>
-              </div>
-            </div>
-            )}
+            <p className="mb-4">
+              Agregue los siguientes elementos al material que el estudiante
+              debe consultar durante de clase.
+            </p>
+            <CardList
+            courseData={courseData.duringClassCards} 
+            setCourseData={setDuringClassCards}
+            handleInputChange={handleInputChange}
+            name="duringClassCards" 
+            />
           </div>
         );
-
       case 4:
         return (
           <div>
-            <h3 className="text-3xl font-medium mb-4">Crear Evaluación</h3>
+            <h2 className="text-lg mb-2 font-semibold">Tercer momento</h2>
+            <h3 className="text-3xl mb-2 font-medium">Después de clase</h3>
+            <p className="mb-4">
+              Esto ayudará al estudiante a guiarse durante los espacios de
+              clase.
+            </p>
             <hr className="mb-4 border-gray-300" />
-            <div className="space-y-3">
-              <label className="block font-medium mb-1">Pregunta 1</label>
-              <input
-                type="text"
-                name="firstQuestion"
-                placeholder="Escribe la pregunta"
-                value={courseData.firstQuestion}
-                onChange={handleInputChange}
-                className="w-full p-2 border border-gray-300 rounded-lg bg-gray-50"
-              />
-              <label className="block font-medium mb-1">
-                Respuesta correcta
-              </label>
-              <textarea
-                name="questionDescription"
-                placeholder="Escribe la respuesta correcta"
-                value={courseData.questionDescription}
-                onChange={handleInputChange}
-                className="w-full p-2 border border-gray-300 rounded-lg bg-gray-50"
-              />
-            </div>
+            <p className="mb-4">
+              Agregue los siguientes elementos al material que el estudiante
+              debe consultar después de clase.
+            </p>
+            <CardList
+            courseData={courseData.afterClassCards} 
+            setCourseData={setAfterClassCards}
+            handleInputChange={handleInputChange}
+            />
           </div>
         );
+      case 5:
+        return <div>{/* Contenido del paso 5 */}</div>;
       default:
         return null;
     }
@@ -459,43 +437,38 @@ const Wizard = ({ course, onComplete, onCancel }: WizardProps) => {
 
   return (
     <div className="bg-white p-6">
+      <div className="mb-6 max-w-5xl mx-auto w-full">
+        <button onClick={onCancel} className="text-primary-40">
+          &lt; Salir
+        </button>
+      </div>
+
       {/* Stepper */}
-      <div className="mb-6 w-full">{renderStepper()}</div>
+      <div className="mb-6 sm:mb-20 max-w-5xl mx-auto w-full">
+        {renderStepper()}
+      </div>
 
       {/* Contenido del Wizard */}
-      <div className="max-w-2xl mx-auto w-full">{renderStep()}</div>
+      <div className="max-w-5xl mx-auto w-full">{renderStep()}</div>
 
       {/* Footer del Wizard */}
-      <div className="max-w-2xl mx-auto w-full flex flex-col sm:flex-row justify-between mt-6 gap-4">
-        {/* Botón Cancelar (queda al inicio en web, al final en mobile) */}
-        <div className="order-3 sm:order-1 w-full sm:w-auto">
-          <button
-            onClick={onCancel}
-            className="w-full sm:w-auto px-4 py-2 border border-primary-40 text-primary-40 bg-white rounded hover:bg-gray-100"
-          >
-            <FaTimes className="inline-block mr-2" />
-            Cancelar
-          </button>
-        </div>
-
+      <div className="max-w-5xl mx-auto w-full flex flex-col sm:flex-row justify-between mt-6 gap-4">
         {/* Botones Anterior y Siguiente */}
         <div className="flex flex-col-reverse sm:flex-row gap-4 w-full sm:w-auto order-1 sm:order-2">
-          {step > 1 && ( // Oculta el botón "Anterior" si está en el paso 1
+          {step > 1 && (
             <button
               onClick={prevStep}
               className="w-full sm:w-auto px-4 py-2 border border-gray-500 text-gray-500 bg-white rounded hover:bg-gray-100"
             >
-              <FaArrowLeft className="inline-block mr-2" />
               Anterior
             </button>
           )}
-          {step < 4 ? (
+          {step < 5 ? (
             <button
               onClick={nextStep}
               className="w-full sm:w-auto px-4 py-2 bg-primary-40 hover:bg-primary-50 text-white rounded"
             >
               Siguiente
-              <FaArrowRight className="inline-block ml-2" />
             </button>
           ) : (
             <button
