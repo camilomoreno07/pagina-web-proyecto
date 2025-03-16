@@ -1,5 +1,6 @@
 // components/Wizard.tsx
 import { useState, useEffect } from "react";
+import Cookies from "js-cookie";
 import {
   FaArrowLeft,
   FaArrowRight,
@@ -163,7 +164,35 @@ const Wizard = ({ course, onComplete, onCancel }: WizardProps) => {
   };
 
   // Avanzar al siguiente paso
-  const nextStep = () => {
+  const nextStep = async () => {
+    try {
+      const token = Cookies.get("token");
+      if (!token) {
+          throw new Error("No token found");
+      }
+
+      // Imprime el cuerpo (body) antes de enviarlo
+      console.log("Datos a enviar:", courseData);
+
+      const response = await fetch(`http://localhost:8081/api/courses/${courseData.id}`, {
+          method: "PUT",
+          headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(courseData), // Envía el objeto combinado
+      });
+
+      if (!response.ok) {
+          throw new Error(`Failed to update course: ${response.statusText}`);
+      }
+
+      console.log("Datos guardados:", courseData);
+
+  } catch (error) {
+      console.error("Error al guardar el curso:", error);
+      alert(`Error al guardar: ${error instanceof Error ? error.message : "Ocurrió un error"}`);
+  }
     if (step < 5) setStep(step + 1);
   };
 
@@ -187,10 +216,13 @@ const Wizard = ({ course, onComplete, onCancel }: WizardProps) => {
     const file = event.target.files[0];
     if (file) {
       const reader = new FileReader();
+      
       reader.onload = (e) => {
         setPreviewImage(e.target.result);
+        
       };
       reader.readAsDataURL(file);
+      console.log("imagen", reader)
     }
   };
 
@@ -321,11 +353,11 @@ const Wizard = ({ course, onComplete, onCancel }: WizardProps) => {
               Descripción del curso
             </label>
             <textarea
-              name="courseDescription"
+              name="description"
               placeholder="Dile a tus estudiantes de qué tratará este curso"
-              value={courseData.courseDescription}
+              value={courseData.description}
               onChange={(e) =>
-                setCourseData({ ...courseData, courseDescription: e.target.value })
+                setCourseData({ ...courseData, description: e.target.value })
               }
               className="w-full p-2 border border-gray-300 rounded-lg bg-gray-50"
             />
@@ -388,10 +420,10 @@ const Wizard = ({ course, onComplete, onCancel }: WizardProps) => {
               onCancel={handleCancel}
               courseId={courseData.id}
               course={courseData}
-              courseData={courseData.beforeClass}
-              setCourseData={setbeforeClass}
               handleInputChange={handleInputChange}
               name="beforeClass"
+              courseData={courseData.beforeClass}
+              setCourseData={setbeforeClass}
             />
           </div>
         );
@@ -413,10 +445,12 @@ const Wizard = ({ course, onComplete, onCancel }: WizardProps) => {
               activeCardId={activeCardId}
               onCardClick={handleCardClick}
               onCancel={handleCancel}
-              courseData={courseData.duringClass}
-              setCourseData={setduringClass}
+              courseId={courseData.id}
+              course={courseData}
               handleInputChange={handleInputChange}
               name="duringClass"
+              courseData={courseData.duringClass}
+              setCourseData={setduringClass}
             />
           </div>
         );
@@ -435,10 +469,15 @@ const Wizard = ({ course, onComplete, onCancel }: WizardProps) => {
               debe consultar después de clase.
             </p>
             <CardList
-              courseData={courseData.afterClass}
-              setCourseData={setafterClass}
+              activeCardId={activeCardId}
+              onCardClick={handleCardClick}
+              onCancel={handleCancel}
+              courseId={courseData.id}
+              course={courseData}
               handleInputChange={handleInputChange}
               name="afterClass"
+              courseData={courseData.afterClass}
+              setCourseData={setafterClass}
             />
           </div>
         );

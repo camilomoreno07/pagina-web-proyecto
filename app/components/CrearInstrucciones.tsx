@@ -22,35 +22,35 @@ export default function CrearInstrucciones({
   }, [setCourseData]); 
 
   const addStep = () => {
-    const newSteps = [...(courseData.instruction?.steps || []), ""];
+    const newSteps = [...(courseData.instructions?.steps || []), ""];
     setCourseData({
       ...courseData,
-      instruction: {
-        ...courseData.instruction,
+      instructions: {
+        ...courseData.instructions,
         steps: newSteps,
       },
     });
-    console.log("Añadir paso", courseData.instruction)
+    console.log("Añadir paso", courseData.instructions)
   };
 
   const removeStep = (index: number) => {
-    const newSteps = courseData.instruction.steps.filter((_, i) => i !== index);
+    const newSteps = courseData.instructions.steps.filter((_, i) => i !== index);
     setCourseData({
       ...courseData,
-      instruction: {
-        ...courseData.instruction,
+      instructions: {
+        ...courseData.instructions,
         steps: newSteps,
       },
     });
   };
 
   const updateStep = (index: number, value: string) => {
-    const newSteps = [...courseData.instruction.steps];
+    const newSteps = [...courseData.instructions.steps];
     newSteps[index] = value;
     setCourseData({
       ...courseData,
-      instruction: {
-        ...courseData.instruction,
+      instructions: {
+        ...courseData.instructions,
         steps: newSteps,
       },
     });
@@ -65,9 +65,9 @@ export default function CrearInstrucciones({
         <label className="block font-medium mb-1">Nombre de la actividad</label>
         <input
           type="text"
-          name={`${name}.instruction.instructionTitle`}
+          name={`${name}.instructions.instructionTitle`}
           placeholder="¿Cómo se llamará el tema?"
-          value={courseData.instruction.instructionTitle}
+          value={courseData.instructions.instructionTitle}
           onChange={handleInputChange}
           className="w-full p-2 border border-gray-300 rounded-lg bg-gray-50"
         />
@@ -77,16 +77,16 @@ export default function CrearInstrucciones({
         </label>
         <input
           type="text"
-          name={`${name}.instruction.instructionDescription`}
+          name={`${name}.instructions.instructionDescription`}
           placeholder="Dile a tus estudiantes de qué tratará este módulo"
-          value={courseData.instruction.instructionDescription}
+          value={courseData.instructions.instructionDescription}
           onChange={handleInputChange}
           className="w-full p-2 border border-gray-300 rounded-lg bg-gray-50"
         />
 
         <div>
           <label className="block font-medium mb-1">Paso a paso</label>
-          {courseData.instruction?.steps?.map((step, index) => (
+          {courseData.instructions?.steps?.map((step, index) => (
             <div key={index} className="flex items-center space-x-2 mb-2">
               <span>{index + 1}.</span>
               <input

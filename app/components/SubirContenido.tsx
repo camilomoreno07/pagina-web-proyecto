@@ -33,7 +33,7 @@ export default function SubirContenido({
   }, [courseData?.contents]);
 
   // Función para agregar un nuevo paso
-  const addStep = () => {
+  const addContent = () => {
     const newContent = {
       contentTitle: "",
       contentDescription: "",
@@ -241,7 +241,7 @@ export default function SubirContenido({
       {/* Botón para agregar nuevo contenido */}
       <button
         type="button"
-        onClick={addStep}
+        onClick={addContent}
         className="mt-2 p-2 border-2 border-primary-40 text-primary-40 bg-white rounded-lg font-semibold flex items-center justify-center"
       >
         <FaPlus className="text-2xl leading-none mr-2" /> Agregar Contenido

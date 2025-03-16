@@ -135,8 +135,10 @@ export default function CardList({
             />
           ) : (
             <CrearEvaluacion
-              courseData={courseData}
-              handleInputChange={handleInputChange}
+            courseData={courseData}
+            setCourseData={setCourseData}
+            handleInputChange={handleInputChange}
+            name={name}
             />
           )}
 
