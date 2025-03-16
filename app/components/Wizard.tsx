@@ -15,9 +15,6 @@ interface WizardProps {
   course: any | null;
   onComplete: (data: any) => void;
   onCancel: () => void;
-  beforeClassCards: Card[];
-  duringClassCards: Card[];
-  afterClassCards: Card[];
 }
 
 type CardList = {
@@ -73,45 +70,46 @@ const Wizard = ({ course, onComplete, onCancel }: WizardProps) => {
   const [counter, setCounter] = useState<number>(0);
   const [activeCardId, setActiveCardId] = useState<number | null>(null);
   const [courseData, setCourseData] = useState<any>({
-    name: course ? course.courseName : "",
-    description: course ? course.description || "" : "",
+    id: course ? course.courseId : "",
+    courseName: course ? course.courseName || "" : "",
+    courseDescription: course ? course.courseDescription || "" : "",
     activityName: course ? course.activityName || "" : "",
     activityDescription: course ? course.activityDescription || "" : "",
     contentTitle: course ? course.contentTitle || "" : "",
     contentDescription: course ? course.contentDescription || "" : "",
-    isPublic: false,
+    isPublic: course ? course.isPublic || "" : "",
     startDate: course ? course.startDate || "" : "",
     image: null,
     files: [],
-    beforeClassCards: course.beforeClass, // Asegura que no sea undefined
-    duringClassCards: course.duringClass,
-    afterClassCards: course.afterClass,
+    beforeClass: course.beforeClass, // Asegura que no sea undefined
+    duringClass: course.duringClass,
+    afterClass: course.afterClass,
   });
 
   // Sincroniza el contador con el paso actual cada vez que cambie
   useEffect(() => {
-    console.log("Wizard", setCourseData);
+    console.log("Wizard", course);
     setCounter(step);
   }, [step]);
 
-  const setBeforeClassCards = (newBeforeClassCards: any) => {
+  const setbeforeClass = (newbeforeClass: any) => {
     setCourseData((prevData) => ({
       ...prevData,
-      beforeClassCards: newBeforeClassCards,
+      beforeClass: newbeforeClass,
     }));
   };
 
-  const setDuringClassCards = (newDuringClassCards: any) => {
+  const setduringClass = (newduringClass: any) => {
     setCourseData((prevData) => ({
       ...prevData,
-      duringClassCards: newDuringClassCards,
+      duringClass: newduringClass,
     }));
   };
 
-  const setAfterClassCards = (newAfterClassCards: any) => {
+  const setafterClass = (newafterClass: any) => {
     setCourseData((prevData) => ({
       ...prevData,
-      afterClassCards: newAfterClassCards,
+      afterClass: newafterClass,
     }));
   };
 
@@ -136,7 +134,7 @@ const Wizard = ({ course, onComplete, onCancel }: WizardProps) => {
   ) => {
     const { name, value } = e.target;
 
-    // Divide el nombre en partes (por ejemplo, "beforeClassCards.instruction.instructionTitle")
+    // Divide el nombre en partes (por ejemplo, "beforeClass.instruction.instructionTitle")
     const keys = name.split(".");
 
     // Función recursiva para actualizar el estado
@@ -323,11 +321,11 @@ const Wizard = ({ course, onComplete, onCancel }: WizardProps) => {
               Descripción del curso
             </label>
             <textarea
-              name="description"
+              name="courseDescription"
               placeholder="Dile a tus estudiantes de qué tratará este curso"
-              value={courseData.description}
+              value={courseData.courseDescription}
               onChange={(e) =>
-                setCourseData({ ...courseData, description: e.target.value })
+                setCourseData({ ...courseData, courseDescription: e.target.value })
               }
               className="w-full p-2 border border-gray-300 rounded-lg bg-gray-50"
             />
@@ -388,10 +386,12 @@ const Wizard = ({ course, onComplete, onCancel }: WizardProps) => {
               activeCardId={activeCardId}
               onCardClick={handleCardClick}
               onCancel={handleCancel}
-              courseData={courseData.beforeClassCards}
-              setCourseData={setBeforeClassCards}
+              courseId={courseData.id}
+              course={courseData}
+              courseData={courseData.beforeClass}
+              setCourseData={setbeforeClass}
               handleInputChange={handleInputChange}
-              name="beforeClassCards"
+              name="beforeClass"
             />
           </div>
         );
@@ -413,10 +413,10 @@ const Wizard = ({ course, onComplete, onCancel }: WizardProps) => {
               activeCardId={activeCardId}
               onCardClick={handleCardClick}
               onCancel={handleCancel}
-              courseData={courseData.duringClassCards}
-              setCourseData={setDuringClassCards}
+              courseData={courseData.duringClass}
+              setCourseData={setduringClass}
               handleInputChange={handleInputChange}
-              name="duringClassCards"
+              name="duringClass"
             />
           </div>
         );
@@ -435,10 +435,10 @@ const Wizard = ({ course, onComplete, onCancel }: WizardProps) => {
               debe consultar después de clase.
             </p>
             <CardList
-              courseData={courseData.afterClassCards}
-              setCourseData={setAfterClassCards}
+              courseData={courseData.afterClass}
+              setCourseData={setafterClass}
               handleInputChange={handleInputChange}
-              name="afterClassCards"
+              name="afterClass"
             />
           </div>
         );

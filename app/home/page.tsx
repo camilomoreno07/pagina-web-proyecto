@@ -183,9 +183,6 @@ const Dashboard = () => {
                       id={course.courseId}
                       image=""
                       title={course.courseName}
-                      beforeClass={course.beforeClass}
-                      duringClass={course.duringClass}
-                      afterClass={course.afterClass}
                       date="Fecha no disponible"
                       onClick={() => handleCourseClick(course)}
                     />

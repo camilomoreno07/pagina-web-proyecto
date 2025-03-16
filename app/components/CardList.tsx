@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import Cookies from "js-cookie";
 import CrearInstrucciones from "./CrearInstrucciones";
 import SubirContenido from "./SubirContenido";
 import CrearEvaluacion from "./CrearEvaluacion";
@@ -11,6 +12,8 @@ interface Card {
 }
 
 interface CardListProps {
+  courseId: string;
+  course: any;
   courseData: any; // Estado del curso (puedes reemplazar "any" con una interfaz específica)
   setCourseData: (data: any) => void; 
   handleInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => void;
@@ -21,6 +24,8 @@ interface CardListProps {
 }
 
 export default function CardList({
+  courseId,
+  course,
   courseData,
   handleInputChange,
   setCourseData,
@@ -31,7 +36,7 @@ export default function CardList({
 }: CardListProps) {
 
   useEffect(() => {
-    console.log("Este es el courseData", courseData); // ✅ Imprime courseData
+    console.log("Este es el course", course); // ✅ Imprime courseData
   }, [courseData]); // ✅ Usa courseData como dependencia
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -42,11 +47,44 @@ export default function CardList({
   };
 
 
-  const handleSave = () => {
-    console.log("Datos guardados:", courseData);
-    alert("Datos guardados correctamente");
-  };
+  const handleSave = async () => {
+    try {
+        const token = Cookies.get("token");
+        if (!token) {
+            throw new Error("No token found");
+        }
 
+        // Combina el objeto `course` con `courseData` en la propiedad especificada por `name`
+        const updatedCourse = {
+            ...course, // Copia todas las propiedades de `course`
+            [name]: courseData, // Asigna `courseData` a la propiedad con el nombre de `name`
+        };
+
+        // Imprime el cuerpo (body) antes de enviarlo
+        console.log("Datos a enviar:", updatedCourse);
+
+        const response = await fetch(`http://localhost:8081/api/courses/${courseId}`, {
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify(updatedCourse), // Envía el objeto combinado
+        });
+
+        if (!response.ok) {
+            throw new Error(`Failed to update course: ${response.statusText}`);
+        }
+
+        console.log("Datos guardados:", updatedCourse);
+        // Restablece el activeCardId a null después de guardar
+        onCancel();
+    } catch (error) {
+        console.error("Error al guardar el curso:", error);
+        alert(`Error al guardar: ${error instanceof Error ? error.message : "Ocurrió un error"}`);
+    }
+};
+  
   
 
   const cards = [
