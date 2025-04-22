@@ -28,7 +28,7 @@ type CardList = {
     contenidos: {
       contentTitle: string;
       contentDescription: string;
-      image: string | File | null; // Manejo flexible de imagen
+      imageUrl: string | File | null; // Manejo flexible de imagen
     }[];
   };
   evaluaciónCard: {
@@ -50,7 +50,7 @@ const defaultCardList: CardList = {
       {
         contentTitle: "",
         contentDescription: "",
-        image: null,
+        imageUrl: null,
       },
     ],
   },
@@ -80,18 +80,21 @@ const Wizard = ({ course, onComplete, onCancel }: WizardProps) => {
     contentDescription: course ? course.contentDescription || "" : "",
     isPublic: course ? course.isPublic || "" : "",
     startDate: course ? course.startDate || "" : "",
-    image: null,
+    imageUrl: course ? course.imageUrl || "" : "",
     files: [],
     beforeClass: course.beforeClass, // Asegura que no sea undefined
     duringClass: course.duringClass,
     afterClass: course.afterClass,
+    teacherName: course ? course.teacherName : "",
+    teacherTitle: course ? course.teacherTitle : "",
+    teacherEmail: course ? course.teacherEmail : "",
   });
 
-  // Sincroniza el contador con el paso actual cada vez que cambie
   useEffect(() => {
-    console.log("Wizard", course);
-    setCounter(step);
-  }, [step]);
+    if (courseData.imageUrl) {
+      loadProtectedImage(courseData.imageUrl);
+    }
+  }, [courseData.imageUrl]);
 
   const setbeforeClass = (newbeforeClass: any) => {
     setCourseData((prevData) => ({
@@ -113,6 +116,22 @@ const Wizard = ({ course, onComplete, onCancel }: WizardProps) => {
       afterClass: newafterClass,
     }));
   };
+
+  const isStepValid = (): boolean => {
+    const validateMoment = (moment: any) => {
+      return (
+        getInstructionStatus(moment.instructions) === "completo" &&
+        getContentStatus(moment.contents) === "completo" &&
+        getEvaluationStatus(moment.evaluations) === "completo"
+      );
+    };
+  
+    if (step === 2) return validateMoment(courseData.beforeClass);
+    if (step === 3) return validateMoment(courseData.duringClass);
+    if (step === 4) return validateMoment(courseData.afterClass);
+    return true; // Paso 1 y 5 no tienen validación
+  };
+  
 
   // Función para disminuir el contador
   const handleDecrease = () => {
@@ -163,37 +182,90 @@ const Wizard = ({ course, onComplete, onCancel }: WizardProps) => {
     setCourseData({ ...courseData, image: file });
   };
 
+  const getInstructionStatus = (instructions: any): string => {
+    return instructions?.instructionTitle?.trim() ||
+      instructions?.instructionDescription?.trim() ||
+      (Array.isArray(instructions?.steps) &&
+        instructions.steps.some((s: string) => s.trim()))
+      ? "completo"
+      : "pendiente";
+  };
+
+  const getContentStatus = (contents: any[]): string =>
+    Array.isArray(contents) && contents.length > 0 ? "completo" : "pendiente";
+
+  const getEvaluationStatus = (evaluations: any[]): string =>
+    Array.isArray(evaluations) && evaluations.length > 0
+      ? "completo"
+      : "pendiente";
+
   // Avanzar al siguiente paso
   const nextStep = async () => {
     try {
       const token = Cookies.get("token");
-      if (!token) {
-          throw new Error("No token found");
+      if (!token) throw new Error("No token found");
+
+      // ⬇️ Si hay imagen, la subimos al backend primero
+      if (courseData.image instanceof File) {
+        const uploadResult = await uploadImageToBackend(courseData.image);
+        if (!uploadResult) throw new Error("Error uploading image");
+
+        // Guardar la URL o path del archivo en el objeto courseData
+        courseData.image = uploadResult; // o extrae solo el path si tu backend lo devuelve así
       }
 
-      // Imprime el cuerpo (body) antes de enviarlo
-      console.log("Datos a enviar:", courseData);
+      const momentStatus = {
+        beforeClass: {
+          instructions: getInstructionStatus(
+            courseData.beforeClass.instructions
+          ),
+          contents: getContentStatus(courseData.beforeClass.contents),
+          evaluations: getEvaluationStatus(courseData.beforeClass.evaluations),
+        },
+        duringClass: {
+          instructions: getInstructionStatus(
+            courseData.duringClass.instructions
+          ),
+          contents: getContentStatus(courseData.duringClass.contents),
+          evaluations: getEvaluationStatus(courseData.duringClass.evaluations),
+        },
+        afterClass: {
+          instructions: getInstructionStatus(
+            courseData.afterClass.instructions
+          ),
+          contents: getContentStatus(courseData.afterClass.contents),
+          evaluations: getEvaluationStatus(courseData.afterClass.evaluations),
+        },
+      };
 
-      const response = await fetch(`http://localhost:8081/api/courses/${courseData.id}`, {
+      courseData.momentStatus = momentStatus;
+
+      const response = await fetch(
+        `http://localhost:8081/api/courses/${courseData.id}`,
+        {
           method: "PUT",
           headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
           },
-          body: JSON.stringify(courseData), // Envía el objeto combinado
-      });
+          body: JSON.stringify(courseData),
+        }
+      );
 
-      if (!response.ok) {
-          throw new Error(`Failed to update course: ${response.statusText}`);
-      }
-
+      if (!response.ok)
+        throw new Error(`Failed to update course: ${response.statusText}`);
       console.log("Datos guardados:", courseData);
 
-  } catch (error) {
+      // Avanza al siguiente paso si todo fue bien
+      if (step < 5) setStep(step + 1);
+    } catch (error) {
       console.error("Error al guardar el curso:", error);
-      alert(`Error al guardar: ${error instanceof Error ? error.message : "Ocurrió un error"}`);
-  }
-    if (step < 5) setStep(step + 1);
+      alert(
+        `Error al guardar: ${
+          error instanceof Error ? error.message : "Ocurrió un error"
+        }`
+      );
+    }
   };
 
   const prevStep = () => {
@@ -212,18 +284,98 @@ const Wizard = ({ course, onComplete, onCancel }: WizardProps) => {
     setActiveCardId(null); // Regresar a la lista de tarjetas
   };
 
-  const handleImageUpload = (event) => {
-    const file = event.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      
-      reader.onload = (e) => {
-        setPreviewImage(e.target.result);
-        
-      };
-      reader.readAsDataURL(file);
-      console.log("imagen", reader)
+  const handleImageUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const previousUrl = courseData.imageUrl;
+
+    // Vista previa
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      setPreviewImage(e.target?.result as string);
+    };
+    reader.readAsDataURL(file);
+
+    // Guardamos el File para que nextStep lo detecte
+    setCourseData((prev) => ({
+      ...prev,
+      image: file,
+    }));
+
+    // Subida al backend
+    const uploadResult = await uploadImageToBackend(file);
+    if (uploadResult) {
+      setCourseData((prev) => ({
+        ...prev,
+        imageUrl: uploadResult,
+      }));
+
+      // Eliminar la imagen anterior si existe y es URL válida
+      if (previousUrl && previousUrl.includes("/media/files/")) {
+        const token = Cookies.get("token");
+        const filename = previousUrl.split("/media/files/")[1];
+
+        await fetch(`http://localhost:8081/media/files/${filename}`, {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }).then((res) => {
+          if (!res.ok) console.warn("No se pudo eliminar la imagen anterior");
+        });
+      }
+    } else {
+      alert("Error al subir imagen");
     }
+  };
+
+  const uploadImageToBackend = async (file: File): Promise<string | null> => {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const token = Cookies.get("token");
+
+    try {
+      const response = await fetch("http://localhost:8081/media/upload", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Upload failed: ${response.status} - ${errorText}`);
+      }
+
+      const result = await response.json(); // { url: "/media/files/nombre.jpg" }
+      return `http://localhost:8081${result.url}`;
+    } catch (error) {
+      console.error("Error subiendo imagen:", error);
+      return null;
+    }
+  };
+
+  const loadProtectedImage = async (url: string) => {
+    const token = Cookies.get("token");
+    const response = await fetch(url, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      console.error("Error cargando imagen protegida");
+      return;
+    }
+
+    const blob = await response.blob();
+    const objectURL = URL.createObjectURL(blob);
+    setPreviewImage(objectURL); // esto lo puedes usar en <img src={previewImage} />
   };
 
   const renderStepper = () => {
@@ -234,6 +386,8 @@ const Wizard = ({ course, onComplete, onCancel }: WizardProps) => {
       "Después de la clase",
       "Revisión",
     ];
+  
+    
 
     return (
       <div className="flex flex-col items-center w-full mb-6">
@@ -305,9 +459,9 @@ const Wizard = ({ course, onComplete, onCancel }: WizardProps) => {
           <div>
             {/* Banner del curso */}
             <div className="w-full rounded-lg bg-gray-200 flex items-center justify-center overflow-hidden relative group h-48">
-              {previewImage ? (
+              {previewImage || courseData.imageUrl ? (
                 <img
-                  src={previewImage}
+                  src={previewImage || courseData.imageUrl}
                   alt="Banner del curso"
                   className="w-full h-full object-cover rounded-lg"
                 />
@@ -324,7 +478,6 @@ const Wizard = ({ course, onComplete, onCancel }: WizardProps) => {
                 </div>
                 {/* Input de archivo invisible pero funcional */}
                 <input
-                  id="image-upload"
                   type="file"
                   accept="image/*"
                   onChange={handleImageUpload}
@@ -332,15 +485,6 @@ const Wizard = ({ course, onComplete, onCancel }: WizardProps) => {
                 />
               </label>
             </div>
-
-            {/* Input oculto para cargar la imagen */}
-            <input
-              id="image-upload"
-              type="file"
-              accept="image/*"
-              onChange={handleImageUpload}
-              className="hidden"
-            />
 
             {/* Margen superior agregado al h3 */}
             <h3 className="text-3xl font-semibold mt-6 mb-4">
@@ -355,9 +499,12 @@ const Wizard = ({ course, onComplete, onCancel }: WizardProps) => {
             <textarea
               name="description"
               placeholder="Dile a tus estudiantes de qué tratará este curso"
-              value={courseData.description}
+              value={courseData.courseDescription}
               onChange={(e) =>
-                setCourseData({ ...courseData, description: e.target.value })
+                setCourseData({
+                  ...courseData,
+                  courseDescription: e.target.value,
+                })
               }
               className="w-full p-2 border border-gray-300 rounded-lg bg-gray-50"
             />
@@ -482,7 +629,84 @@ const Wizard = ({ course, onComplete, onCancel }: WizardProps) => {
           </div>
         );
       case 5:
-        return <div>{/* Contenido del paso 5 */}</div>;
+        return (
+          <div>
+            <h3 className="text-3xl font-semibold mb-4">Revisión del Curso</h3>
+            <hr className="mb-4 border-gray-300" />
+
+            {/* Imagen del curso */}
+            <div className="w-full rounded-lg bg-gray-200 flex items-center justify-center overflow-hidden h-48 mb-6">
+              {previewImage || courseData.imageUrl ? (
+                <img
+                  src={previewImage || courseData.imageUrl}
+                  alt="Imagen del curso"
+                  className="w-full h-full object-cover rounded-lg"
+                />
+              ) : (
+                <span className="text-gray-500">No hay imagen cargada</span>
+              )}
+            </div>
+
+            {/* Datos básicos */}
+            <div className="mb-6">
+              <p>
+                <strong>Nombre:</strong> {courseData.courseName}
+              </p>
+              <p>
+                <strong>Descripción:</strong> {courseData.courseDescription}
+              </p>
+              <p>
+                <strong>Privacidad:</strong>{" "}
+                {courseData.isPublic ? "Público" : "Privado"}
+              </p>
+            </div>
+
+            {/* Resumen de los momentos */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="border rounded-lg p-4">
+                <h4 className="font-bold mb-2">Antes de clase</h4>
+                <p>
+                  Instrucciones:{" "}
+                  {courseData.beforeClass.instructions.instructionTitle ||
+                    "Sin título"}
+                </p>
+                <p>Pasos: {courseData.beforeClass.instructions.steps.length}</p>
+                <p>Contenidos: {courseData.beforeClass.contents.length}</p>
+                <p>Evaluaciones: {courseData.beforeClass.evaluations.length}</p>
+              </div>
+
+              <div className="border rounded-lg p-4">
+                <h4 className="font-bold mb-2">Durante la clase</h4>
+                <p>
+                  Instrucciones:{" "}
+                  {courseData.duringClass.instructions.instructionTitle ||
+                    "Sin título"}
+                </p>
+                <p>Pasos: {courseData.duringClass.instructions.steps.length}</p>
+                <p>Contenidos: {courseData.duringClass.contents.length}</p>
+                <p>Evaluaciones: {courseData.duringClass.evaluations.length}</p>
+              </div>
+
+              <div className="border rounded-lg p-4">
+                <h4 className="font-bold mb-2">Después de clase</h4>
+                <p>
+                  Instrucciones:{" "}
+                  {courseData.afterClass.instructions.instructionTitle ||
+                    "Sin título"}
+                </p>
+                <p>Pasos: {courseData.afterClass.instructions.steps.length}</p>
+                <p>Contenidos: {courseData.afterClass.contents.length}</p>
+                <p>Evaluaciones: {courseData.afterClass.evaluations.length}</p>
+              </div>
+            </div>
+
+            <p className="text-sm text-gray-500 mt-6">
+              Revisa la información. Si todo está correcto, haz clic en "Crear
+              Curso".
+            </p>
+          </div>
+        );
+
       default:
         return null;
     }
@@ -492,7 +716,7 @@ const Wizard = ({ course, onComplete, onCancel }: WizardProps) => {
     <div className="bg-white p-2">
       <div className="mb-6 max-w-5xl mx-auto w-full">
         <button onClick={onCancel} className="text-primary-40">
-          &lt; Salir
+          <span className="text-base">←</span> Salir
         </button>
       </div>
 
@@ -522,16 +746,21 @@ const Wizard = ({ course, onComplete, onCancel }: WizardProps) => {
             {step < 5 ? (
               <button
                 onClick={nextStep}
-                className="w-full sm:w-auto px-4 py-2 bg-primary-40 hover:bg-primary-50 text-white rounded"
+                disabled={!isStepValid()}
+                className={`w-full sm:w-auto px-4 py-2 rounded text-white transition ${
+                  isStepValid()
+                    ? "bg-primary-40 hover:bg-primary-50"
+                    : "bg-gray-300 cursor-not-allowed"
+                }`}
               >
                 Siguiente
               </button>
             ) : (
               <button
                 onClick={handleSubmit}
-                className="w-full sm:w-auto px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded"
+                className="w-full sm:w-auto px-4 py-2 bg-primary-40 hover:bg-primary-50 text-white rounded"
               >
-                Crear Curso
+                Finalizar
                 <FaCheck className="inline-block ml-2" />
               </button>
             )}

@@ -1,26 +1,24 @@
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import Cookies from "js-cookie";
 import CrearInstrucciones from "./CrearInstrucciones";
 import SubirContenido from "./SubirContenido";
 import CrearEvaluacion from "./CrearEvaluacion";
-
-interface Card {
-  id: number;
-  title: string;
-  status: string;
-  isFilled: boolean;
-}
+import { FaCheckCircle } from "react-icons/fa";
 
 interface CardListProps {
   courseId: string;
   course: any;
-  courseData: any; // Estado del curso (puedes reemplazar "any" con una interfaz específica)
-  setCourseData: (data: any) => void; 
-  handleInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => void;
+  courseData: any;
+  setCourseData: (data: any) => void;
+  handleInputChange: (
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >
+  ) => void;
   onCardClick: (id: number) => void;
   onCancel: () => void;
-  activeCardId: number | null
-  name: string; 
+  activeCardId: number | null;
+  name: string;
 }
 
 export default function CardList({
@@ -32,117 +30,133 @@ export default function CardList({
   onCardClick,
   onCancel,
   activeCardId,
-  name
+  name,
 }: CardListProps) {
-
-  useEffect(() => {
-    console.log("Este es el course", course); // ✅ Imprime courseData
-  }, [courseData]); // ✅ Usa courseData como dependencia
-
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      console.log("Archivo subido:", file);
-    }
+  const getInstructionStatus = (instructions: any): boolean => {
+    return (
+      instructions?.instructionTitle?.trim() ||
+      instructions?.instructionDescription?.trim() ||
+      (Array.isArray(instructions?.steps) &&
+        instructions.steps.some((s: string) => s.trim()))
+    );
   };
 
+  const getContentStatus = (contents: any[]): boolean =>
+    Array.isArray(contents) && contents.length > 0;
+
+  const getEvaluationStatus = (evaluations: any[]): boolean =>
+    Array.isArray(evaluations) && evaluations.length > 0;
+
+  const currentData = courseData;
+
+  const cards = [
+    {
+      id: 1,
+      title: "Crear instrucciones",
+      isFilled: getInstructionStatus(currentData.instructions),
+    },
+    {
+      id: 2,
+      title: "Subir contenido",
+      isFilled: getContentStatus(currentData.contents),
+    },
+    {
+      id: 3,
+      title: "Crear evaluación",
+      isFilled: getEvaluationStatus(currentData.evaluations),
+    },
+  ];
 
   const handleSave = async () => {
     try {
-        const token = Cookies.get("token");
-        if (!token) {
-            throw new Error("No token found");
+      const token = Cookies.get("token");
+      if (!token) throw new Error("No token found");
+
+      const updatedCourse = {
+        ...course,
+        [name]: courseData,
+      };
+
+      const response = await fetch(
+        `http://localhost:8081/api/courses/${courseId}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(updatedCourse),
         }
+      );
 
-        // Combina el objeto `course` con `courseData` en la propiedad especificada por `name`
-        const updatedCourse = {
-            ...course, // Copia todas las propiedades de `course`
-            [name]: courseData, // Asigna `courseData` a la propiedad con el nombre de `name`
-        };
+      if (!response.ok)
+        throw new Error(`Failed to update course: ${response.statusText}`);
 
-        // Imprime el cuerpo (body) antes de enviarlo
-        console.log("Datos a enviar:", updatedCourse);
-
-        const response = await fetch(`http://localhost:8081/api/courses/${courseId}`, {
-            method: "PUT",
-            headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify(updatedCourse), // Envía el objeto combinado
-        });
-
-        if (!response.ok) {
-            throw new Error(`Failed to update course: ${response.statusText}`);
-        }
-
-        console.log("Datos guardados:", updatedCourse);
-        // Restablece el activeCardId a null después de guardar
-        onCancel();
+      console.log("Datos guardados:", updatedCourse);
+      onCancel();
     } catch (error) {
-        console.error("Error al guardar el curso:", error);
-        alert(`Error al guardar: ${error instanceof Error ? error.message : "Ocurrió un error"}`);
+      console.error("Error al guardar el curso:", error);
+      alert(
+        `Error al guardar: ${
+          error instanceof Error ? error.message : "Ocurrió un error"
+        }`
+      );
     }
-};
-  
-  
-
-  const cards = [
-    { id: 1, title: "Crear instrucciones", status: "Pendiente", isFilled: false },
-    { id: 2, title: "Subir contenido", status: "Pendiente", isFilled: false },
-    { id: 3, title: "Crear evaluación", status: "Pendiente", isFilled: false },
-  ];
-
-
+  };
 
   return (
     <div className="p-2">
-      {/* Mostrar la lista de tarjetas si no hay una activa */}
       {!activeCardId ? (
         <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
           {cards.map((card) => (
             <div
               key={card.id}
               onClick={() => onCardClick(card.id)}
-              className="flex-1 sm:w-auto px-4 py-2 border border-gray-300 text-black bg-white rounded-md hover:bg-gray-100 cursor-pointer"
+              className="flex-1 sm:w-auto px-4 py-3 border border-gray-300 text-black bg-white rounded-md hover:bg-gray-100 cursor-pointer flex justify-between items-center"
             >
-              <div className="flex justify-between items-start">
-                <div>
-                  <h2 className="text-lg font-bold">{card.title}</h2>
-                  <p className="text-sm text-gray-500">{card.status}</p>
-                </div>
+              <div>
+                <h2 className="text-lg font-bold">{card.title}</h2>
+                <p
+                  className={`text-sm ${
+                    card.isFilled ? "text-green-600" : "text-gray-500"
+                  }`}
+                >
+                  {card.isFilled ? "Completado" : "Pendiente"}
+                </p>
               </div>
+              <FaCheckCircle
+                className={`text-xl ${
+                  card.isFilled ? "text-green-500" : "text-gray-400"
+                }`}
+              />
             </div>
           ))}
         </div>
       ) : (
-        // Mostrar el contenido correspondiente a la tarjeta activa
         <div className="py-2">
           {activeCardId === 1 ? (
             <CrearInstrucciones
-            courseData={courseData}
-            setCourseData={setCourseData}
-            handleInputChange={handleInputChange}
-            name={name}
+              courseData={courseData}
+              setCourseData={setCourseData}
+              handleInputChange={handleInputChange}
+              name={name}
             />
           ) : activeCardId === 2 ? (
             <SubirContenido
               courseData={courseData}
               setCourseData={setCourseData}
               handleInputChange={handleInputChange}
-              handleFileUpload={handleFileUpload}
               name={name}
             />
           ) : (
             <CrearEvaluacion
-            courseData={courseData}
-            setCourseData={setCourseData}
-            handleInputChange={handleInputChange}
-            name={name}
+              courseData={courseData}
+              setCourseData={setCourseData}
+              handleInputChange={handleInputChange}
+              name={name}
             />
           )}
 
-          {/* Botones de Guardar y Cancelar */}
           <div className="flex justify-end space-x-4 mt-6">
             <button
               onClick={onCancel}

@@ -3,7 +3,10 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Cookies from "js-cookie";
 import Activity from "../components/Activity";
+import ActivityStudent from "../components/ActivityStudent";
+import CourseViewStudent from "../components/CourseViewStudent";
 import Wizard from "../components/Wizard";
+import { useAuth } from "../hooks/useAuth";
 import {
   FaBook,
   FaEnvelope,
@@ -22,8 +25,14 @@ const Dashboard = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
   const [showWizard, setShowWizard] = useState<boolean>(false);
   const [selectedCourse, setSelectedCourse] = useState<any | null>(null);
+  const [hasMounted, setHasMounted] = useState(false);
+
+  const { role } = useAuth();
+  const isTeacher = role === "TEACHER";
+  const isStudent = role === "STUDENT";
 
   useEffect(() => {
+    setHasMounted(true);
     const fetchCourses = async () => {
       try {
         const token = Cookies.get("token");
@@ -61,6 +70,7 @@ const Dashboard = () => {
   const handleLogout = () => {
     try {
       Cookies.remove("token");
+      Cookies.remove("role");
       router.push("/auth/login");
     } catch (err) {
       console.error("Logout failed", err);
@@ -68,9 +78,10 @@ const Dashboard = () => {
   };
 
   const handleCourseClick = (course: Course) => {
+    console.log("Curso clickeado:", course); // 👀 debería verse al hacer clic
     setShowWizard(true);
     setSelectedCourse(course);
-  };
+  };  
 
   const handleWizardComplete = (data: WizardData) => {
     console.log("Datos del curso:", data);
@@ -158,17 +169,27 @@ const Dashboard = () => {
 
         {/* Content Area */}
         <div className="flex-1 p-6 space-y-6 bg-white shadow-none border-none">
-          {!showWizard && (
-            <h2 className="text-2xl font-bold mb-4">¡Hola, profesor!</h2>
+          {!showWizard && hasMounted && (
+            <h2 className="text-2xl font-bold mb-4">
+              {isTeacher && "¡Hola, profesor!"}
+              {isStudent && "¡Hola, estudiante!"}
+            </h2>
           )}
 
           {/* Courses Section */}
           {showWizard ? (
-            <Wizard
-              course={selectedCourse}
-              onComplete={handleWizardComplete}
-              onCancel={handleWizardCancel}
-            />
+            isTeacher ? (
+              <Wizard
+                course={selectedCourse}
+                onComplete={handleWizardComplete}
+                onCancel={handleWizardCancel}
+              />
+            ) : (
+              <CourseViewStudent
+                course={selectedCourse}
+                onClose={handleWizardCancel}
+              />
+            )
           ) : (
             <section>
               <div className="flex flex-wrap gap-4 p-6">
@@ -177,16 +198,28 @@ const Dashboard = () => {
                 ) : error ? (
                   <p className="text-red-500">{error}</p>
                 ) : (
-                  courses.map((course) => (
-                    <Activity
-                      key={course.courseId}
-                      id={course.courseId}
-                      image=""
-                      title={course.courseName}
-                      date="Fecha no disponible"
-                      onClick={() => handleCourseClick(course)}
-                    />
-                  ))
+                  courses.map((course) => {
+                    const commonProps = {
+                      id: course.courseId,
+                      image: course.imageUrl,
+                      title: course.courseName,
+                      date: "Fecha no disponible",
+                    };
+
+                    return isStudent ? (
+                      <ActivityStudent
+                        key={course.courseId}
+                        {...commonProps}
+                        onClick={() => handleCourseClick(course)}
+                      />
+                    ) : (
+                      <Activity
+                        key={course.courseId}
+                        {...commonProps}
+                        onClick={() => handleCourseClick(course)}
+                      />
+                    );
+                  })
                 )}
               </div>
             </section>

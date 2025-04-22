@@ -5,21 +5,25 @@ import { FaTrash } from "react-icons/fa";
 interface CrearInstruccionesProps {
   courseData: any;
   setCourseData: (data: any) => void;
-  handleInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => void;
+  handleInputChange: (
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >
+  ) => void;
   name: string;
 }
 
 export default function CrearInstrucciones({
   courseData,
-  setCourseData, 
+  setCourseData,
   handleInputChange,
-  name
+  name,
 }: CrearInstruccionesProps) {
   const [step, setStep] = useState<number>(1);
 
   useEffect(() => {
-    console.log("CrearInstrucciones", courseData); 
-  }, [setCourseData]); 
+    console.log("CrearInstrucciones", courseData);
+  }, [setCourseData]);
 
   const addStep = () => {
     const newSteps = [...(courseData.instructions?.steps || []), ""];
@@ -30,11 +34,13 @@ export default function CrearInstrucciones({
         steps: newSteps,
       },
     });
-    console.log("Añadir paso", courseData.instructions)
+    console.log("Añadir paso", courseData.instructions);
   };
 
   const removeStep = (index: number) => {
-    const newSteps = courseData.instructions.steps.filter((_, i) => i !== index);
+    const newSteps = courseData.instructions.steps.filter(
+      (_, i) => i !== index
+    );
     setCourseData({
       ...courseData,
       instructions: {
@@ -55,7 +61,6 @@ export default function CrearInstrucciones({
       },
     });
   };
-  
 
   return (
     <div>
@@ -83,6 +88,41 @@ export default function CrearInstrucciones({
           onChange={handleInputChange}
           className="w-full p-2 border border-gray-300 rounded-lg bg-gray-50"
         />
+
+        <label className="block font-medium mb-1">Tiempo de estudio</label>
+        <div className="flex items-center mb-2">
+          <button
+            onClick={() =>
+              setCourseData({
+                ...courseData,
+                instructions: {
+                  ...courseData.instructions,
+                  time: Math.max(1, courseData.instructions.time - 1),
+                },
+              })
+            }
+            className="px-4 py-2 bg-gray-300 text-black rounded-l"
+          >
+            -
+          </button>
+          <span className="px-6 py-2 text-lg">
+            {courseData.instructions.time} min
+          </span>
+          <button
+            onClick={() =>
+              setCourseData({
+                ...courseData,
+                instructions: {
+                  ...courseData.instructions,
+                  time: Math.min(30, courseData.instructions.time + 1),
+                },
+              })
+            }
+            className="px-4 py-2 bg-gray-300 text-black rounded-r"
+          >
+            +
+          </button>
+        </div>
 
         <div>
           <label className="block font-medium mb-1">Paso a paso</label>
@@ -113,7 +153,6 @@ export default function CrearInstrucciones({
             <span className="text-2xl leading-none">+</span> Agregar paso
           </button>
         </div>
-
       </div>
     </div>
   );
