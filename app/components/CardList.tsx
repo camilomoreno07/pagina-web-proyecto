@@ -117,16 +117,18 @@ export default function CardList({
               <div>
                 <h2 className="text-lg font-bold">{card.title}</h2>
                 <p
-                  className={`text-sm ${
-                    card.isFilled ? "text-green-600" : "text-gray-500"
-                  }`}
+                  className={`text-sm px-2 py-1 rounded ${
+                    card.isFilled
+                      ? "text-green-700 bg-green-100"
+                      : "text-gray-600 bg-gray-200"
+                  } inline-block`}
                 >
                   {card.isFilled ? "Completado" : "Pendiente"}
                 </p>
               </div>
               <FaCheckCircle
                 className={`text-xl ${
-                  card.isFilled ? "text-green-500" : "text-gray-400"
+                  card.isFilled ? "text-blue-500" : "text-gray-400"
                 }`}
               />
             </div>

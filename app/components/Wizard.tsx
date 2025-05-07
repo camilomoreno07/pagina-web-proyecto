@@ -74,6 +74,8 @@ const Wizard = ({ course, onComplete, onCancel }: WizardProps) => {
     id: course ? course.courseId : "",
     courseName: course ? course.courseName || "" : "",
     courseDescription: course ? course.courseDescription || "" : "",
+    professorIds: course ? course.professorIds || [] : [],
+    studentIds: course ? course.studentIds || [] : [],
     activityName: course ? course.activityName || "" : "",
     activityDescription: course ? course.activityDescription || "" : "",
     contentTitle: course ? course.contentTitle || "" : "",
@@ -125,13 +127,12 @@ const Wizard = ({ course, onComplete, onCancel }: WizardProps) => {
         getEvaluationStatus(moment.evaluations) === "completo"
       );
     };
-  
+
     if (step === 2) return validateMoment(courseData.beforeClass);
     if (step === 3) return validateMoment(courseData.duringClass);
     if (step === 4) return validateMoment(courseData.afterClass);
     return true; // Paso 1 y 5 no tienen validación
   };
-  
 
   // Función para disminuir el contador
   const handleDecrease = () => {
@@ -386,8 +387,6 @@ const Wizard = ({ course, onComplete, onCancel }: WizardProps) => {
       "Después de la clase",
       "Revisión",
     ];
-  
-    
 
     return (
       <div className="flex flex-col items-center w-full mb-6">
@@ -510,57 +509,66 @@ const Wizard = ({ course, onComplete, onCancel }: WizardProps) => {
             />
 
             {/* Privacidad */}
-            <div className="flex items-center space-x-4 mt-4">
-              <label htmlFor="privacy-switch" className="text-gray-700">
+            <div className="flex flex-col mt-4">
+              <label htmlFor="privacy-switch" className="text-gray-700 mb-2">
                 Privacidad del Curso
               </label>
-              <div className="relative inline-block w-10 align-middle select-none transition duration-200 ease-in">
-                <input
-                  type="checkbox"
-                  name="isPublic"
-                  id="privacy-switch"
-                  checked={courseData.isPublic}
-                  onChange={(e) =>
-                    setCourseData({ ...courseData, isPublic: e.target.checked })
-                  }
-                  className={`toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-2 border-gray-300 appearance-none cursor-pointer transition-transform duration-200 ease-in-out ${
-                    courseData.isPublic ? "translate-x-4" : "translate-x-0"
-                  }`}
-                  aria-checked={courseData.isPublic}
-                  aria-labelledby="privacy-label"
-                />
-                <div
-                  className={`toggle-label block overflow-hidden h-6 rounded-full cursor-pointer ${
-                    courseData.isPublic ? "bg-green-500" : "bg-gray-300"
-                  }`}
-                  id="privacy-label"
-                ></div>
+              <div className="flex items-center space-x-4">
+                <div className="relative inline-block w-10 align-middle select-none transition duration-200 ease-in">
+                  <input
+                    type="checkbox"
+                    name="isPublic"
+                    id="privacy-switch"
+                    checked={courseData.isPublic}
+                    onChange={(e) =>
+                      setCourseData({
+                        ...courseData,
+                        isPublic: e.target.checked,
+                      })
+                    }
+                    className={`toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-2 border-gray-300 appearance-none cursor-pointer transition-transform duration-200 ease-in-out ${
+                      courseData.isPublic ? "translate-x-4" : "translate-x-0"
+                    }`}
+                    aria-checked={courseData.isPublic}
+                    aria-labelledby="privacy-label"
+                  />
+                  <div
+                    className={`toggle-label block overflow-hidden h-6 rounded-full cursor-pointer ${
+                      courseData.isPublic ? "bg-green-500" : "bg-gray-300"
+                    }`}
+                    id="privacy-label"
+                  ></div>
+                </div>
+                <span className="text-gray-700">
+                  {courseData.isPublic ? "Público" : "Privado"}
+                </span>
               </div>
-              <span className="text-gray-700">
-                {courseData.isPublic ? "Público" : "Privado"}
-              </span>
+              <p className="text-sm text-gray-500 mt-2">
+                {courseData.isPublic
+                  ? "Este curso se visualizará en la biblioteca pública."
+                  : "Este curso no será visible en la biblioteca pública."}
+              </p>
             </div>
-            <p className="text-sm text-gray-500">
-              {courseData.isPublic
-                ? "Este curso se visualizará en la biblioteca pública."
-                : "Este curso no será visible en la biblioteca pública."}
-            </p>
           </div>
         );
       case 2:
         return (
           <div>
-            <h2 className="text-lg mb-2 font-semibold">Primer momento</h2>
-            <h3 className="text-3xl mb-2 font-medium">Antes de clase</h3>
-            <p className="mb-4">
-              Esto ayudará al estudiante para que lleve una idea de lo que verá
-              en el encuentro presencial.
-            </p>
-            <hr className="mb-4 border-gray-300" />
-            <p className="mb-2">
-              Agregue los siguientes elementos al material que el estudiante
-              debe consultar antes de clase.
-            </p>
+            {activeCardId === null && (
+              <>
+                <h2 className="text-lg mb-2 font-semibold">Primer momento</h2>
+                <h3 className="text-3xl mb-2 font-medium">Antes de clase</h3>
+                <p className="mb-4">
+                  Esto ayudará al estudiante para que lleve una idea de lo que
+                  verá en el encuentro presencial.
+                </p>
+                <hr className="mb-4 border-gray-300" />
+                <p className="mb-2">
+                  Agregue los siguientes elementos al material que el estudiante
+                  debe consultar antes de clase.
+                </p>
+              </>
+            )}
             <CardList
               activeCardId={activeCardId}
               onCardClick={handleCardClick}
@@ -577,17 +585,21 @@ const Wizard = ({ course, onComplete, onCancel }: WizardProps) => {
       case 3:
         return (
           <div>
-            <h2 className="text-lg mb-2 font-semibold">Segundo momento</h2>
-            <h3 className="text-3xl mb-2 font-medium">Durante la clase</h3>
-            <p className="mb-4">
-              Esto ayudará al estudiante a guiarse durante los espacios de
-              clase.
-            </p>
-            <hr className="mb-4 border-gray-300" />
-            <p className="mb-4">
-              Agregue los siguientes elementos al material que el estudiante
-              debe consultar durante de clase.
-            </p>
+            {activeCardId === null && (
+              <>
+                <h2 className="text-lg mb-2 font-semibold">Segundo momento</h2>
+                <h3 className="text-3xl mb-2 font-medium">Durante la clase</h3>
+                <p className="mb-4">
+                  Esto ayudará al estudiante a guiarse durante los espacios de
+                  clase.
+                </p>
+                <hr className="mb-4 border-gray-300" />
+                <p className="mb-4">
+                  Agregue los siguientes elementos al material que el estudiante
+                  debe consultar durante de clase.
+                </p>
+              </>
+            )}
             <CardList
               activeCardId={activeCardId}
               onCardClick={handleCardClick}
@@ -604,17 +616,21 @@ const Wizard = ({ course, onComplete, onCancel }: WizardProps) => {
       case 4:
         return (
           <div>
-            <h2 className="text-lg mb-2 font-semibold">Tercer momento</h2>
-            <h3 className="text-3xl mb-2 font-medium">Después de clase</h3>
-            <p className="mb-4">
-              Esto ayudará al estudiante a afianzar los conceptos vistos en
-              clase.
-            </p>
-            <hr className="mb-4 border-gray-300" />
-            <p className="mb-4">
-              Agregue los siguientes elementos al material que el estudiante
-              debe consultar después de clase.
-            </p>
+            {activeCardId === null && (
+              <>
+                <h2 className="text-lg mb-2 font-semibold">Tercer momento</h2>
+                <h3 className="text-3xl mb-2 font-medium">Después de clase</h3>
+                <p className="mb-4">
+                  Esto ayudará al estudiante a afianzar los conceptos vistos en
+                  clase.
+                </p>
+                <hr className="mb-4 border-gray-300" />
+                <p className="mb-4">
+                  Agregue los siguientes elementos al material que el estudiante
+                  debe consultar después de clase.
+                </p>
+              </>
+            )}
             <CardList
               activeCardId={activeCardId}
               onCardClick={handleCardClick}
