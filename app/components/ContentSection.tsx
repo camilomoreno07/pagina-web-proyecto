@@ -3,6 +3,8 @@ import React, { useEffect, useState } from "react";
 import clsx from "clsx";
 import Cookies from "js-cookie";
 import Resumen from "./Resumen";
+import { FaDownload } from "react-icons/fa";
+
 
 interface ContentSectionProps {
   title: string;
@@ -16,6 +18,7 @@ type Tab = (typeof TABS)[number];
 const ContentSection = ({ title, onBack, course }: ContentSectionProps) => {
   const [activeTab, setActiveTab] = useState<Tab>("Instrucciones");
   const [images, setImages] = useState<Record<string, string>>({});
+  const [activeContentIndex, setActiveContentIndex] = useState(0);
 
   const sectionMap = {
     "Antes de clase": course.beforeClass,
@@ -78,12 +81,11 @@ const ContentSection = ({ title, onBack, course }: ContentSectionProps) => {
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
-            className={clsx(
-              "py-3 text-center text-sm md:text-base font-medium transition-colors",
+            className={`py-3 text-center text-sm md:text-base font-medium transition-colors ${
               activeTab === tab
-                ? "bg-primary-50 text-primary-600"
-                : "bg-white text-gray-600 hover:bg-gray-50"
-            )}
+                ? "bg-[#EDFAFA] text-[#096874]"
+                : "bg-white text-gray-600 hover:bg-gray-100"
+            }`}
           >
             {tab}
           </button>
@@ -95,6 +97,9 @@ const ContentSection = ({ title, onBack, course }: ContentSectionProps) => {
         {/* 🔹 Instrucciones */}
         {activeTab === "Instrucciones" && currentSection?.instructions && (
           <div className="space-y-3">
+            <h2 className="text-xl font-semibold mb-4">
+              {currentSection.instructions.instructionTitle}
+            </h2>
             <p className="text-sm text-gray-500">
               {currentSection.instructions.time} min
             </p>
@@ -121,41 +126,105 @@ const ContentSection = ({ title, onBack, course }: ContentSectionProps) => {
 
         {/* 🔹 Contenido */}
         {activeTab === "Contenido" && (
-          <div className="space-y-3">
-            <h2 className="text-2xl font-semibold text-gray-800">Recursos Disponibles</h2>
-            {currentSection?.contents?.length ? (
-              currentSection.contents.map((content, idx) => {
-                const imageSrc = content.imageUrl.startsWith("blob:")
-                  ? content.imageUrl
-                  : images[content.imageUrl] || "";
+          <div className="space-y-6">
+            <h2 className="text-2xl font-semibold text-primary-10">
+              Recursos Disponibles
+            </h2>
 
-                return (
-                  <div
-                    key={idx}
-                    className="border p-4 rounded-md bg-gray-50 space-y-2"
+            {currentSection?.contents?.length ? (
+              <>
+                <div className="p-4 rounded-md space-y-4">
+                  {(() => {
+                    const content = currentSection.contents[activeContentIndex];
+                    const imageSrc = content.imageUrl.startsWith("blob:")
+                      ? content.imageUrl
+                      : images[content.imageUrl] || "";
+
+                    const isPdf = content.imageUrl
+                      .toLowerCase()
+                      .endsWith(".pdf");
+
+                    return (
+                      <>
+                        {imageSrc && isPdf ? (
+                          <div className="w-full max-w-xs bg-primary-98 rounded-xl border border-gray-200 px-6 py-5 shadow-sm">
+                            <h4 className="text-base font-medium text-primary-10 mb-2 text-center">
+                              {content.contentTitle}
+                            </h4>
+                            <a
+                              href={imageSrc}
+                              download
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="block text-center text-sm font-semibold text-primary-40 hover:underline"
+                            >
+                              Documento PDF <FaDownload className="text-base" />
+                            </a>
+                          </div>
+                        ) : imageSrc ? (
+                          <img
+                            src={imageSrc}
+                            alt="Contenido visual"
+                            className="w-full max-h-64 object-contain rounded-md mx-auto"
+                            onError={(e) => {
+                              e.currentTarget.style.display = "none";
+                            }}
+                          />
+                        ) : null}
+
+                        <h4 className="text-lg font-semibold text-primary-10 mt-4">
+                          Descripción
+                        </h4>
+                        <p className="text-sm text-primary-30">
+                          {content.contentDescription}
+                        </p>
+                        <p className="text-xs text-primary-20">
+                          {content.time} min
+                        </p>
+                        <div className="pt-2">
+                          <label className="inline-flex items-center gap-2 text-sm text-primary-30">
+                            <input type="checkbox" />
+                            Marcar como completado
+                          </label>
+                        </div>
+                      </>
+                    );
+                  })()}
+                </div>
+
+                {/* Navegación */}
+                <div className="flex justify-between items-center pt-4">
+                  <button
+                    onClick={() =>
+                      setActiveContentIndex((prev) => Math.max(prev - 1, 0))
+                    }
+                    disabled={activeContentIndex === 0}
+                    className="text-primary-30 px-4 py-2 border border-primary-30 rounded disabled:opacity-30"
                   >
-                    <h4 className="text-md font-semibold text-gray-800">
-                      {content.contentTitle}
-                    </h4>
-                    <p className="text-sm text-gray-600">
-                      {content.contentDescription}
-                    </p>
-                    <p className="text-xs text-gray-400">{content.time} min</p>
-                    {imageSrc && (
-                      <img
-                        src={imageSrc}
-                        alt="Contenido visual"
-                        className="w-full max-h-64 object-contain rounded-md mt-2 mx-auto"
-                        onError={(e) => {
-                          e.currentTarget.style.display = "none";
-                        }}
-                      />
-                    )}
-                  </div>
-                );
-              })
+                    Anterior
+                  </button>
+
+                  <span className="text-sm text-primary-20">
+                    {activeContentIndex + 1} de {currentSection.contents.length}
+                  </span>
+
+                  <button
+                    onClick={() =>
+                      setActiveContentIndex((prev) =>
+                        Math.min(prev + 1, currentSection.contents.length - 1)
+                      )
+                    }
+                    disabled={
+                      activeContentIndex === currentSection.contents.length - 1
+                    }
+                    className="text-primary-100 bg-primary-40 px-4 py-2 rounded hover:opacity-90 disabled:opacity-30"
+                  >
+                    Siguiente
+                  </button>
+                </div>
+              </>
             ) : (
-              <p className="text-gray-500">No hay contenido disponible.</p>
+              <p className="text-primary-20">No hay contenido disponible.</p>
             )}
           </div>
         )}
