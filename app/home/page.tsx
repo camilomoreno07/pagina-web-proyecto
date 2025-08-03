@@ -6,6 +6,7 @@ import Activity from "../components/Activity";
 import ActivityStudent from "../components/ActivityStudent";
 import CourseViewStudent from "../components/CourseViewStudent";
 import Wizard from "../components/Wizard";
+import CreateCourse from "../components/CreateCourse";  // ← Nuevo componente
 import { useAuth } from "../hooks/useAuth";
 import {
   FaBook,
@@ -17,6 +18,16 @@ import {
   FaUser,
 } from "react-icons/fa";
 
+const AddNewCourseCard = ({ onClick }: { onClick: () => void }) => (
+  <div
+    onClick={onClick}
+    className="w-64 h-64 flex flex-col items-center justify-center border-2 border-dashed border-primary-40 rounded cursor-pointer hover:bg-primary-95 transition"
+  >
+    <span className="text-4xl text-primary-40 mb-4">+</span>
+    <span className="text-lg font-bold text-primary-40">Agregar nuevo curso</span>
+  </div>
+);
+
 const Dashboard = () => {
   const router = useRouter();
   const [courses, setCourses] = useState<any[]>([]);
@@ -25,11 +36,13 @@ const Dashboard = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
   const [showWizard, setShowWizard] = useState<boolean>(false);
   const [selectedCourse, setSelectedCourse] = useState<any | null>(null);
+  const [showCreateCourse, setShowCreateCourse] = useState<boolean>(false);
   const [hasMounted, setHasMounted] = useState(false);
 
   const { role } = useAuth();
   const isTeacher = role === "TEACHER";
   const isStudent = role === "STUDENT";
+  const isAdmin = role === "ADMIN";
 
   useEffect(() => {
     setHasMounted(true);
@@ -51,7 +64,7 @@ const Dashboard = () => {
         }
 
         const data: Course[] = await response.json();
-        console.log("Cursos obtenidos del API:", data); // 🔍 Verifica los dato
+        console.log("Cursos obtenidos del API:", data);
         setCourses(data);
       } catch (error) {
         console.error("Error al obtener cursos:", error);
@@ -62,7 +75,6 @@ const Dashboard = () => {
     };
 
     fetchCourses();
-
     const intervalId = setInterval(fetchCourses, 5000);
     return () => clearInterval(intervalId);
   }, []);
@@ -78,19 +90,24 @@ const Dashboard = () => {
   };
 
   const handleCourseClick = (course: Course) => {
-    console.log("Curso clickeado:", course); // 👀 debería verse al hacer clic
-    setShowWizard(true);
+    console.log("Curso clickeado:", course);
     setSelectedCourse(course);
-  };  
+    setShowWizard(true);
+  };
 
   const handleWizardComplete = (data: WizardData) => {
     console.log("Datos del curso:", data);
     setShowWizard(false);
-    // Aquí puedes enviar los datos al backend
+    setSelectedCourse(null);
   };
 
   const handleWizardCancel = () => {
     setShowWizard(false);
+    setSelectedCourse(null);
+  };
+
+  const handleAddNewCourse = () => {
+    setShowCreateCourse(true);
   };
 
   return (
@@ -169,25 +186,33 @@ const Dashboard = () => {
 
         {/* Content Area */}
         <div className="flex-1 p-6 space-y-6 bg-white shadow-none border-none">
-          {!showWizard && hasMounted && (
+          {!showWizard && !showCreateCourse && hasMounted && (
             <h2 className="text-2xl font-bold mb-4">
               {isTeacher && "¡Hola, profesor!"}
               {isStudent && "¡Hola, estudiante!"}
+              {isAdmin && "¡Hola, administrador!"}
             </h2>
           )}
 
-          {/* Courses Section */}
-          {showWizard ? (
-            isTeacher ? (
+          {showCreateCourse ? (
+            <CreateCourse
+              onCancel={() => setShowCreateCourse(false)}
+              onComplete={(newCourse) => {
+                setShowCreateCourse(false);
+                setCourses([...courses, newCourse]);
+              }}
+            />
+          ) : showWizard ? (
+            isStudent ? (
+              <CourseViewStudent
+                course={selectedCourse}
+                onClose={handleWizardCancel}
+              />
+            ) : (
               <Wizard
                 course={selectedCourse}
                 onComplete={handleWizardComplete}
                 onCancel={handleWizardCancel}
-              />
-            ) : (
-              <CourseViewStudent
-                course={selectedCourse}
-                onClose={handleWizardCancel}
               />
             )
           ) : (
@@ -197,29 +222,42 @@ const Dashboard = () => {
                   <p>Cargando cursos...</p>
                 ) : error ? (
                   <p className="text-red-500">{error}</p>
-                ) : (
-                  courses.map((course) => {
-                    const commonProps = {
-                      id: course.courseId,
-                      image: course.imageUrl,
-                      title: course.courseName,
-                      date: "Fecha no disponible",
-                    };
-
-                    return isStudent ? (
-                      <ActivityStudent
-                        key={course.courseId}
-                        {...commonProps}
-                        onClick={() => handleCourseClick(course)}
-                      />
-                    ) : (
+                ) : isAdmin ? (
+                  <>
+                    {courses.map((course) => (
                       <Activity
                         key={course.courseId}
-                        {...commonProps}
+                        id={course.courseId}
+                        image={course.imageUrl}
+                        title={course.courseName}
+                        date="Fecha no disponible"
                         onClick={() => handleCourseClick(course)}
                       />
-                    );
-                  })
+                    ))}
+                    <AddNewCourseCard onClick={handleAddNewCourse} />
+                  </>
+                ) : isStudent ? (
+                  courses.map((course) => (
+                    <ActivityStudent
+                      key={course.courseId}
+                      id={course.courseId}
+                      image={course.imageUrl}
+                      title={course.courseName}
+                      date="Fecha no disponible"
+                      onClick={() => handleCourseClick(course)}
+                    />
+                  ))
+                ) : (
+                  courses.map((course) => (
+                    <Activity
+                      key={course.courseId}
+                      id={course.courseId}
+                      image={course.imageUrl}
+                      title={course.courseName}
+                      date="Fecha no disponible"
+                      onClick={() => handleCourseClick(course)}
+                    />
+                  ))
                 )}
               </div>
             </section>
