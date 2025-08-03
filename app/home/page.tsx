@@ -6,7 +6,9 @@ import Activity from "../components/Activity";
 import ActivityStudent from "../components/ActivityStudent";
 import CourseViewStudent from "../components/CourseViewStudent";
 import Wizard from "../components/Wizard";
-import CreateCourse from "../components/CreateCourse";  // ← Nuevo componente
+import CreateCourse from "../components/CreateCourse";
+import EditCourse from "../components/EditCourse";
+import ConfigView from "../components/ConfigView";
 import { useAuth } from "../hooks/useAuth";
 import {
   FaBook,
@@ -16,6 +18,7 @@ import {
   FaTimes,
   FaBell,
   FaUser,
+  FaCog,
 } from "react-icons/fa";
 
 const AddNewCourseCard = ({ onClick }: { onClick: () => void }) => (
@@ -24,7 +27,9 @@ const AddNewCourseCard = ({ onClick }: { onClick: () => void }) => (
     className="w-64 h-64 flex flex-col items-center justify-center border-2 border-dashed border-primary-40 rounded cursor-pointer hover:bg-primary-95 transition"
   >
     <span className="text-4xl text-primary-40 mb-4">+</span>
-    <span className="text-lg font-bold text-primary-40">Agregar nuevo curso</span>
+    <span className="text-lg font-bold text-primary-40">
+      Agregar nuevo curso
+    </span>
   </div>
 );
 
@@ -35,9 +40,12 @@ const Dashboard = () => {
   const [error, setError] = useState<string | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
   const [showWizard, setShowWizard] = useState<boolean>(false);
+  const [showEditCourse, setShowEditCourse] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState<any | null>(null);
   const [showCreateCourse, setShowCreateCourse] = useState<boolean>(false);
   const [hasMounted, setHasMounted] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const [showConfig, setShowConfig] = useState(false);
 
   const { role } = useAuth();
   const isTeacher = role === "TEACHER";
@@ -46,6 +54,7 @@ const Dashboard = () => {
 
   useEffect(() => {
     setHasMounted(true);
+    setMounted(true);
     const fetchCourses = async () => {
       try {
         const token = Cookies.get("token");
@@ -91,8 +100,15 @@ const Dashboard = () => {
 
   const handleCourseClick = (course: Course) => {
     console.log("Curso clickeado:", course);
-    setSelectedCourse(course);
-    setShowWizard(true);
+    if (isAdmin) {
+      setSelectedCourse(course);
+      setShowCreateCourse(false);
+      setShowWizard(false);
+      setShowEditCourse(true); // Nuevo estado
+    } else {
+      setSelectedCourse(course);
+      setShowWizard(true);
+    }
   };
 
   const handleWizardComplete = (data: WizardData) => {
@@ -171,6 +187,23 @@ const Dashboard = () => {
                 <FaCalendarAlt className="text-primary-40 text-xl mr-2" />
                 <span className="text-primary-40 font-medium">Calendario</span>
               </li>
+
+              {mounted && isAdmin && (
+                <li
+                  className="p-2 flex flex-row items-center rounded hover:bg-primary-95 cursor-pointer"
+                  onClick={() => {
+                    setShowConfig(true);
+                    setShowCreateCourse(false);
+                    setShowEditCourse(false);
+                    setShowWizard(false);
+                  }}
+                >
+                  <FaCog className="text-primary-40 text-xl mr-2" />
+                  <span className="text-primary-40 font-medium">
+                    Configuración
+                  </span>
+                </li>
+              )}
             </ul>
           </nav>
 
@@ -186,15 +219,34 @@ const Dashboard = () => {
 
         {/* Content Area */}
         <div className="flex-1 p-6 space-y-6 bg-white shadow-none border-none">
-          {!showWizard && !showCreateCourse && hasMounted && (
-            <h2 className="text-2xl font-bold mb-4">
-              {isTeacher && "¡Hola, profesor!"}
-              {isStudent && "¡Hola, estudiante!"}
-              {isAdmin && "¡Hola, administrador!"}
-            </h2>
-          )}
+          {!showWizard &&
+            !showCreateCourse &&
+            !showEditCourse &&
+            !showConfig &&
+            hasMounted && (
+              <h2 className="text-2xl font-bold mb-4">
+                {isTeacher && "¡Hola, profesor!"}
+                {isStudent && "¡Hola, estudiante!"}
+                {isAdmin && "¡Hola, administrador!"}
+              </h2>
+            )}
 
-          {showCreateCourse ? (
+          {showConfig ? (
+            <ConfigView onBack={() => setShowConfig(false)} />
+          ) : showEditCourse ? (
+            <EditCourse
+              course={selectedCourse}
+              onCancel={() => setShowEditCourse(false)}
+              onComplete={(updatedCourse) => {
+                setShowEditCourse(false);
+                setCourses(
+                  courses.map((c) =>
+                    c.courseId === updatedCourse.courseId ? updatedCourse : c
+                  )
+                );
+              }}
+            />
+          ) : showCreateCourse ? (
             <CreateCourse
               onCancel={() => setShowCreateCourse(false)}
               onComplete={(newCourse) => {
