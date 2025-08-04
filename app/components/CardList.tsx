@@ -3,6 +3,7 @@ import Cookies from "js-cookie";
 import CrearInstrucciones from "./CrearInstrucciones";
 import SubirContenido from "./SubirContenido";
 import CrearEvaluacion from "./CrearEvaluacion";
+import CrearExperiencia from "./CrearExperiencia";
 import { FaCheckCircle } from "react-icons/fa";
 
 interface CardListProps {
@@ -145,6 +146,13 @@ export default function CardList({
             />
           ) : activeCardId === 2 ? (
             <SubirContenido
+              courseData={courseData}
+              setCourseData={setCourseData}
+              handleInputChange={handleInputChange}
+              name={name}
+            />
+          ) : name === "afterClass" ? ( // <-- SI ES afterClass CAMBIA
+            <CrearExperiencia
               courseData={courseData}
               setCourseData={setCourseData}
               handleInputChange={handleInputChange}
