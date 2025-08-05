@@ -3,8 +3,10 @@ import { FaTrash, FaPlus } from "react-icons/fa";
 
 interface Question {
   question: string;
-  questionDescription: string;
+  correctAnswer: string;
   type: string;
+  time: number;
+  experienceUrl: string;
 }
 
 interface CrearEvaluacionProps {
@@ -29,7 +31,7 @@ export default function CrearEvaluacion({
     if (!courseData.evaluations) {
       setCourseData({
         ...courseData,
-        evaluations: [{ question: "", questionDescription: "", type: "Respuesta corta" }],
+        evaluations: [{ question: "", correctAnswer: "", type: "Respuesta corta" }],
       });
     }
   }, [courseData, setCourseData]);
@@ -37,7 +39,7 @@ export default function CrearEvaluacion({
   const addQuestion = () => {
     const newQuestion: Question = {
       question: "",
-      questionDescription: "",
+      correctAnswer: "",
       time: 1,
       type: "Respuesta corta",
     };
@@ -96,9 +98,9 @@ export default function CrearEvaluacion({
             </label>
             <textarea
               placeholder="Escribe la respuesta correcta"
-              value={q.questionDescription}
+              value={q.correctAnswer}
               onChange={(e) =>
-                handleQuestionChange(index, "questionDescription", e.target.value)
+                handleQuestionChange(index, "correctAnswer", e.target.value)
               }
               className="w-full p-2 border border-gray-300 rounded-lg bg-gray-50"
             />

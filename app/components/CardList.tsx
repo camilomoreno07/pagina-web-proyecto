@@ -144,6 +144,13 @@ export default function CardList({
               handleInputChange={handleInputChange}
               name={name}
             />
+          ): activeCardId === 2 && name === "afterClass" ? ( // <-- SI ES afterClass CAMBIA
+            <CrearExperiencia
+              courseData={courseData}
+              setCourseData={setCourseData}
+              handleInputChange={handleInputChange}
+              name={name}
+            />
           ) : activeCardId === 2 ? (
             <SubirContenido
               courseData={courseData}
@@ -151,14 +158,7 @@ export default function CardList({
               handleInputChange={handleInputChange}
               name={name}
             />
-          ) : name === "afterClass" ? ( // <-- SI ES afterClass CAMBIA
-            <CrearExperiencia
-              courseData={courseData}
-              setCourseData={setCourseData}
-              handleInputChange={handleInputChange}
-              name={name}
-            />
-          ) : (
+          )  : (
             <CrearEvaluacion
               courseData={courseData}
               setCourseData={setCourseData}
