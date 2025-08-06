@@ -1,26 +1,27 @@
 "use client";
 import { useEffect, useState } from "react";
-import { FaCloudUploadAlt, FaTrash, FaPlus, FaCheck } from "react-icons/fa";
+import { FaCloudUploadAlt, FaTrash } from "react-icons/fa";
 import Cookies from "js-cookie";
 
 interface CrearExperienciaProps {
   courseData: any;
   setCourseData: (data: any) => void;
-  name: string; // viene desde CardList, ej: "afterClass"
 }
 
 export default function CrearExperiencia({
   courseData,
   setCourseData,
-  name,
 }: CrearExperienciaProps) {
-  const [contents, setContents] = useState<any[]>([]);
+  const [experience, setExperience] = useState<any | null>(null);
   const [componentKey, setComponentKey] = useState(0);
 
   useEffect(() => {
-    const section = courseData[name] || {};
-    setContents(section.contents || []);
-  }, [courseData, name]);
+    if (courseData?.contents && courseData.contents.length > 0) {
+      setExperience(courseData.contents[0]);
+    } else {
+      setExperience(null);
+    }
+  }, [courseData?.contents]);
 
   const uploadExperienceToBackend = async (file: File): Promise<string | null> => {
     const formData = new FormData();
@@ -45,36 +46,28 @@ export default function CrearExperiencia({
     if (!url) return alert("Error al subir experiencia");
 
     const newExperience = {
-      contentTitle: "Experiencia Unity",
+      contentTitle: file.name.replace(".zip", ""),
       contentDescription: "",
       time: 1,
       experienceUrl: url,
       completed: true,
     };
-    const updated = [...contents, newExperience];
 
-    setContents(updated);
-    setCourseData({
-      ...courseData,
-      [name]: {
-        ...courseData[name],
-        contents: updated,
-      },
-    });
-
+    setCourseData({ ...courseData, contents: [newExperience] });
+    setExperience(newExperience);
     setComponentKey((prev) => prev + 1);
   };
 
-  const removeExperience = (idx: number) => {
-    const updated = contents.filter((_, i) => i !== idx);
-    setContents(updated);
-    setCourseData({
-      ...courseData,
-      [name]: {
-        ...courseData[name],
-        contents: updated,
-      },
-    });
+  const removeExperience = () => {
+    setCourseData({ ...courseData, contents: [] });
+    setExperience(null);
+  };
+
+  const updateTime = (newTime: number) => {
+    if (!experience) return;
+    const updated = { ...experience, time: newTime };
+    setCourseData({ ...courseData, contents: [updated] });
+    setExperience(updated);
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -88,50 +81,57 @@ export default function CrearExperiencia({
       <h3 className="text-3xl font-medium mb-4">Crear Experiencia</h3>
       <hr className="mb-4 border-gray-300" />
 
-      {contents.map((c, i) => (
-        <div
-          key={i}
-          className="p-4 border border-gray-300 rounded-lg mb-4 shadow relative"
-        >
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="flex-1 space-y-3">
-              <div className="absolute top-2 right-2 flex gap-2">
-                <button
-                  onClick={() => removeExperience(i)}
-                  className="flex items-center gap-2 p-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
-                >
-                  <FaTrash size={16} />
-                  <span className="text-sm">Eliminar</span>
-                </button>
-              </div>
-              <h4 className="text-lg font-bold">{c.contentTitle}</h4>
-              <p className="text-gray-600">Tiempo: {c.time} horas</p>
-            </div>
+      {experience && (
+        <div className="p-4 border border-gray-300 rounded-lg mb-4 shadow relative">
+          <div className="absolute top-2 right-2 flex gap-2">
+            <button
+              onClick={removeExperience}
+              className="flex items-center gap-2 p-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+            >
+              <FaTrash size={16} />
+              <span className="text-sm">Eliminar</span>
+            </button>
           </div>
 
-          <div className="mt-4 border rounded">
-            {c.experienceUrl && (
-              <web-experience-viewer
-                key={`${componentKey}-${i}`}
-                url={c.experienceUrl}
-              ></web-experience-viewer>
-            )}
+          <h4 className="text-lg font-bold">{experience.contentTitle}</h4>
+
+          {/* Number stepper */}
+          <div className="flex items-center gap-2 mt-2">
+            <label className="text-gray-700 text-sm">Tiempo (horas):</label>
+            <input
+              type="number"
+              min={1}
+              value={experience.time}
+              onChange={(e) => updateTime(parseInt(e.target.value) || 1)}
+              className="border rounded p-1 w-20"
+            />
           </div>
+
+          {experience.experienceUrl && (
+            <iframe
+              key={componentKey}
+              src={experience.experienceUrl}
+              className="w-full h-[500px] border rounded mt-4"
+              allow="autoplay; fullscreen; vr"
+            />
+          )}
         </div>
-      ))}
+      )}
 
-      <label className="relative w-full h-40 flex flex-col items-center justify-center bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:bg-gray-200 transition">
-        <FaCloudUploadAlt className="text-gray-400 text-4xl mb-2" />
-        <span className="text-gray-600 text-sm text-center">
-          Clic para cargar experiencia ZIP
-        </span>
-        <input
-          type="file"
-          accept=".zip"
-          onChange={handleFileSelect}
-          className="hidden"
-        />
-      </label>
+      {!experience && (
+        <label className="relative w-full h-40 flex flex-col items-center justify-center bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:bg-gray-200 transition">
+          <FaCloudUploadAlt className="text-gray-400 text-4xl mb-2" />
+          <span className="text-gray-600 text-sm text-center">
+            Clic para cargar experiencia ZIP
+          </span>
+          <input
+            type="file"
+            accept=".zip"
+            onChange={handleFileSelect}
+            className="hidden"
+          />
+        </label>
+      )}
     </div>
   );
 }

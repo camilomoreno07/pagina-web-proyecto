@@ -5,7 +5,6 @@ import Cookies from "js-cookie";
 import Resumen from "./Resumen";
 import { FaDownload } from "react-icons/fa";
 
-
 interface ContentSectionProps {
   title: string;
   onBack: () => void;
@@ -39,12 +38,10 @@ const ContentSection = ({ title, onBack, course }: ContentSectionProps) => {
       await Promise.all(
         contents.map(async (content) => {
           if (!content.imageUrl || content.imageUrl.startsWith("blob:")) return;
-
           try {
             const res = await fetch(content.imageUrl, {
               headers: { Authorization: `Bearer ${token}` },
             });
-
             if (!res.ok) return;
 
             const blob = await res.blob();
@@ -92,9 +89,9 @@ const ContentSection = ({ title, onBack, course }: ContentSectionProps) => {
         ))}
       </div>
 
-      {/* 🔸 CONTENIDO CENTRADO */}
+      {/* CONTENIDO CENTRADO */}
       <div className="w-full max-w-4xl mx-auto space-y-6">
-        {/* 🔹 Instrucciones */}
+        {/* Instrucciones */}
         {activeTab === "Instrucciones" && currentSection?.instructions && (
           <div className="space-y-3">
             <h2 className="text-xl font-semibold mb-4">
@@ -103,9 +100,7 @@ const ContentSection = ({ title, onBack, course }: ContentSectionProps) => {
             <p className="text-sm text-gray-500">
               {currentSection.instructions.time} min
             </p>
-            <Resumen
-              description={currentSection.instructions.instructionDescription}
-            />
+            <Resumen description={currentSection.instructions.instructionDescription} />
             {currentSection.instructions.steps?.length > 0 && (
               <ol className="list-decimal list-inside text-gray-700 space-y-1 mt-2">
                 {currentSection.instructions.steps
@@ -124,7 +119,7 @@ const ContentSection = ({ title, onBack, course }: ContentSectionProps) => {
           </div>
         )}
 
-        {/* 🔹 Contenido */}
+        {/* Contenido */}
         {activeTab === "Contenido" && (
           <div className="space-y-6">
             <h2 className="text-2xl font-semibold text-primary-10">
@@ -136,13 +131,41 @@ const ContentSection = ({ title, onBack, course }: ContentSectionProps) => {
                 <div className="p-4 rounded-md space-y-4">
                   {(() => {
                     const content = currentSection.contents[activeContentIndex];
-                    const imageSrc = content.imageUrl.startsWith("blob:")
+
+                    // 👉 Si es experiencia WebGL
+                    if (content.experienceUrl) {
+                      return (
+                        <>
+                          <h4 className="text-lg font-semibold text-primary-10">
+                            {content.contentTitle}
+                          </h4>
+                          <iframe
+                            src={content.experienceUrl}
+                            className="w-full h-[500px] border rounded"
+                            allow="autoplay; fullscreen; vr"
+                          />
+                          <p className="text-sm text-primary-30 mt-2">
+                            {content.contentDescription}
+                          </p>
+                          <p className="text-xs text-primary-20">{content.time} min</p>
+                          <div className="pt-2">
+                            <label className="inline-flex items-center gap-2 text-sm text-primary-30">
+                              <input type="checkbox" />
+                              Marcar como completado
+                            </label>
+                          </div>
+                        </>
+                      );
+                    }
+
+                    // 👉 Caso normal (imagen/pdf)
+                    const imageSrc = content.imageUrl?.startsWith("blob:")
                       ? content.imageUrl
                       : images[content.imageUrl] || "";
 
-                    const isPdf = content.imageUrl
-                      .toLowerCase()
-                      .endsWith(".pdf");
+                    const isPdf =
+                      content.imageUrl &&
+                      content.imageUrl.toLowerCase().endsWith(".pdf");
 
                     return (
                       <>
@@ -178,9 +201,7 @@ const ContentSection = ({ title, onBack, course }: ContentSectionProps) => {
                         <p className="text-sm text-primary-30">
                           {content.contentDescription}
                         </p>
-                        <p className="text-xs text-primary-20">
-                          {content.time} min
-                        </p>
+                        <p className="text-xs text-primary-20">{content.time} min</p>
                         <div className="pt-2">
                           <label className="inline-flex items-center gap-2 text-sm text-primary-30">
                             <input type="checkbox" />
@@ -229,7 +250,7 @@ const ContentSection = ({ title, onBack, course }: ContentSectionProps) => {
           </div>
         )}
 
-        {/* 🔹 Evaluaciones */}
+        {/* Evaluaciones */}
         {activeTab === "Evaluación" && (
           <div className="space-y-3">
             {currentSection?.evaluations?.length ? (
