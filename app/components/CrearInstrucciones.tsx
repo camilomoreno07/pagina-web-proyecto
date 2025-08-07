@@ -11,6 +11,7 @@ interface CrearInstruccionesProps {
     >
   ) => void;
   name: string;
+  hasSimulation: boolean;
 }
 
 export default function CrearInstrucciones({
@@ -18,6 +19,7 @@ export default function CrearInstrucciones({
   setCourseData,
   handleInputChange,
   name,
+  hasSimulation,
 }: CrearInstruccionesProps) {
   const [step, setStep] = useState<number>(1);
 
@@ -64,7 +66,7 @@ export default function CrearInstrucciones({
 
   return (
     <div>
-      <h3 className="text-3xl font-medium mb-4">Crear instrucciones</h3>
+      <h3 className="text-3xl font-medium mb-4">{hasSimulation ? "Prebriefing":"Crear instrucciones"}</h3>
       <hr className="mb-4 border-gray-300" />
       <div className="space-y-3">
         <label className="block font-medium mb-1">Nombre de la actividad</label>

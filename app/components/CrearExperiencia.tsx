@@ -6,11 +6,13 @@ import Cookies from "js-cookie";
 interface CrearExperienciaProps {
   courseData: any;
   setCourseData: (data: any) => void;
+  hasSimulation: boolean;
 }
 
 export default function CrearExperiencia({
   courseData,
   setCourseData,
+  hasSimulation,
 }: CrearExperienciaProps) {
   const [experience, setExperience] = useState<any | null>(null);
   const [componentKey, setComponentKey] = useState(0);
@@ -78,7 +80,7 @@ export default function CrearExperiencia({
 
   return (
     <div>
-      <h3 className="text-3xl font-medium mb-4">Crear Experiencia</h3>
+      <h3 className="text-3xl font-medium mb-4">{hasSimulation ? "Briefing":"Subir Experiencia"}</h3>
       <hr className="mb-4 border-gray-300" />
 
       {experience && (

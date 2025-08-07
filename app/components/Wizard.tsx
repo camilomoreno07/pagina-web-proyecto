@@ -382,9 +382,9 @@ const Wizard = ({ course, onComplete, onCancel }: WizardProps) => {
   const renderStepper = () => {
     const steps = [
       "Identificación del curso",
-      "Antes de clase",
-      "Durante la clase",
-      "Después de la clase",
+      "Aula Invertida",
+      "Taller de Habilidad",
+      "Actividad Experiencial",
       "Revisión",
     ];
 
@@ -511,7 +511,7 @@ const Wizard = ({ course, onComplete, onCancel }: WizardProps) => {
             {/* Privacidad */}
             <div className="flex flex-col mt-4">
               <label htmlFor="privacy-switch" className="text-gray-700 mb-2">
-                Privacidad del Curso
+                Tipo de curso
               </label>
               <div className="flex items-center space-x-4">
                 <div className="relative inline-block w-10 align-middle select-none transition duration-200 ease-in">
@@ -523,7 +523,7 @@ const Wizard = ({ course, onComplete, onCancel }: WizardProps) => {
                     onChange={(e) =>
                       setCourseData({
                         ...courseData,
-                        isPublic: e.target.checked,
+                        isPublic: e.target.checked
                       })
                     }
                     className={`toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-2 border-gray-300 appearance-none cursor-pointer transition-transform duration-200 ease-in-out ${
@@ -540,13 +540,13 @@ const Wizard = ({ course, onComplete, onCancel }: WizardProps) => {
                   ></div>
                 </div>
                 <span className="text-gray-700">
-                  {courseData.isPublic ? "Público" : "Privado"}
+                  {courseData.isPublic ? "Escenario Simulado" : "Tradicional"}
                 </span>
               </div>
               <p className="text-sm text-gray-500 mt-2">
                 {courseData.isPublic
-                  ? "Este curso se visualizará en la biblioteca pública."
-                  : "Este curso no será visible en la biblioteca pública."}
+                  ? "Este curso incluirá componentes de simulación."
+                  : "Este curso no incluirá componentes de simulación."}
               </p>
             </div>
           </div>
@@ -680,7 +680,7 @@ const Wizard = ({ course, onComplete, onCancel }: WizardProps) => {
             {/* Resumen de los momentos */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="border rounded-lg p-4">
-                <h4 className="font-bold mb-2">Antes de clase</h4>
+                <h4 className="font-bold mb-2">Aula Invertida</h4>
                 <p>
                   Instrucciones:{" "}
                   {courseData.beforeClass.instructions.instructionTitle ||
@@ -692,7 +692,7 @@ const Wizard = ({ course, onComplete, onCancel }: WizardProps) => {
               </div>
 
               <div className="border rounded-lg p-4">
-                <h4 className="font-bold mb-2">Durante la clase</h4>
+                <h4 className="font-bold mb-2">Taller de Habilidad</h4>
                 <p>
                   Instrucciones:{" "}
                   {courseData.duringClass.instructions.instructionTitle ||
@@ -704,7 +704,7 @@ const Wizard = ({ course, onComplete, onCancel }: WizardProps) => {
               </div>
 
               <div className="border rounded-lg p-4">
-                <h4 className="font-bold mb-2">Después de clase</h4>
+                <h4 className="font-bold mb-2">Actividad Experiencial</h4>
                 <p>
                   Instrucciones:{" "}
                   {courseData.afterClass.instructions.instructionTitle ||

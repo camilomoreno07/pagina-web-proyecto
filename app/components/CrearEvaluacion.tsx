@@ -18,6 +18,7 @@ interface CrearEvaluacionProps {
     >
   ) => void;
   name: string;
+  hasSimulation: boolean;
 }
 
 export default function CrearEvaluacion({
@@ -25,6 +26,7 @@ export default function CrearEvaluacion({
   setCourseData,
   handleInputChange,
   name,
+  hasSimulation,
 }: CrearEvaluacionProps) {
   // Inicializar courseData.evaluations si no existe
   useEffect(() => {
@@ -66,7 +68,7 @@ export default function CrearEvaluacion({
 
   return (
     <div>
-      <h3 className="text-3xl font-medium mb-4">Crear Evaluación</h3>
+      <h3 className="text-3xl font-medium mb-4">{hasSimulation ? "Debriefing":"Crear Evaluación"}</h3>
       <hr className="mb-4 border-gray-300" />
 
       <div className="grid grid-cols-1 gap-4">

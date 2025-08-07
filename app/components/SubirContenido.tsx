@@ -18,11 +18,13 @@ interface SubirContenidoProps {
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => void;
   name: string;
+  hasSimulation: boolean;
 }
 
 export default function SubirContenido({
   courseData,
   setCourseData,
+  hasSimulation,
 }: SubirContenidoProps) {
   const [contents, setContents] = useState<any[]>([]);
   const [images, setImages] = useState<Record<string, string>>({});
@@ -168,7 +170,7 @@ export default function SubirContenido({
 
   return (
     <div>
-      <h3 className="text-3xl font-medium mb-4">Subir Contenido</h3>
+      <h3 className="text-3xl font-medium mb-4">{hasSimulation ? "Briefing":"Subir Contenido"}</h3>
       <hr className="mb-4 border-gray-300" />
 
       {contents.map((c, i) => (
