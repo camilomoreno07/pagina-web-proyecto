@@ -557,7 +557,7 @@ const Wizard = ({ course, onComplete, onCancel }: WizardProps) => {
             {activeCardId === null && (
               <>
                 <h2 className="text-lg mb-2 font-semibold">Primer momento</h2>
-                <h3 className="text-3xl mb-2 font-medium">Antes de clase</h3>
+                <h3 className="text-3xl mb-2 font-medium">Aula Invertida</h3>
                 <p className="mb-4">
                   Esto ayudará al estudiante para que lleve una idea de lo que
                   verá en el encuentro presencial.
@@ -588,7 +588,7 @@ const Wizard = ({ course, onComplete, onCancel }: WizardProps) => {
             {activeCardId === null && (
               <>
                 <h2 className="text-lg mb-2 font-semibold">Segundo momento</h2>
-                <h3 className="text-3xl mb-2 font-medium">Durante la clase</h3>
+                <h3 className="text-3xl mb-2 font-medium">Taller de Habilidad</h3>
                 <p className="mb-4">
                   Esto ayudará al estudiante a guiarse durante los espacios de
                   clase.
@@ -619,7 +619,7 @@ const Wizard = ({ course, onComplete, onCancel }: WizardProps) => {
             {activeCardId === null && (
               <>
                 <h2 className="text-lg mb-2 font-semibold">Tercer momento</h2>
-                <h3 className="text-3xl mb-2 font-medium">Después de clase</h3>
+                <h3 className="text-3xl mb-2 font-medium">Actividad Experiencial</h3>
                 <p className="mb-4">
                   Esto ayudará al estudiante a afianzar los conceptos vistos en
                   clase.
