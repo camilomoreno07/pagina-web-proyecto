@@ -80,8 +80,8 @@ export default function CrearExperiencia({
 
   const isOmitted =
     experience &&
-    experience.experienceUrl === "" &&
-    experience.contentTitle === "Experiencia";
+    experience.experienceUrl === "NA" &&
+    experience.contentTitle === "Sin Experiencia";
 
   return (
     <div>
@@ -159,10 +159,10 @@ export default function CrearExperiencia({
           <button
             onClick={() => {
               const newExperience = {
-                contentTitle: "Experiencia",
+                contentTitle: "Sin Experiencia",
                 contentDescription: "",
                 time: 1,
-                experienceUrl: "",
+                experienceUrl: "NA",
                 completed: false,
               };
               setCourseData({ ...courseData, contents: [newExperience] });

@@ -169,7 +169,7 @@ const ContentSection = ({ title, onBack, course }: ContentSectionProps) => {
                     const content = currentSection.contents[activeContentIndex];
 
                     // 👉 Si es experiencia WebGL
-                    if (content.experienceUrl && content.experienceUrl !== "") {
+                    if (content.experienceUrl && content.experienceUrl !== "NA") {
                       return (
                         <>
                           <h4 className="text-lg font-semibold text-primary-10">
@@ -192,7 +192,7 @@ const ContentSection = ({ title, onBack, course }: ContentSectionProps) => {
                           </div>
                         </>
                       );
-                    } else {
+                    } else if(content.experienceUrl === "NA") {
                       return (
                         <>
                           <div className="w-full h-[200px] border border-dashed border-gray-300 rounded flex items-center justify-center text-gray-500 text-sm italic">
