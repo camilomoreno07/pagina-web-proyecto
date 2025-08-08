@@ -96,6 +96,22 @@ const ContentSection = ({ title, onBack, course }: ContentSectionProps) => {
     return "unknown";
   };
 
+  const [completedContents, setCompletedContents] = useState<boolean[]>([]);
+
+  useEffect(() => {
+    if (currentSection?.contents?.length) {
+      setCompletedContents(new Array(currentSection.contents.length).fill(false));
+    }
+  }, [currentSection]);
+
+  const toggleCompleted = (index: number) => {
+    setCompletedContents(prev => {
+      const newState = [...prev];
+      newState[index] = !newState[index];
+      return newState;
+    });
+  };
+
   return (
     <div className="w-full px-6 py-6 space-y-6 bg-white">
       {/* 🔙 Volver */}
@@ -133,9 +149,6 @@ const ContentSection = ({ title, onBack, course }: ContentSectionProps) => {
             <h2 className="text-xl font-semibold mb-4">
               {currentSection.instructions.instructionTitle}
             </h2>
-            <p className="text-sm text-gray-500">
-              {currentSection.instructions.time} min
-            </p>
             <Resumen description={currentSection.instructions.instructionDescription} />
             {currentSection.instructions.steps?.length > 0 && (
               <ol className="list-decimal list-inside text-gray-700 space-y-1 mt-2">
@@ -146,6 +159,12 @@ const ContentSection = ({ title, onBack, course }: ContentSectionProps) => {
                   ))}
               </ol>
             )}
+            <div className="flex items-center gap-2 mb-2">
+              <h2 className="text-sm font-semibold text-gray-500">Tiempo sugerido de estudio:</h2>
+              <p className="text-sm px-2 py-1 rounded text-green-700 bg-green-100 inline-block">
+                {currentSection.instructions.time} min
+              </p>
+            </div>
             <div className="mt-4 flex items-center gap-2">
               <input type="checkbox" id="completado" />
               <label htmlFor="completado" className="text-gray-600 text-sm">
@@ -183,7 +202,12 @@ const ContentSection = ({ title, onBack, course }: ContentSectionProps) => {
                           <p className="text-sm text-primary-30 mt-2">
                             {content.contentDescription}
                           </p>
-                          <p className="text-xs text-primary-20">{content.time} min</p>
+                          <div className="flex items-center gap-2 mb-2">
+                            <h2 className="text-sm font-semibold text-gray-500">Tiempo sugerido de estudio:</h2>
+                            <p className="text-sm px-2 py-1 rounded text-green-700 bg-green-100 inline-block">
+                              {content.time} min
+                            </p>
+                          </div>
                           <div className="pt-2">
                             <label className="inline-flex items-center gap-2 text-sm text-primary-30">
                               <input type="checkbox" />
@@ -192,17 +216,26 @@ const ContentSection = ({ title, onBack, course }: ContentSectionProps) => {
                           </div>
                         </>
                       );
-                    } else if(content.experienceUrl === "NA") {
+                    } else if (content.experienceUrl === "NA") {
                       return (
                         <>
-                          <div className="w-full h-[200px] border border-dashed border-gray-300 rounded flex items-center justify-center text-gray-500 text-sm italic">
+                          <div className="w-full min-h-[120px] border border-dashed border-gray-300 rounded flex items-center justify-center px-4 py-6 text-center text-gray-500 text-sm italic">
                             Este curso no cuenta con una experiencia de realidad aumentada para navegador
                           </div>
                         </>
                       );
                     }
 
-                    // 👉 Caso normal (imagen/pdf)
+                    // 👉 Caso normal (imagen/video/audio/pdf)
+
+                    if (currentSection?.contents[0]?.contentTitle === "NA") {
+                      return (
+                        <div className="w-full min-h-[120px] border border-dashed border-gray-300 rounded flex items-center justify-center px-4 py-6 text-center text-gray-500 text-sm italic">
+                          Esta sección no cuenta con ningún contenido asociado
+                        </div>
+                      );
+                    }
+
                     const mimeType = content.imageUrl ? getMimeTypeFromUrl(content.imageUrl) : "unknown";
                     const imageSrc = content.imageUrl?.startsWith("blob:")
                       ? content.imageUrl
@@ -257,6 +290,23 @@ const ContentSection = ({ title, onBack, course }: ContentSectionProps) => {
                               </a>
                             </div>
                           )}
+
+                        <div className="flex items-center gap-2 mb-2">
+                          <h2 className="text-sm font-semibold text-gray-500">Tiempo sugerido de estudio:</h2>
+                          <p className="text-sm px-2 py-1 rounded text-green-700 bg-green-100 inline-block">
+                            {content.time} min
+                          </p>
+                        </div>
+                        <div className="pt-2">
+                          <label className="inline-flex items-center gap-2 text-sm text-primary-30">
+                            <input
+                              type="checkbox"
+                              checked={completedContents[activeContentIndex] || false}
+                              onChange={() => toggleCompleted(activeContentIndex)}
+                            />
+                            Marcar como completado
+                          </label>
+                        </div>
                       </>
                     );
                   })()}
@@ -301,7 +351,13 @@ const ContentSection = ({ title, onBack, course }: ContentSectionProps) => {
 
         {/* Evaluaciones */}
         {activeTab === "Evaluación" && (
-          <EvaluacionViewStudent evaluations={currentSection?.evaluations} />
+          currentSection?.evaluations[0].question === "NA" ? (
+            <div className="w-full min-h-[120px] border border-dashed border-gray-300 rounded flex items-center justify-center px-4 py-6 text-center text-gray-500 text-sm italic">
+              Esta sección no cuenta con una evaluación de conocimientos
+            </div>
+          ) : (
+            <EvaluacionViewStudent evaluations={currentSection?.evaluations} />
+          )
         )}
       </div>
     </div>

@@ -262,8 +262,7 @@ const Wizard = ({ course, onComplete, onCancel }: WizardProps) => {
     } catch (error) {
       console.error("Error al guardar el curso:", error);
       alert(
-        `Error al guardar: ${
-          error instanceof Error ? error.message : "Ocurrió un error"
+        `Error al guardar: ${error instanceof Error ? error.message : "Ocurrió un error"
         }`
       );
     }
@@ -399,19 +398,17 @@ const Wizard = ({ course, onComplete, onCancel }: WizardProps) => {
             return (
               <div
                 key={index}
-                className={`flex items-center ${
-                  index === steps.length - 1 ? "flex-none" : "flex-1"
-                }`}
+                className={`flex items-center ${index === steps.length - 1 ? "flex-none" : "flex-1"
+                  }`}
               >
                 {/* Contenedor del círculo */}
                 <div className="flex flex-col items-center relative">
                   {/* Icono del paso */}
                   <div
                     className={`w-10 h-10 flex items-center justify-center rounded-full text-sm font-bold transition-all duration-300
-                      ${
-                        isCompleted
-                          ? "bg-primary-95 text-primary-40"
-                          : isActive
+                      ${isCompleted
+                        ? "bg-primary-95 text-primary-40"
+                        : isActive
                           ? "bg-primary-40 text-white"
                           : "bg-gray-300 text-gray-600"
                       }`}
@@ -421,11 +418,10 @@ const Wizard = ({ course, onComplete, onCancel }: WizardProps) => {
 
                   {/* Texto debajo del círculo */}
                   <span
-                    className={`absolute top-12 text-sm font-medium text-center ${
-                      step === index + 1 || step > index + 1
-                        ? "text-gray-800"
-                        : "text-gray-500"
-                    } hidden md:block`}
+                    className={`absolute top-12 text-sm font-medium text-center ${step === index + 1 || step > index + 1
+                      ? "text-gray-800"
+                      : "text-gray-500"
+                      } hidden md:block`}
                     style={{
                       width: "100px",
                       wordWrap: "break-word",
@@ -438,9 +434,8 @@ const Wizard = ({ course, onComplete, onCancel }: WizardProps) => {
                 {/* Línea de conexión entre pasos, solo si NO es el último paso */}
                 {index < steps.length - 1 && (
                   <div
-                    className={`h-1 flex-1 mx-2 transition-all duration-300 ${
-                      step > index + 1 ? "bg-primary-95" : "bg-gray-300"
-                    }`}
+                    className={`h-1 flex-1 mx-2 transition-all duration-300 ${step > index + 1 ? "bg-primary-95" : "bg-gray-300"
+                      }`}
                   ></div>
                 )}
               </div>
@@ -526,16 +521,14 @@ const Wizard = ({ course, onComplete, onCancel }: WizardProps) => {
                         isPublic: e.target.checked
                       })
                     }
-                    className={`toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-2 border-gray-300 appearance-none cursor-pointer transition-transform duration-200 ease-in-out ${
-                      courseData.isPublic ? "translate-x-4" : "translate-x-0"
-                    }`}
+                    className={`toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-2 border-gray-300 appearance-none cursor-pointer transition-transform duration-200 ease-in-out ${courseData.isPublic ? "translate-x-4" : "translate-x-0"
+                      }`}
                     aria-checked={courseData.isPublic}
                     aria-labelledby="privacy-label"
                   />
                   <div
-                    className={`toggle-label block overflow-hidden h-6 rounded-full cursor-pointer ${
-                      courseData.isPublic ? "bg-green-500" : "bg-gray-300"
-                    }`}
+                    className={`toggle-label block overflow-hidden h-6 rounded-full cursor-pointer ${courseData.isPublic ? "bg-green-500" : "bg-gray-300"
+                      }`}
                     id="privacy-label"
                   ></div>
                 </div>
@@ -672,8 +665,8 @@ const Wizard = ({ course, onComplete, onCancel }: WizardProps) => {
                 <strong>Descripción:</strong> {courseData.courseDescription}
               </p>
               <p>
-                <strong>Privacidad:</strong>{" "}
-                {courseData.isPublic ? "Público" : "Privado"}
+                <strong>Tipo de curso:</strong>{" "}
+                {courseData.isPublic ? "Escenario Simulado" : "Tradicional"}
               </p>
             </div>
 
@@ -687,8 +680,18 @@ const Wizard = ({ course, onComplete, onCancel }: WizardProps) => {
                     "Sin título"}
                 </p>
                 <p>Pasos: {courseData.beforeClass.instructions.steps.length}</p>
-                <p>Contenidos: {courseData.beforeClass.contents.length}</p>
-                <p>Evaluaciones: {courseData.beforeClass.evaluations.length}</p>
+                <p>
+                  Contenidos:
+                  {courseData.beforeClass?.content?.[0]?.contentTitle === "NA"
+                    ? " 0"
+                    : courseData.beforeClass?.content?.length || 0}
+                </p>
+                <p>
+                  Evaluaciones:
+                  {courseData.beforeClass?.evaluations?.[0]?.question === "NA"
+                    ? " 0"
+                    : courseData.beforeClass?.evaluations?.length || 0}
+                </p>
               </div>
 
               <div className="border rounded-lg p-4">
@@ -699,8 +702,18 @@ const Wizard = ({ course, onComplete, onCancel }: WizardProps) => {
                     "Sin título"}
                 </p>
                 <p>Pasos: {courseData.duringClass.instructions.steps.length}</p>
-                <p>Contenidos: {courseData.duringClass.contents.length}</p>
-                <p>Evaluaciones: {courseData.duringClass.evaluations.length}</p>
+                <p>
+                  Contenidos:
+                  {courseData.duringClass?.content?.[0]?.contentTitle === "NA"
+                    ? " 0"
+                    : courseData.duringClass?.content?.length || 0}
+                </p>
+                <p>
+                  Evaluaciones:
+                  {courseData.duringClass?.evaluations?.[0]?.question === "NA"
+                    ? " 0"
+                    : courseData.duringClass?.evaluations?.length || 0}
+                </p>
               </div>
 
               <div className="border rounded-lg p-4">
@@ -711,8 +724,18 @@ const Wizard = ({ course, onComplete, onCancel }: WizardProps) => {
                     "Sin título"}
                 </p>
                 <p>Pasos: {courseData.afterClass.instructions.steps.length}</p>
-                <p>Contenidos: {courseData.afterClass.contents.length}</p>
-                <p>Evaluaciones: {courseData.afterClass.evaluations.length}</p>
+                <p>
+                  Contenidos:
+                  {courseData.afterClass?.content?.[0]?.contentTitle === "NA"
+                    ? " 0"
+                    : courseData.afterClass?.content?.length || 0}
+                </p>
+                <p>
+                  Evaluaciones:
+                  {courseData.afterClass?.evaluations?.[0]?.question === "NA"
+                    ? " 0"
+                    : courseData.afterClass?.evaluations?.length || 0}
+                </p>
               </div>
             </div>
 
@@ -763,11 +786,10 @@ const Wizard = ({ course, onComplete, onCancel }: WizardProps) => {
               <button
                 onClick={nextStep}
                 disabled={!isStepValid()}
-                className={`w-full sm:w-auto px-4 py-2 rounded text-white transition ${
-                  isStepValid()
-                    ? "bg-primary-40 hover:bg-primary-50"
-                    : "bg-gray-300 cursor-not-allowed"
-                }`}
+                className={`w-full sm:w-auto px-4 py-2 rounded text-white transition ${isStepValid()
+                  ? "bg-primary-40 hover:bg-primary-50"
+                  : "bg-gray-300 cursor-not-allowed"
+                  }`}
               >
                 Siguiente
               </button>

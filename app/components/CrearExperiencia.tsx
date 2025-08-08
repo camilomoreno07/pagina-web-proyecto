@@ -161,7 +161,7 @@ export default function CrearExperiencia({
               const newExperience = {
                 contentTitle: "Sin Experiencia",
                 contentDescription: "",
-                time: 1,
+                time: 0,
                 experienceUrl: "NA",
                 completed: false,
               };
