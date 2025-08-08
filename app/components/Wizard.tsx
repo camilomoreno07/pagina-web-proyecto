@@ -354,7 +354,7 @@ const Wizard = ({ course, onComplete, onCancel }: WizardProps) => {
       }
 
       const result = await response.json(); // { url: "/media/files/nombre.jpg" }
-      return `http://localhost:8081${result.url}`;
+      return `http://localhost:8081/media/files/${result.url}`;
     } catch (error) {
       console.error("Error subiendo imagen:", error);
       return null;

@@ -78,61 +78,101 @@ export default function CrearExperiencia({
     addExperience(file);
   };
 
+  const isOmitted =
+    experience &&
+    experience.experienceUrl === "" &&
+    experience.contentTitle === "Experiencia";
+
   return (
     <div>
-      <h3 className="text-3xl font-medium mb-4">{hasSimulation ? "Briefing":"Subir Experiencia"}</h3>
+      <h3 className="text-3xl font-medium mb-4">{hasSimulation ? "Briefing" : "Subir Experiencia"}</h3>
       <hr className="mb-4 border-gray-300" />
 
       {experience && (
-        <div className="p-4 border border-gray-300 rounded-lg mb-4 shadow relative">
-          <div className="absolute top-2 right-2 flex gap-2">
-            <button
-              onClick={removeExperience}
-              className="flex items-center gap-2 p-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
-            >
-              <FaTrash size={16} />
-              <span className="text-sm">Eliminar</span>
-            </button>
-          </div>
+        <div className="p-4 border border-gray-300 rounded-lg mb-4 shadow relative bg-gray-50">
+          {isOmitted ? (
+            <div className="text-center text-gray-600">
+              <p className="text-lg font-semibold mb-2">Experiencia omitida</p>
+              <p className="text-sm">
+                Este curso no cuenta con una experiencia de realidad aumentada para navegador
+              </p>
+              <button
+                onClick={removeExperience}
+                className="mt-4 px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition"
+              >
+                Cancelar omisión
+              </button>
+            </div>
+          ) : (
+            <>
+              <div className="absolute top-2 right-2 flex gap-2">
+                <button
+                  onClick={removeExperience}
+                  className="flex items-center gap-2 p-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+                >
+                  <FaTrash size={16} />
+                  <span className="text-sm">Eliminar</span>
+                </button>
+              </div>
 
-          <h4 className="text-lg font-bold">{experience.contentTitle}</h4>
+              <h4 className="text-lg font-bold">{experience.contentTitle}</h4>
 
-          {/* Number stepper */}
-          <div className="flex items-center gap-2 mt-2">
-            <label className="text-gray-700 text-sm">Tiempo (horas):</label>
-            <input
-              type="number"
-              min={1}
-              value={experience.time}
-              onChange={(e) => updateTime(parseInt(e.target.value) || 1)}
-              className="border rounded p-1 w-20"
-            />
-          </div>
+              <div className="flex items-center gap-2 mt-2">
+                <label className="text-gray-700 text-sm">Tiempo (horas):</label>
+                <input
+                  type="number"
+                  min={1}
+                  value={experience.time}
+                  onChange={(e) => updateTime(parseInt(e.target.value) || 1)}
+                  className="border rounded p-1 w-20"
+                />
+              </div>
 
-          {experience.experienceUrl && (
-            <iframe
-              key={componentKey}
-              src={experience.experienceUrl}
-              className="w-full h-[500px] border rounded mt-4"
-              allow="autoplay; fullscreen; vr"
-            />
+              {experience.experienceUrl && (
+                <iframe
+                  key={componentKey}
+                  src={experience.experienceUrl}
+                  className="w-full h-[500px] border rounded mt-4"
+                  allow="autoplay; fullscreen; vr"
+                />
+              )}
+            </>
           )}
         </div>
       )}
 
       {!experience && (
-        <label className="relative w-full h-40 flex flex-col items-center justify-center bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:bg-gray-200 transition">
-          <FaCloudUploadAlt className="text-gray-400 text-4xl mb-2" />
-          <span className="text-gray-600 text-sm text-center">
-            Clic para cargar experiencia ZIP
-          </span>
-          <input
-            type="file"
-            accept=".zip"
-            onChange={handleFileSelect}
-            className="hidden"
-          />
-        </label>
+        <div className="flex flex-col items-center gap-4">
+          <label className="relative w-full h-40 flex flex-col items-center justify-center bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:bg-gray-200 transition">
+            <FaCloudUploadAlt className="text-gray-400 text-4xl mb-2" />
+            <span className="text-gray-600 text-sm text-center">
+              Clic para cargar experiencia ZIP
+            </span>
+            <input
+              type="file"
+              accept=".zip"
+              onChange={handleFileSelect}
+              className="hidden"
+            />
+          </label>
+
+          <button
+            onClick={() => {
+              const newExperience = {
+                contentTitle: "Experiencia",
+                contentDescription: "",
+                time: 1,
+                experienceUrl: "",
+                completed: false,
+              };
+              setCourseData({ ...courseData, contents: [newExperience] });
+              setExperience(newExperience);
+            }}
+            className="px-4 py-2 bg-gray-400 text-white rounded hover:bg-gray-500 transition"
+          >
+            Omitir experiencia
+          </button>
+        </div>
       )}
     </div>
   );

@@ -4,6 +4,7 @@ import clsx from "clsx";
 import Cookies from "js-cookie";
 import Resumen from "./Resumen";
 import { FaDownload } from "react-icons/fa";
+import EvaluacionViewStudent from "../components/EvaluacionViewStudent";
 
 interface ContentSectionProps {
   title: string;
@@ -59,6 +60,42 @@ const ContentSection = ({ title, onBack, course }: ContentSectionProps) => {
     loadImages();
   }, [course, title]);
 
+  const getMimeTypeFromUrl = (url: string): string => {
+    const lowerUrl = url.toLowerCase();
+
+    if (lowerUrl.endsWith(".pdf")) return "application/pdf";
+    if (lowerUrl.endsWith(".doc")) return "application/msword";
+    if (lowerUrl.endsWith(".docx")) return "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+    if (lowerUrl.endsWith(".xls")) return "application/vnd.ms-excel";
+    if (lowerUrl.endsWith(".xlsx")) return "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+    if (lowerUrl.endsWith(".ppt")) return "application/vnd.ms-powerpoint";
+    if (lowerUrl.endsWith(".pptx")) return "application/vnd.openxmlformats-officedocument.presentationml.presentation";
+
+    if (lowerUrl.endsWith(".jpg") || lowerUrl.endsWith(".jpeg")) return "image/jpeg";
+    if (lowerUrl.endsWith(".png")) return "image/png";
+    if (lowerUrl.endsWith(".gif")) return "image/gif";
+    if (lowerUrl.endsWith(".svg")) return "image/svg+xml";
+    if (lowerUrl.endsWith(".webp")) return "image/webp";
+
+    if (lowerUrl.endsWith(".mp4")) return "video/mp4";
+    if (lowerUrl.endsWith(".webm")) return "video/webm";
+    if (lowerUrl.endsWith(".mov")) return "video/quicktime";
+
+    if (lowerUrl.endsWith(".mp3")) return "audio/mpeg";
+    if (lowerUrl.endsWith(".wav")) return "audio/wav";
+    if (lowerUrl.endsWith(".ogg")) return "audio/ogg";
+
+    if (lowerUrl.endsWith(".zip")) return "application/zip";
+    if (lowerUrl.endsWith(".rar")) return "application/vnd.rar";
+    if (lowerUrl.endsWith(".7z")) return "application/x-7z-compressed";
+
+    if (lowerUrl.endsWith(".txt")) return "text/plain";
+    if (lowerUrl.endsWith(".csv")) return "text/csv";
+    if (lowerUrl.endsWith(".json")) return "application/json";
+
+    return "unknown";
+  };
+
   return (
     <div className="w-full px-6 py-6 space-y-6 bg-white">
       {/* 🔙 Volver */}
@@ -78,11 +115,10 @@ const ContentSection = ({ title, onBack, course }: ContentSectionProps) => {
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
-            className={`py-3 text-center text-sm md:text-base font-medium transition-colors ${
-              activeTab === tab
-                ? "bg-[#EDFAFA] text-[#096874]"
-                : "bg-white text-gray-600 hover:bg-gray-100"
-            }`}
+            className={`py-3 text-center text-sm md:text-base font-medium transition-colors ${activeTab === tab
+              ? "bg-[#EDFAFA] text-[#096874]"
+              : "bg-white text-gray-600 hover:bg-gray-100"
+              }`}
           >
             {tab}
           </button>
@@ -133,7 +169,7 @@ const ContentSection = ({ title, onBack, course }: ContentSectionProps) => {
                     const content = currentSection.contents[activeContentIndex];
 
                     // 👉 Si es experiencia WebGL
-                    if (content.experienceUrl) {
+                    if (content.experienceUrl && content.experienceUrl !== "") {
                       return (
                         <>
                           <h4 className="text-lg font-semibold text-primary-10">
@@ -156,35 +192,25 @@ const ContentSection = ({ title, onBack, course }: ContentSectionProps) => {
                           </div>
                         </>
                       );
+                    } else {
+                      return (
+                        <>
+                          <div className="w-full h-[200px] border border-dashed border-gray-300 rounded flex items-center justify-center text-gray-500 text-sm italic">
+                            Este curso no cuenta con una experiencia de realidad aumentada para navegador
+                          </div>
+                        </>
+                      );
                     }
 
                     // 👉 Caso normal (imagen/pdf)
+                    const mimeType = content.imageUrl ? getMimeTypeFromUrl(content.imageUrl) : "unknown";
                     const imageSrc = content.imageUrl?.startsWith("blob:")
                       ? content.imageUrl
                       : images[content.imageUrl] || "";
 
-                    const isPdf =
-                      content.imageUrl &&
-                      content.imageUrl.toLowerCase().endsWith(".pdf");
-
                     return (
                       <>
-                        {imageSrc && isPdf ? (
-                          <div className="w-full max-w-xs bg-primary-98 rounded-xl border border-gray-200 px-6 py-5 shadow-sm">
-                            <h4 className="text-base font-medium text-primary-10 mb-2 text-center">
-                              {content.contentTitle}
-                            </h4>
-                            <a
-                              href={imageSrc}
-                              download
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="block text-center text-sm font-semibold text-primary-40 hover:underline"
-                            >
-                              Documento PDF <FaDownload className="text-base" />
-                            </a>
-                          </div>
-                        ) : imageSrc ? (
+                        {imageSrc && mimeType.startsWith("image/") && (
                           <img
                             src={imageSrc}
                             alt="Contenido visual"
@@ -193,21 +219,44 @@ const ContentSection = ({ title, onBack, course }: ContentSectionProps) => {
                               e.currentTarget.style.display = "none";
                             }}
                           />
-                        ) : null}
+                        )}
 
-                        <h4 className="text-lg font-semibold text-primary-10 mt-4">
-                          Descripción
-                        </h4>
-                        <p className="text-sm text-primary-30">
-                          {content.contentDescription}
-                        </p>
-                        <p className="text-xs text-primary-20">{content.time} min</p>
-                        <div className="pt-2">
-                          <label className="inline-flex items-center gap-2 text-sm text-primary-30">
-                            <input type="checkbox" />
-                            Marcar como completado
-                          </label>
-                        </div>
+                        {imageSrc && mimeType.startsWith("video/") && (
+                          <video
+                            src={imageSrc}
+                            controls
+                            className="w-full max-h-64 object-contain rounded-md mx-auto"
+                          />
+                        )}
+
+                        {imageSrc && mimeType.startsWith("audio/") && (
+                          <audio
+                            src={imageSrc}
+                            controls
+                            className="w-full rounded-md mx-auto"
+                          />
+                        )}
+
+                        {/* Bloque genérico para PDF, DOC, TXT, etc. */}
+                        {imageSrc &&
+                          !mimeType.startsWith("image/") &&
+                          !mimeType.startsWith("video/") &&
+                          !mimeType.startsWith("audio/") && (
+                            <div className="w-full max-w-xs bg-primary-98 rounded-xl border border-gray-200 px-6 py-5 shadow-sm">
+                              <h4 className="text-base font-medium text-primary-10 mb-2 text-center">
+                                {content.contentTitle}
+                              </h4>
+                              <a
+                                href={imageSrc}
+                                download={`doc-${Date.now()}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="block text-center text-sm font-semibold text-primary-40 hover:underline"
+                              >
+                                Descargar Documento <FaDownload className="text-base inline ml-1" />
+                              </a>
+                            </div>
+                          )}
                       </>
                     );
                   })()}
@@ -252,26 +301,7 @@ const ContentSection = ({ title, onBack, course }: ContentSectionProps) => {
 
         {/* Evaluaciones */}
         {activeTab === "Evaluación" && (
-          <div className="space-y-3">
-            {currentSection?.evaluations?.length ? (
-              currentSection.evaluations.map((evalItem, idx) => (
-                <div
-                  key={idx}
-                  className="border p-4 rounded-md bg-gray-50 space-y-2"
-                >
-                  <h4 className="text-md font-semibold text-gray-800">
-                    {evalItem.question}
-                  </h4>
-                  <p className="text-sm text-gray-600">
-                    {evalItem.questionDescription}
-                  </p>
-                  <p className="text-xs text-gray-400">{evalItem.time} min</p>
-                </div>
-              ))
-            ) : (
-              <p className="text-gray-500">No hay evaluaciones disponibles.</p>
-            )}
-          </div>
+          <EvaluacionViewStudent evaluations={currentSection?.evaluations} />
         )}
       </div>
     </div>

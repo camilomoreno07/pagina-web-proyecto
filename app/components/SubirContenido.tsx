@@ -64,7 +64,7 @@ export default function SubirContenido({
       });
       if (!response.ok) throw new Error("Upload failed");
       const result = await response.json();
-      return `http://localhost:8081${result.url}`;
+      return `http://localhost:8081/media/files/${result.url}`;
     } catch (error) {
       console.error("Error subiendo imagen:", error);
       return null;
@@ -130,47 +130,84 @@ export default function SubirContenido({
     if (!url) return null;
 
     const lowerUrl = url.toLowerCase();
+    const mimeType = getMimeTypeFromUrl(url);
 
-    if (lowerUrl.startsWith("blob:")) {
+    loadProtectedImage(lowerUrl);
+
+    console.log(lowerUrl);
+    console.log(mimeType);
+
+    if (mimeType.startsWith("image/")) {
       return (
         <img
-          src={url}
+          src={images[url]}
           alt="Vista previa local"
           className="w-full h-full object-cover rounded-lg"
         />
       );
     }
-
-    if (images[url]) {
+    else if (mimeType.startsWith("video/")) {
       return (
-        <img
+        <video
           src={images[url]}
-          alt="Vista previa protegida"
+          controls
           className="w-full h-full object-cover rounded-lg"
         />
       );
     }
-
-    if (lowerUrl.endsWith(".pdf")) return <FaFilePdf className="text-red-500 text-6xl" />;
-    if (lowerUrl.endsWith(".doc") || lowerUrl.endsWith(".docx"))
-      return <FaFileWord className="text-blue-500 text-6xl" />;
-
-    if (lowerUrl.endsWith(".jpg") || lowerUrl.endsWith(".jpeg") || lowerUrl.endsWith(".png")) {
+    else if (mimeType.startsWith("audio/")) {
       return (
-        <img
-          src={url}
-          alt="Vista previa directa"
-          className="w-full h-full object-cover rounded-lg"
-        />
+        <audio
+          src={images[url]}
+          controls
+          className="w-full rounded-lg"
+        ></audio>
       );
     }
-
-    return <FaFileAlt className="text-gray-500 text-6xl" />;
+    else {
+      return <FaFileAlt className="text-gray-500 text-7xl" />;
+    }
   };
 
+  const getMimeTypeFromUrl = (url: string): string => {
+    const lowerUrl = url.toLowerCase();
+
+    if (lowerUrl.endsWith(".pdf")) return "application/pdf";
+    if (lowerUrl.endsWith(".doc")) return "application/msword";
+    if (lowerUrl.endsWith(".docx")) return "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+    if (lowerUrl.endsWith(".xls")) return "application/vnd.ms-excel";
+    if (lowerUrl.endsWith(".xlsx")) return "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+    if (lowerUrl.endsWith(".ppt")) return "application/vnd.ms-powerpoint";
+    if (lowerUrl.endsWith(".pptx")) return "application/vnd.openxmlformats-officedocument.presentationml.presentation";
+
+    if (lowerUrl.endsWith(".jpg") || lowerUrl.endsWith(".jpeg")) return "image/jpeg";
+    if (lowerUrl.endsWith(".png")) return "image/png";
+    if (lowerUrl.endsWith(".gif")) return "image/gif";
+    if (lowerUrl.endsWith(".svg")) return "image/svg+xml";
+    if (lowerUrl.endsWith(".webp")) return "image/webp";
+
+    if (lowerUrl.endsWith(".mp4")) return "video/mp4";
+    if (lowerUrl.endsWith(".webm")) return "video/webm";
+    if (lowerUrl.endsWith(".mov")) return "video/quicktime";
+
+    if (lowerUrl.endsWith(".mp3")) return "audio/mpeg";
+    if (lowerUrl.endsWith(".wav")) return "audio/wav";
+    if (lowerUrl.endsWith(".ogg")) return "audio/ogg";
+
+    if (lowerUrl.endsWith(".zip")) return "application/zip";
+    if (lowerUrl.endsWith(".rar")) return "application/vnd.rar";
+    if (lowerUrl.endsWith(".7z")) return "application/x-7z-compressed";
+
+    if (lowerUrl.endsWith(".txt")) return "text/plain";
+    if (lowerUrl.endsWith(".csv")) return "text/csv";
+    if (lowerUrl.endsWith(".json")) return "application/json";
+
+    return "unknown";
+  };
+  
   return (
     <div>
-      <h3 className="text-3xl font-medium mb-4">{hasSimulation ? "Briefing":"Subir Contenido"}</h3>
+      <h3 className="text-3xl font-medium mb-4">{hasSimulation ? "Briefing" : "Subir Contenido"}</h3>
       <hr className="mb-4 border-gray-300" />
 
       {contents.map((c, i) => (
@@ -264,7 +301,7 @@ export default function SubirContenido({
                   )}
                   <input
                     type="file"
-                    accept="image/*,.pdf,.doc,.docx"
+                    accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.txt"
                     onChange={(e) => handleImageUpload(i, e)}
                     className="hidden"
                   />
