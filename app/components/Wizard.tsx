@@ -501,6 +501,7 @@ const Wizard = ({ course, onComplete, onCancel }: WizardProps) => {
                 })
               }
               className="w-full p-2 border border-gray-300 rounded-lg bg-gray-50"
+              rows={3}
             />
 
             {/* Privacidad */}
@@ -679,15 +680,15 @@ const Wizard = ({ course, onComplete, onCancel }: WizardProps) => {
                   {courseData.beforeClass.instructions.instructionTitle ||
                     "Sin título"}
                 </p>
-                <p>Pasos: {courseData.beforeClass.instructions.steps.length}</p>
+                <p>Pasos:{" "}{courseData.beforeClass.instructions.steps.length}</p>
                 <p>
-                  Contenidos:
-                  {courseData.beforeClass?.content?.[0]?.contentTitle === "NA"
+                  Contenidos:{" "}
+                  {courseData.beforeClass?.contents?.[0]?.contentTitle === "NA"
                     ? " 0"
-                    : courseData.beforeClass?.content?.length || 0}
+                    : courseData.beforeClass?.contents?.length || 0}
                 </p>
                 <p>
-                  Evaluaciones:
+                  Evaluaciones:{" "}
                   {courseData.beforeClass?.evaluations?.[0]?.question === "NA"
                     ? " 0"
                     : courseData.beforeClass?.evaluations?.length || 0}
@@ -701,15 +702,15 @@ const Wizard = ({ course, onComplete, onCancel }: WizardProps) => {
                   {courseData.duringClass.instructions.instructionTitle ||
                     "Sin título"}
                 </p>
-                <p>Pasos: {courseData.duringClass.instructions.steps.length}</p>
+                <p>Pasos:{" "}{courseData.duringClass.instructions.steps.length}</p>
                 <p>
-                  Contenidos:
-                  {courseData.duringClass?.content?.[0]?.contentTitle === "NA"
+                  Contenidos:{" "}
+                  {courseData.duringClass?.contents?.[0]?.contentTitle === "NA"
                     ? " 0"
-                    : courseData.duringClass?.content?.length || 0}
+                    : courseData.duringClass?.contents?.length || 0}
                 </p>
                 <p>
-                  Evaluaciones:
+                  Evaluaciones:{" "}
                   {courseData.duringClass?.evaluations?.[0]?.question === "NA"
                     ? " 0"
                     : courseData.duringClass?.evaluations?.length || 0}
@@ -723,15 +724,15 @@ const Wizard = ({ course, onComplete, onCancel }: WizardProps) => {
                   {courseData.afterClass.instructions.instructionTitle ||
                     "Sin título"}
                 </p>
-                <p>Pasos: {courseData.afterClass.instructions.steps.length}</p>
+                <p>Pasos:{" "}{courseData.afterClass.instructions.steps.length}</p>
                 <p>
-                  Contenidos:
-                  {courseData.afterClass?.content?.[0]?.contentTitle === "NA"
+                  Contenidos:{" "}
+                  {courseData.afterClass?.contents?.[0]?.contentTitle === "NA"
                     ? " 0"
-                    : courseData.afterClass?.content?.length || 0}
+                    : courseData.afterClass?.contents?.length || 0}
                 </p>
                 <p>
-                  Evaluaciones:
+                  Evaluaciones:{" "}
                   {courseData.afterClass?.evaluations?.[0]?.question === "NA"
                     ? " 0"
                     : courseData.afterClass?.evaluations?.length || 0}

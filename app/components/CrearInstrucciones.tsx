@@ -66,7 +66,7 @@ export default function CrearInstrucciones({
 
   return (
     <div>
-      <h3 className="text-3xl font-medium mb-4">{hasSimulation ? "Prebriefing":"Crear instrucciones"}</h3>
+      <h3 className="text-3xl font-medium mb-4">{hasSimulation ? "Prebriefing" : "Crear instrucciones"}</h3>
       <hr className="mb-4 border-gray-300" />
       <div className="space-y-3">
         <label className="block font-medium mb-1">Nombre de la actividad</label>
@@ -82,13 +82,13 @@ export default function CrearInstrucciones({
         <label className="block font-medium mb-1">
           Descripción de la actividad
         </label>
-        <input
-          type="text"
+        <textarea
           name={`${name}.instructions.instructionDescription`}
           placeholder="Dile a tus estudiantes de qué tratará este módulo"
           value={courseData.instructions.instructionDescription}
           onChange={handleInputChange}
           className="w-full p-2 border border-gray-300 rounded-lg bg-gray-50"
+          rows={3} // puedes ajustar la altura inicial
         />
 
         <label className="block font-medium mb-1">Tiempo de estudio</label>

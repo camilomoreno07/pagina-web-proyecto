@@ -1,6 +1,5 @@
-"use client";
 import { useEffect, useState } from "react";
-import { FaCloudUploadAlt, FaTrash } from "react-icons/fa";
+import { FaCloudUploadAlt, FaTrash, FaSpinner } from "react-icons/fa";
 import Cookies from "js-cookie";
 
 interface CrearExperienciaProps {
@@ -16,6 +15,7 @@ export default function CrearExperiencia({
 }: CrearExperienciaProps) {
   const [experience, setExperience] = useState<any | null>(null);
   const [componentKey, setComponentKey] = useState(0);
+  const [isUploading, setIsUploading] = useState(false);
 
   useEffect(() => {
     if (courseData?.contents && courseData.contents.length > 0) {
@@ -44,7 +44,10 @@ export default function CrearExperiencia({
   };
 
   const addExperience = async (file: File) => {
+    setIsUploading(true);
     const url = await uploadExperienceToBackend(file);
+    setIsUploading(false);
+
     if (!url) return alert("Error al subir experiencia");
 
     const newExperience = {
@@ -85,16 +88,18 @@ export default function CrearExperiencia({
 
   return (
     <div>
-      <h3 className="text-3xl font-medium mb-4">{hasSimulation ? "Briefing" : "Subir Experiencia"}</h3>
+      <h3 className="text-3xl font-medium mb-4">
+        {hasSimulation ? "Briefing" : "Subir Experiencia"}
+      </h3>
       <hr className="mb-4 border-gray-300" />
 
       {experience && (
         <div className="p-4 border border-gray-300 rounded-lg mb-4 shadow relative bg-gray-50">
           {isOmitted ? (
             <div className="text-center text-gray-600">
-              <p className="text-lg font-semibold mb-2">Experiencia omitida</p>
+              <p className="text-lg font-semibold mb-2">Experiencia para navegador omitida</p>
               <p className="text-sm">
-                Este curso no cuenta con una experiencia de realidad aumentada para navegador
+                Este curso cuenta con una experiencia de realidad aumentada presencial.
               </p>
               <button
                 onClick={removeExperience}
@@ -128,13 +133,15 @@ export default function CrearExperiencia({
                 />
               </div>
 
-              {experience.experienceUrl && (
-                <iframe
-                  key={componentKey}
-                  src={experience.experienceUrl}
-                  className="w-full h-[500px] border rounded mt-4"
-                  allow="autoplay; fullscreen; vr"
-                />
+              {experience.experienceUrl && experience.experienceUrl !== "NA" && (
+                <div className="mt-4 relative w-full h-[500px] border rounded">
+                  <iframe
+                    key={componentKey}
+                    src={experience.experienceUrl}
+                    className="w-full h-full rounded"
+                    allow="autoplay; fullscreen; vr"
+                  />
+                </div>
               )}
             </>
           )}
@@ -142,19 +149,26 @@ export default function CrearExperiencia({
       )}
 
       {!experience && (
-        <div className="flex flex-col items-center gap-4">
-          <label className="relative w-full h-40 flex flex-col items-center justify-center bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:bg-gray-200 transition">
-            <FaCloudUploadAlt className="text-gray-400 text-4xl mb-2" />
-            <span className="text-gray-600 text-sm text-center">
-              Clic para cargar experiencia ZIP
-            </span>
-            <input
-              type="file"
-              accept=".zip"
-              onChange={handleFileSelect}
-              className="hidden"
-            />
-          </label>
+        <div className="flex flex-col items-center gap-4 w-full">
+          {isUploading ? (
+            <div className="flex flex-col items-center justify-center h-40 w-full bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg">
+              <FaSpinner className="animate-spin text-primary-600 text-4xl mb-2" />
+              <p className="text-gray-600 text-sm text-center">Subiendo experiencia...</p>
+            </div>
+          ) : (
+            <label className="relative w-full h-40 flex flex-col items-center justify-center bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:bg-gray-200 transition">
+              <FaCloudUploadAlt className="text-gray-400 text-4xl mb-2" />
+              <span className="text-gray-600 text-sm text-center">
+                Clic para cargar experiencia de navegador ZIP
+              </span>
+              <input
+                type="file"
+                accept=".zip"
+                onChange={handleFileSelect}
+                className="hidden"
+              />
+            </label>
+          )}
 
           <button
             onClick={() => {
@@ -170,7 +184,7 @@ export default function CrearExperiencia({
             }}
             className="px-4 py-2 bg-gray-400 text-white rounded hover:bg-gray-500 transition"
           >
-            Omitir experiencia
+            Usar experiencia presencial
           </button>
         </div>
       )}

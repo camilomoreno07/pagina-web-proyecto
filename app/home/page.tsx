@@ -282,7 +282,7 @@ const Dashboard = () => {
                         id={course.courseId}
                         image={course.imageUrl}
                         title={course.courseName}
-                        date="Fecha no disponible"
+                        date="2025-2"
                         onClick={() => handleCourseClick(course)}
                       />
                     ))}
@@ -295,7 +295,7 @@ const Dashboard = () => {
                       id={course.courseId}
                       image={course.imageUrl}
                       title={course.courseName}
-                      date="Fecha no disponible"
+                      date="2025-2"
                       onClick={() => handleCourseClick(course)}
                     />
                   ))
@@ -306,7 +306,7 @@ const Dashboard = () => {
                       id={course.courseId}
                       image={course.imageUrl}
                       title={course.courseName}
-                      date="Fecha no disponible"
+                      date="2025-2"
                       onClick={() => handleCourseClick(course)}
                     />
                   ))

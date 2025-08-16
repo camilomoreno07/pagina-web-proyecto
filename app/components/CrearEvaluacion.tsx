@@ -127,19 +127,20 @@ export default function CrearEvaluacion({
                 <label className="block font-medium mb-1">
                   Pregunta {index + 1}
                 </label>
-                <input
-                  type="text"
+                <textarea
                   placeholder="Escribe la pregunta"
                   value={q.question}
                   onChange={(e) =>
                     handleQuestionChange(index, "question", e.target.value)
                   }
                   className="w-full p-2 border border-gray-300 rounded-lg bg-gray-50"
+                  rows={2}
                 />
                 <label className="block font-medium mb-1 mt-3">
                   Respuesta correcta
                 </label>
-                <textarea
+                <input
+                  type="text"
                   placeholder="Escribe la respuesta correcta"
                   value={q.correctAnswer}
                   onChange={(e) =>

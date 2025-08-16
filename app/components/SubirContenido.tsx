@@ -290,12 +290,13 @@ export default function SubirContenido({
                         className="w-full p-2 border border-gray-300 rounded-lg bg-gray-50"
                       />
                       <label className="block font-medium mb-1">Descripción del contenido</label>
-                      <input
-                        type="text"
+                      <textarea
                         value={c.contentDescription}
                         onChange={(e) => updateContent(i, "contentDescription", e.target.value)}
                         className="w-full p-2 border border-gray-300 rounded-lg bg-gray-50"
+                        rows={3}
                       />
+
                       <label className="block font-medium mb-1">Tiempo de estudio</label>
                       <div className="flex items-center">
                         <button

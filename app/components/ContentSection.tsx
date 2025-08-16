@@ -5,11 +5,29 @@ import Cookies from "js-cookie";
 import Resumen from "./Resumen";
 import { FaDownload } from "react-icons/fa";
 import EvaluacionViewStudent from "../components/EvaluacionViewStudent";
+import ReviewExperience from "../components/ReviewExperience";
+
+const token = Cookies.get("token");
+let username = null;
+
+if (token) {
+  try {
+    const payload = JSON.parse(atob(token.split(".")[1]));
+    username = payload.sub;
+  } catch (err) {
+    console.error("Error al decodificar token:", err);
+  }
+}
 
 interface ContentSectionProps {
   title: string;
   onBack: () => void;
   course: Course;
+}
+
+interface TokenPayload {
+  sub: string;
+  role?: string;
 }
 
 const TABS = ["Instrucciones", "Contenido", "Evaluación"] as const;
@@ -26,8 +44,40 @@ const ContentSection = ({ title, onBack, course }: ContentSectionProps) => {
     "Después de la clase": course.afterClass,
   };
 
+  const sectionName = {
+    "Antes de clase": "Aula Invertida",
+    "Durante la clase": "Taller de Habilidad",
+    "Después de la clase": "Actividad Experiencial",
+  };
+
   const currentSection = sectionMap[title];
 
+  // Estado de completado
+  const [instructionsCompleted, setInstructionsCompleted] = useState(false);
+  const [completedContents, setCompletedContents] = useState<boolean[]>([]);
+
+  // Inicializar contenidos
+  useEffect(() => {
+    if (currentSection?.contents?.length) {
+      setCompletedContents(
+        new Array(currentSection.contents.length).fill(false)
+      );
+    }
+  }, [currentSection]);
+
+  const toggleCompleted = (index: number) => {
+    setCompletedContents((prev) => {
+      const newState = [...prev];
+      newState[index] = !newState[index];
+      return newState;
+    });
+  };
+
+  const toggleInstructions = () => {
+    setInstructionsCompleted((prev) => !prev);
+  };
+
+  // Cargar imágenes autenticadas
   useEffect(() => {
     const loadImages = async () => {
       const token = Cookies.get("token");
@@ -96,22 +146,6 @@ const ContentSection = ({ title, onBack, course }: ContentSectionProps) => {
     return "unknown";
   };
 
-  const [completedContents, setCompletedContents] = useState<boolean[]>([]);
-
-  useEffect(() => {
-    if (currentSection?.contents?.length) {
-      setCompletedContents(new Array(currentSection.contents.length).fill(false));
-    }
-  }, [currentSection]);
-
-  const toggleCompleted = (index: number) => {
-    setCompletedContents(prev => {
-      const newState = [...prev];
-      newState[index] = !newState[index];
-      return newState;
-    });
-  };
-
   return (
     <div className="w-full px-6 py-6 space-y-6 bg-white">
       {/* 🔙 Volver */}
@@ -123,7 +157,9 @@ const ContentSection = ({ title, onBack, course }: ContentSectionProps) => {
       </button>
 
       {/* 🔹 Título */}
-      <h2 className="text-2xl font-bold text-gray-800 mb-4">{title}</h2>
+      <h2 className="text-2xl font-bold text-gray-800 mb-4">
+        {sectionName[title]}
+      </h2>
 
       {/* 🔹 Tabs */}
       <div className="grid grid-cols-3 mb-6 rounded-lg overflow-hidden border border-gray-200">
@@ -132,8 +168,8 @@ const ContentSection = ({ title, onBack, course }: ContentSectionProps) => {
             key={tab}
             onClick={() => setActiveTab(tab)}
             className={`py-3 text-center text-sm md:text-base font-medium transition-colors ${activeTab === tab
-              ? "bg-[#EDFAFA] text-[#096874]"
-              : "bg-white text-gray-600 hover:bg-gray-100"
+                ? "bg-[#EDFAFA] text-[#096874]"
+                : "bg-white text-gray-600 hover:bg-gray-100"
               }`}
           >
             {tab}
@@ -149,7 +185,9 @@ const ContentSection = ({ title, onBack, course }: ContentSectionProps) => {
             <h2 className="text-xl font-semibold mb-4">
               {currentSection.instructions.instructionTitle}
             </h2>
-            <Resumen description={currentSection.instructions.instructionDescription} />
+            <Resumen
+              description={currentSection.instructions.instructionDescription}
+            />
             {currentSection.instructions.steps?.length > 0 && (
               <ol className="list-decimal list-inside text-gray-700 space-y-1 mt-2">
                 {currentSection.instructions.steps
@@ -160,13 +198,20 @@ const ContentSection = ({ title, onBack, course }: ContentSectionProps) => {
               </ol>
             )}
             <div className="flex items-center gap-2 mb-2">
-              <h2 className="text-sm font-semibold text-gray-500">Tiempo sugerido de estudio:</h2>
+              <h2 className="text-sm font-semibold text-gray-500">
+                Tiempo sugerido de estudio:
+              </h2>
               <p className="text-sm px-2 py-1 rounded text-green-700 bg-green-100 inline-block">
                 {currentSection.instructions.time} min
               </p>
             </div>
             <div className="mt-4 flex items-center gap-2">
-              <input type="checkbox" id="completado" />
+              <input
+                type="checkbox"
+                id="completado"
+                checked={instructionsCompleted}
+                onChange={toggleInstructions}
+              />
               <label htmlFor="completado" className="text-gray-600 text-sm">
                 Marcar como completado
               </label>
@@ -177,17 +222,13 @@ const ContentSection = ({ title, onBack, course }: ContentSectionProps) => {
         {/* Contenido */}
         {activeTab === "Contenido" && (
           <div className="space-y-6">
-            <h2 className="text-2xl font-semibold text-primary-10">
-              Recursos Disponibles
-            </h2>
-
             {currentSection?.contents?.length ? (
               <>
                 <div className="p-4 rounded-md space-y-4">
                   {(() => {
                     const content = currentSection.contents[activeContentIndex];
 
-                    // 👉 Si es experiencia WebGL
+                    // 👉 Experiencia WebGL
                     if (content.experienceUrl && content.experienceUrl !== "NA") {
                       return (
                         <>
@@ -203,14 +244,20 @@ const ContentSection = ({ title, onBack, course }: ContentSectionProps) => {
                             {content.contentDescription}
                           </p>
                           <div className="flex items-center gap-2 mb-2">
-                            <h2 className="text-sm font-semibold text-gray-500">Tiempo sugerido de estudio:</h2>
+                            <h2 className="text-sm font-semibold text-gray-500">
+                              Tiempo sugerido de estudio:
+                            </h2>
                             <p className="text-sm px-2 py-1 rounded text-green-700 bg-green-100 inline-block">
-                              {content.time} min
+                              {content.time * 60} min
                             </p>
                           </div>
                           <div className="pt-2">
                             <label className="inline-flex items-center gap-2 text-sm text-primary-30">
-                              <input type="checkbox" />
+                              <input
+                                type="checkbox"
+                                checked={completedContents[activeContentIndex] || false}
+                                onChange={() => toggleCompleted(activeContentIndex)}
+                              />
                               Marcar como completado
                             </label>
                           </div>
@@ -218,16 +265,14 @@ const ContentSection = ({ title, onBack, course }: ContentSectionProps) => {
                       );
                     } else if (content.experienceUrl === "NA") {
                       return (
-                        <>
-                          <div className="w-full min-h-[120px] border border-dashed border-gray-300 rounded flex items-center justify-center px-4 py-6 text-center text-gray-500 text-sm italic">
-                            Este curso no cuenta con una experiencia de realidad aumentada para navegador
-                          </div>
-                        </>
+                        <ReviewExperience
+                          idEstudiante={username}
+                          nombreCurso={course.courseName}
+                        />
                       );
                     }
 
-                    // 👉 Caso normal (imagen/video/audio/pdf)
-
+                    // 👉 Contenido normal (imagen/video/pdf/etc.)
                     if (currentSection?.contents[0]?.contentTitle === "NA") {
                       return (
                         <div className="w-full min-h-[120px] border border-dashed border-gray-300 rounded flex items-center justify-center px-4 py-6 text-center text-gray-500 text-sm italic">
@@ -236,7 +281,9 @@ const ContentSection = ({ title, onBack, course }: ContentSectionProps) => {
                       );
                     }
 
-                    const mimeType = content.imageUrl ? getMimeTypeFromUrl(content.imageUrl) : "unknown";
+                    const mimeType = content.imageUrl
+                      ? getMimeTypeFromUrl(content.imageUrl)
+                      : "unknown";
                     const imageSrc = content.imageUrl?.startsWith("blob:")
                       ? content.imageUrl
                       : images[content.imageUrl] || "";
@@ -270,7 +317,7 @@ const ContentSection = ({ title, onBack, course }: ContentSectionProps) => {
                           />
                         )}
 
-                        {/* Bloque genérico para PDF, DOC, TXT, etc. */}
+                        {/* Genérico para docs */}
                         {imageSrc &&
                           !mimeType.startsWith("image/") &&
                           !mimeType.startsWith("video/") &&
@@ -286,13 +333,16 @@ const ContentSection = ({ title, onBack, course }: ContentSectionProps) => {
                                 rel="noopener noreferrer"
                                 className="block text-center text-sm font-semibold text-primary-40 hover:underline"
                               >
-                                Descargar Documento <FaDownload className="text-base inline ml-1" />
+                                Descargar Documento{" "}
+                                <FaDownload className="text-base inline ml-1" />
                               </a>
                             </div>
                           )}
 
                         <div className="flex items-center gap-2 mb-2">
-                          <h2 className="text-sm font-semibold text-gray-500">Tiempo sugerido de estudio:</h2>
+                          <h2 className="text-sm font-semibold text-gray-500">
+                            Tiempo sugerido de estudio:
+                          </h2>
                           <p className="text-sm px-2 py-1 rounded text-green-700 bg-green-100 inline-block">
                             {content.time} min
                           </p>
@@ -301,7 +351,9 @@ const ContentSection = ({ title, onBack, course }: ContentSectionProps) => {
                           <label className="inline-flex items-center gap-2 text-sm text-primary-30">
                             <input
                               type="checkbox"
-                              checked={completedContents[activeContentIndex] || false}
+                              checked={
+                                completedContents[activeContentIndex] || false
+                              }
                               onChange={() => toggleCompleted(activeContentIndex)}
                             />
                             Marcar como completado
@@ -331,7 +383,10 @@ const ContentSection = ({ title, onBack, course }: ContentSectionProps) => {
                   <button
                     onClick={() =>
                       setActiveContentIndex((prev) =>
-                        Math.min(prev + 1, currentSection.contents.length - 1)
+                        Math.min(
+                          prev + 1,
+                          currentSection.contents.length - 1
+                        )
                       )
                     }
                     disabled={
@@ -350,15 +405,14 @@ const ContentSection = ({ title, onBack, course }: ContentSectionProps) => {
         )}
 
         {/* Evaluaciones */}
-        {activeTab === "Evaluación" && (
-          currentSection?.evaluations[0].question === "NA" ? (
+        {activeTab === "Evaluación" &&
+          (currentSection?.evaluations[0].question === "NA" ? (
             <div className="w-full min-h-[120px] border border-dashed border-gray-300 rounded flex items-center justify-center px-4 py-6 text-center text-gray-500 text-sm italic">
               Esta sección no cuenta con una evaluación de conocimientos
             </div>
           ) : (
             <EvaluacionViewStudent evaluations={currentSection?.evaluations} />
-          )
-        )}
+          ))}
       </div>
     </div>
   );
