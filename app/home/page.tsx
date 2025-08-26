@@ -34,6 +34,7 @@ const AddNewCourseCard = ({ onClick }: { onClick: () => void }) => (
 );
 
 const Dashboard = () => {
+  
   const router = useRouter();
   const [courses, setCourses] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(true);

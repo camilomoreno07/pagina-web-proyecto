@@ -18,6 +18,8 @@ interface WizardProps {
   onCancel: () => void;
 }
 
+type QuestionType = "OPEN" | "MC3" | "MC5";
+
 type CardList = {
   instruccionesCard: {
     activityName: string;
@@ -28,41 +30,25 @@ type CardList = {
     contenidos: {
       contentTitle: string;
       contentDescription: string;
-      imageUrl: string | File | null; // Manejo flexible de imagen
+      imageUrl: string | File | null;
     }[];
   };
   evaluaciónCard: {
     preguntas: {
+      // campos nuevos necesarios para persistir correctamente
+      questionType: QuestionType;      // "OPEN" | "MC3" | "MC5"
       question: string;
-      questionDescription: string;
+      correctAnswer: string;            // si es MC*, debe coincidir con options
+      time: number;                     // minutos (1..30)
+      options?: string[];               // presente solo en MC3/MC5
+      // si usas esto, consérvalo:
+      questionDescription?: string;
+      // opcionalmente un id local si lo necesitas para el UI:
+      id?: string;
     }[];
   };
 };
 
-const defaultCardList: CardList = {
-  instruccionesCard: {
-    activityName: "",
-    activityDescription: "",
-    instructionSteps: [],
-  },
-  contenidoCard: {
-    contenidos: [
-      {
-        contentTitle: "",
-        contentDescription: "",
-        imageUrl: null,
-      },
-    ],
-  },
-  evaluaciónCard: {
-    preguntas: [
-      {
-        question: "",
-        questionDescription: "",
-      },
-    ],
-  },
-};
 
 const Wizard = ({ course, onComplete, onCancel }: WizardProps) => {
   const [previewImage, setPreviewImage] = useState(null);
