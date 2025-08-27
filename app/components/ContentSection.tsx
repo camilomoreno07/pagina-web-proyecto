@@ -98,6 +98,7 @@ const ContentSection = ({ title, onBack, course }: ContentSectionProps) => {
             const blob = await res.blob();
             const objectURL = URL.createObjectURL(blob);
             loadedImages[content.imageUrl] = objectURL;
+            console.log("EVALUACIONES:", currentSection?.evaluations);
           } catch (err) {
             console.error("Error al cargar imagen de contenido:", err);
           }
@@ -115,13 +116,17 @@ const ContentSection = ({ title, onBack, course }: ContentSectionProps) => {
 
     if (lowerUrl.endsWith(".pdf")) return "application/pdf";
     if (lowerUrl.endsWith(".doc")) return "application/msword";
-    if (lowerUrl.endsWith(".docx")) return "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+    if (lowerUrl.endsWith(".docx"))
+      return "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
     if (lowerUrl.endsWith(".xls")) return "application/vnd.ms-excel";
-    if (lowerUrl.endsWith(".xlsx")) return "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+    if (lowerUrl.endsWith(".xlsx"))
+      return "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
     if (lowerUrl.endsWith(".ppt")) return "application/vnd.ms-powerpoint";
-    if (lowerUrl.endsWith(".pptx")) return "application/vnd.openxmlformats-officedocument.presentationml.presentation";
+    if (lowerUrl.endsWith(".pptx"))
+      return "application/vnd.openxmlformats-officedocument.presentationml.presentation";
 
-    if (lowerUrl.endsWith(".jpg") || lowerUrl.endsWith(".jpeg")) return "image/jpeg";
+    if (lowerUrl.endsWith(".jpg") || lowerUrl.endsWith(".jpeg"))
+      return "image/jpeg";
     if (lowerUrl.endsWith(".png")) return "image/png";
     if (lowerUrl.endsWith(".gif")) return "image/gif";
     if (lowerUrl.endsWith(".svg")) return "image/svg+xml";
@@ -167,10 +172,11 @@ const ContentSection = ({ title, onBack, course }: ContentSectionProps) => {
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
-            className={`py-3 text-center text-sm md:text-base font-medium transition-colors ${activeTab === tab
+            className={`py-3 text-center text-sm md:text-base font-medium transition-colors ${
+              activeTab === tab
                 ? "bg-[#EDFAFA] text-[#096874]"
                 : "bg-white text-gray-600 hover:bg-gray-100"
-              }`}
+            }`}
           >
             {tab}
           </button>
@@ -229,7 +235,10 @@ const ContentSection = ({ title, onBack, course }: ContentSectionProps) => {
                     const content = currentSection.contents[activeContentIndex];
 
                     // 👉 Experiencia WebGL
-                    if (content.experienceUrl && content.experienceUrl !== "NA") {
+                    if (
+                      content.experienceUrl &&
+                      content.experienceUrl !== "NA"
+                    ) {
                       return (
                         <>
                           <h4 className="text-lg font-semibold text-primary-10">
@@ -255,8 +264,12 @@ const ContentSection = ({ title, onBack, course }: ContentSectionProps) => {
                             <label className="inline-flex items-center gap-2 text-sm text-primary-30">
                               <input
                                 type="checkbox"
-                                checked={completedContents[activeContentIndex] || false}
-                                onChange={() => toggleCompleted(activeContentIndex)}
+                                checked={
+                                  completedContents[activeContentIndex] || false
+                                }
+                                onChange={() =>
+                                  toggleCompleted(activeContentIndex)
+                                }
                               />
                               Marcar como completado
                             </label>
@@ -354,7 +367,9 @@ const ContentSection = ({ title, onBack, course }: ContentSectionProps) => {
                               checked={
                                 completedContents[activeContentIndex] || false
                               }
-                              onChange={() => toggleCompleted(activeContentIndex)}
+                              onChange={() =>
+                                toggleCompleted(activeContentIndex)
+                              }
                             />
                             Marcar como completado
                           </label>
@@ -383,10 +398,7 @@ const ContentSection = ({ title, onBack, course }: ContentSectionProps) => {
                   <button
                     onClick={() =>
                       setActiveContentIndex((prev) =>
-                        Math.min(
-                          prev + 1,
-                          currentSection.contents.length - 1
-                        )
+                        Math.min(prev + 1, currentSection.contents.length - 1)
                       )
                     }
                     disabled={
@@ -411,7 +423,10 @@ const ContentSection = ({ title, onBack, course }: ContentSectionProps) => {
               Esta sección no cuenta con una evaluación de conocimientos
             </div>
           ) : (
-            <EvaluacionViewStudent evaluations={currentSection?.evaluations} />
+            <EvaluacionViewStudent
+              evaluations={currentSection?.evaluations}
+              course={course}
+            />
           ))}
       </div>
     </div>

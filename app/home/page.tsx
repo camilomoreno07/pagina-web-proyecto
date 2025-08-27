@@ -1,7 +1,8 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Cookies from "js-cookie";
+
 import Activity from "../components/Activity";
 import ActivityStudent from "../components/ActivityStudent";
 import CourseViewStudent from "../components/CourseViewStudent";
@@ -9,6 +10,8 @@ import Wizard from "../components/Wizard";
 import CreateCourse from "../components/CreateCourse";
 import EditCourse from "../components/EditCourse";
 import ConfigView from "../components/ConfigView";
+import Feedback from "../components/Feedback"; // 👁️ NUEVO
+
 import { useAuth } from "../hooks/useAuth";
 import {
   FaBook,
@@ -21,32 +24,44 @@ import {
   FaCog,
 } from "react-icons/fa";
 
+// Tipos mínimos (ajústalos a tu backend si lo deseas)
+interface Course {
+  courseId: string;
+  courseName: string;
+  imageUrl: string;
+  [k: string]: any;
+}
+type WizardData = any;
+
 const AddNewCourseCard = ({ onClick }: { onClick: () => void }) => (
   <div
     onClick={onClick}
     className="w-64 h-64 flex flex-col items-center justify-center border-2 border-dashed border-primary-40 rounded cursor-pointer hover:bg-primary-95 transition"
   >
     <span className="text-4xl text-primary-40 mb-4">+</span>
-    <span className="text-lg font-bold text-primary-40">
-      Agregar nuevo curso
-    </span>
+    <span className="text-lg font-bold text-primary-40">Agregar nuevo curso</span>
   </div>
 );
 
 const Dashboard = () => {
-  
   const router = useRouter();
-  const [courses, setCourses] = useState<any[]>([]);
+
+  const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
+
   const [showWizard, setShowWizard] = useState<boolean>(false);
   const [showEditCourse, setShowEditCourse] = useState(false);
-  const [selectedCourse, setSelectedCourse] = useState<any | null>(null);
   const [showCreateCourse, setShowCreateCourse] = useState<boolean>(false);
+  const [showConfig, setShowConfig] = useState(false);
+  const [showFeedback, setShowFeedback] = useState(false); // 👁️ NUEVO
+
+  const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
+
   const [hasMounted, setHasMounted] = useState(false);
   const [mounted, setMounted] = useState(false);
-  const [showConfig, setShowConfig] = useState(false);
 
   const { role } = useAuth();
   const isTeacher = role === "TEACHER";
@@ -56,6 +71,7 @@ const Dashboard = () => {
   useEffect(() => {
     setHasMounted(true);
     setMounted(true);
+
     const fetchCourses = async () => {
       try {
         const token = Cookies.get("token");
@@ -64,17 +80,12 @@ const Dashboard = () => {
         }
 
         const response = await fetch("http://localhost:8081/api/courses", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          headers: { Authorization: `Bearer ${token}` },
         });
 
-        if (!response.ok) {
-          throw new Error("Failed to fetch courses");
-        }
+        if (!response.ok) throw new Error("Failed to fetch courses");
 
         const data: Course[] = await response.json();
-        console.log("Cursos obtenidos del API:", data);
         setCourses(data);
       } catch (error) {
         console.error("Error al obtener cursos:", error);
@@ -99,17 +110,31 @@ const Dashboard = () => {
     }
   };
 
+  // ✏️ Editar → Wizard o EditCourse (según rol)
   const handleCourseClick = (course: Course) => {
-    console.log("Curso clickeado:", course);
     if (isAdmin) {
       setSelectedCourse(course);
       setShowCreateCourse(false);
       setShowWizard(false);
-      setShowEditCourse(true); // Nuevo estado
+      setShowFeedback(false);
+      setShowEditCourse(true);
     } else {
       setSelectedCourse(course);
+      setShowCreateCourse(false);
+      setShowEditCourse(false);
+      setShowFeedback(false);
       setShowWizard(true);
     }
+  };
+
+  // 👁️ Ver/Feedback en el mismo dashboard
+  const handleCourseView = (course: Course) => {
+    setSelectedCourse(course);
+    setShowWizard(false);
+    setShowEditCourse(false);
+    setShowCreateCourse(false);
+    setShowConfig(false);
+    setShowFeedback(true);
   };
 
   const handleWizardComplete = (data: WizardData) => {
@@ -123,9 +148,7 @@ const Dashboard = () => {
     setSelectedCourse(null);
   };
 
-  const handleAddNewCourse = () => {
-    setShowCreateCourse(true);
-  };
+  const handleAddNewCourse = () => setShowCreateCourse(true);
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-100">
@@ -150,11 +173,7 @@ const Dashboard = () => {
           onClick={() => setIsSidebarOpen(!isSidebarOpen)}
           className="block sm:hidden px-4 py-2 text-white"
         >
-          {isSidebarOpen ? (
-            <FaTimes className="text-2xl" />
-          ) : (
-            <FaBars className="text-2xl" />
-          )}
+          {isSidebarOpen ? <FaTimes className="text-2xl" /> : <FaBars className="text-2xl" />}
         </button>
       </header>
 
@@ -166,10 +185,7 @@ const Dashboard = () => {
           } sm:block sm:relative sm:inset-auto sm:z-auto w-full sm:w-48 bg-white shadow-md p-4 space-y-6`}
         >
           <div className="flex justify-end sm:hidden">
-            <button
-              onClick={() => setIsSidebarOpen(false)}
-              className="text-gray-600 hover:text-gray-800"
-            >
+            <button onClick={() => setIsSidebarOpen(false)} className="text-gray-600 hover:text-gray-800">
               <FaTimes className="text-2xl" />
             </button>
           </div>
@@ -197,12 +213,11 @@ const Dashboard = () => {
                     setShowCreateCourse(false);
                     setShowEditCourse(false);
                     setShowWizard(false);
+                    setShowFeedback(false);
                   }}
                 >
                   <FaCog className="text-primary-40 text-xl mr-2" />
-                  <span className="text-primary-40 font-medium">
-                    Configuración
-                  </span>
+                  <span className="text-primary-40 font-medium">Configuración</span>
                 </li>
               )}
             </ul>
@@ -220,17 +235,13 @@ const Dashboard = () => {
 
         {/* Content Area */}
         <div className="flex-1 p-6 space-y-6 bg-white shadow-none border-none">
-          {!showWizard &&
-            !showCreateCourse &&
-            !showEditCourse &&
-            !showConfig &&
-            hasMounted && (
-              <h2 className="text-2xl font-bold mb-4">
-                {isTeacher && "¡Hola, profesor!"}
-                {isStudent && "¡Hola, estudiante!"}
-                {isAdmin && "¡Hola, administrador!"}
-              </h2>
-            )}
+          {!showWizard && !showCreateCourse && !showEditCourse && !showConfig && !showFeedback && hasMounted && (
+            <h2 className="text-2xl font-bold mb-4">
+              {isTeacher && "¡Hola, profesor!"}
+              {isStudent && "¡Hola, estudiante!"}
+              {isAdmin && "¡Hola, administrador!"}
+            </h2>
+          )}
 
           {showConfig ? (
             <ConfigView onBack={() => setShowConfig(false)} />
@@ -238,39 +249,36 @@ const Dashboard = () => {
             <EditCourse
               course={selectedCourse}
               onCancel={() => setShowEditCourse(false)}
-              onComplete={(updatedCourse) => {
+              onComplete={(updatedCourse: Course) => {
                 setShowEditCourse(false);
-                setCourses(
-                  courses.map((c) =>
-                    c.courseId === updatedCourse.courseId ? updatedCourse : c
-                  )
-                );
+                setCourses(courses.map((c) => (c.courseId === updatedCourse.courseId ? updatedCourse : c)));
               }}
             />
           ) : showCreateCourse ? (
             <CreateCourse
               onCancel={() => setShowCreateCourse(false)}
-              onComplete={(newCourse) => {
+              onComplete={(newCourse: Course) => {
                 setShowCreateCourse(false);
                 setCourses([...courses, newCourse]);
               }}
             />
           ) : showWizard ? (
             isStudent ? (
-              <CourseViewStudent
-                course={selectedCourse}
-                onClose={handleWizardCancel}
-              />
+              <CourseViewStudent course={selectedCourse} onClose={handleWizardCancel} />
             ) : (
-              <Wizard
-                course={selectedCourse}
-                onComplete={handleWizardComplete}
-                onCancel={handleWizardCancel}
-              />
+              <Wizard course={selectedCourse} onComplete={handleWizardComplete} onCancel={handleWizardCancel} />
             )
+          ) : showFeedback ? (
+            <Feedback
+              course={selectedCourse}
+              onClose={() => {
+                setShowFeedback(false);
+                setSelectedCourse(null);
+              }}
+            />
           ) : (
             <section>
-              <div className="flex flex-wrap gap-4 p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-6">
                 {loading ? (
                   <p>Cargando cursos...</p>
                 ) : error ? (
@@ -284,7 +292,8 @@ const Dashboard = () => {
                         image={course.imageUrl}
                         title={course.courseName}
                         date="2025-2"
-                        onClick={() => handleCourseClick(course)}
+                        onClick={() => handleCourseClick(course)}     // ✏️ Editar
+                        onView={() => handleCourseView(course)}        // 👁️ Ver/Feedback
                       />
                     ))}
                     <AddNewCourseCard onClick={handleAddNewCourse} />
@@ -297,7 +306,7 @@ const Dashboard = () => {
                       image={course.imageUrl}
                       title={course.courseName}
                       date="2025-2"
-                      onClick={() => handleCourseClick(course)}
+                      onClick={() => handleCourseClick(course)} // Para alumno abre CourseViewStudent
                     />
                   ))
                 ) : (
@@ -308,7 +317,8 @@ const Dashboard = () => {
                       image={course.imageUrl}
                       title={course.courseName}
                       date="2025-2"
-                      onClick={() => handleCourseClick(course)}
+                      onClick={() => handleCourseClick(course)}   // ✏️
+                      onView={() => handleCourseView(course)}      // 👁️
                     />
                   ))
                 )}
