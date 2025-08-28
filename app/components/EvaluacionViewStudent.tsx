@@ -1,6 +1,7 @@
 "use client";
 import React, { useEffect, useMemo, useState, useCallback } from "react";
 import Cookies from "js-cookie";
+import { FaCheckCircle, FaTimesCircle, FaLock } from "react-icons/fa";
 
 const token = Cookies.get("token");
 let username: string | null = null;
@@ -46,11 +47,9 @@ const deriveType = (q: EvalItem): QuestionType => {
 
 const clampSecs = (mins?: number) => Math.max(5, Math.floor(((mins ?? 1) * 60)));
 const mmss = (s: number) =>
-  `${Math.floor(s / 60).toString().padStart(2, "0")}:${(s % 60)
-    .toString()
-    .padStart(2, "0")}`;
+  `${Math.floor(s / 60).toString().padStart(2, "0")}:${(s % 60).toString().padStart(2, "0")}`;
 
-const Evaluacion: React.FC<Props> = ({ evaluations = [], course }) => {
+const EvaluacionViewStudent: React.FC<Props> = ({ evaluations = [], course }) => {
   const items = useMemo(
     () =>
       evaluations.map((q) => {
@@ -84,20 +83,20 @@ const Evaluacion: React.FC<Props> = ({ evaluations = [], course }) => {
   const [selectedOptIdx, setSelectedOptIdx] = useState<number[]>([]);
   const [finished, setFinished] = useState(false);
   const [existingGrade, setExistingGrade] = useState<any | null>(null);
+  const [feedbacks, setFeedbacks] = useState<string[]>([]);
 
-  // ---------- INIT base (cuando NO hay grade existente) ----------
   useEffect(() => {
-    if (existingGrade) return; // no sobreescribir si ya cargamos algo previo
+    if (existingGrade) return;
     setActiveIndex(0);
     setCheckedQ(Array(items.length).fill(false));
     setIsCorrectQ(Array(items.length).fill(false));
     setOpenAnswers(Array(items.length).fill(""));
     setSelectedOptIdx(Array(items.length).fill(-1));
+    setFeedbacks(Array(items.length).fill(""));
     setFinished(false);
     if (items.length) setTimeLeft(clampSecs(items[0]?.time));
   }, [items, existingGrade]);
 
-  // ---------- Timer por pregunta (si no está finalizado) ----------
   useEffect(() => {
     if (!items.length || finished || activeIndex >= items.length) return;
     setTimeLeft(clampSecs(items[activeIndex]?.time));
@@ -114,7 +113,6 @@ const Evaluacion: React.FC<Props> = ({ evaluations = [], course }) => {
     return () => clearInterval(itv);
   }, [activeIndex, finished, items]);
 
-  // ---------- GET grade existente y prefilling en inputs ----------
   useEffect(() => {
     if (!username || !course?.courseId) return;
 
@@ -129,12 +127,12 @@ const Evaluacion: React.FC<Props> = ({ evaluations = [], course }) => {
         if (!data) return;
         setExistingGrade(data);
 
-        // Prefill respuestas en inputs y marcar validación
         const prev = data?.aulaVirtual?.questions ?? [];
         const newChecked = Array(items.length).fill(false);
         const newIsCorrect = Array(items.length).fill(false);
         const newOpen = Array(items.length).fill("");
         const newSelected = Array(items.length).fill(-1);
+        const newFeedbacks = Array(items.length).fill("");
 
         for (let i = 0; i < items.length; i++) {
           const q = items[i];
@@ -151,8 +149,8 @@ const Evaluacion: React.FC<Props> = ({ evaluations = [], course }) => {
           }
 
           newChecked[i] = true;
+          newFeedbacks[i] = feedback;
 
-          // Si viene feedback lo usamos; si no, calculamos.
           if (feedback) {
             newIsCorrect[i] = /correcto/i.test(feedback);
           } else {
@@ -175,8 +173,8 @@ const Evaluacion: React.FC<Props> = ({ evaluations = [], course }) => {
         setIsCorrectQ(newIsCorrect);
         setOpenAnswers(newOpen);
         setSelectedOptIdx(newSelected);
+        setFeedbacks(newFeedbacks);
 
-        // Mostrar todo como ya finalizado (bloquea edición)
         setFinished(true);
         setActiveIndex(items.length - 1);
         setTimeLeft(0);
@@ -246,7 +244,7 @@ const Evaluacion: React.FC<Props> = ({ evaluations = [], course }) => {
           .catch((err) => console.error("Error saving grade:", err));
       }
     },
-    [checkedQ, items, openAnswers, selectedOptIdx, course, finished, isCorrectQ]
+    [checkedQ, items, openAnswers, selectedOptIdx, course, finished]
   );
 
   const totalAnswered = checkedQ.filter(Boolean).length;
@@ -263,31 +261,51 @@ const Evaluacion: React.FC<Props> = ({ evaluations = [], course }) => {
     <div className="space-y-6">
       {items.map((q, idx) => {
         const isActive = idx === activeIndex;
-        const isDisabled = finished || idx > activeIndex;
+        const isDisabled = idx > activeIndex;
         const answered = checkedQ[idx];
         const isMC = q._type === "MC3" || q._type === "MC5";
 
         return (
-          <div key={q.id ?? idx} className="border p-4 rounded relative">
+          <div
+            key={q.id ?? idx}
+            className={`border p-4 rounded-md relative ${
+              isDisabled ? "bg-gray-100 opacity-60" : "bg-gray-50"
+            }`}
+          >
+            {isDisabled && (
+              <div className="absolute inset-0 bg-gray-100 border border-gray-300 flex items-center justify-center rounded-md z-10">
+                <div className="text-center text-gray-700 text-sm font-medium">
+                  <FaLock className="mx-auto mb-1 text-base" />
+                  <span className="mb-1 block">
+                    Responde la pregunta actual para continuar
+                  </span>
+                </div>
+              </div>
+            )}
+
             <div className="flex items-center justify-between mb-2">
-              <h4 className="font-semibold text-lg">Pregunta {idx + 1}</h4>
-              {!finished && isActive && (
-                <span className="text-sm text-gray-600">
-                  Tiempo: {mmss(timeLeft)}
+              <h4 className="text-gray-600 font-semibold mr-1">
+                Pregunta {idx + 1}
+              </h4>
+              {isActive && !finished && (
+                <span className="text-sm text-gray-500">
+                  Tiempo restante: {mmss(timeLeft)}
                 </span>
               )}
             </div>
 
-            <p className="mb-2">{q.question}</p>
+            <p className="mb-2 text-gray-700">{q.question}</p>
 
             {isMC ? (
               <div className="space-y-2">
                 {q.options.map((opt, oi) => (
                   <label
                     key={oi}
-                    className={`block border px-3 py-2 rounded ${
-                      selectedOptIdx[idx] === oi ? "bg-blue-100" : "bg-white"
-                    }`}
+                    className={`flex items-center border px-3 py-1 rounded cursor-pointer select-none
+          ${selectedOptIdx[idx] === oi
+                        ? "bg-gray-200 text-gray-900 border-gray-400"
+                        : "bg-gray-50 text-gray-800 border-gray-300 hover:bg-gray-100 hover:border-gray-400"
+                      }`}
                   >
                     <input
                       type="radio"
@@ -301,32 +319,34 @@ const Evaluacion: React.FC<Props> = ({ evaluations = [], course }) => {
                         setSelectedOptIdx(next);
                       }}
                       disabled={answered || isDisabled}
-                      className="mr-2"
+                      className="form-radio text-gray-600 mr-2"
                     />
                     {opt}
                   </label>
                 ))}
               </div>
             ) : (
-              <input
-                type="text"
-                value={openAnswers[idx]}
-                onChange={(e) => {
-                  if (answered || isDisabled) return;
-                  const next = [...openAnswers];
-                  next[idx] = e.target.value;
-                  setOpenAnswers(next);
-                }}
-                disabled={answered || isDisabled}
-                className="border px-3 py-2 rounded w-full mt-2"
-                placeholder="Tu respuesta..."
-              />
+              <div className="flex items-center gap-2 mt-2">
+                <input
+                  type="text"
+                  value={openAnswers[idx]}
+                  onChange={(e) => {
+                    if (answered || isDisabled) return;
+                    const next = [...openAnswers];
+                    next[idx] = e.target.value;
+                    setOpenAnswers(next);
+                  }}
+                  disabled={answered || isDisabled}
+                  className="border border-gray-300 rounded px-3 py-1 text-sm flex-1 focus:outline-none focus:ring-1 focus:ring-gray-300 focus:border-gray-400"
+                  placeholder="Tu respuesta..."
+                />
+              </div>
             )}
 
             {isActive && !answered && !finished && (
               <button
                 onClick={() => handleCheck(idx)}
-                className="mt-4 bg-blue-600 text-white px-4 py-2 rounded"
+                className="mt-2 text-sm bg-gray-600 hover:bg-gray-700 text-white px-4 py-1.5 rounded shadow-sm transition"
               >
                 Corroborar
               </button>
@@ -340,7 +360,15 @@ const Evaluacion: React.FC<Props> = ({ evaluations = [], course }) => {
                     : "bg-red-100 text-red-800"
                 }`}
               >
-                {isCorrectQ[idx] ? "¡Correcto!" : "Incorrecto."}
+                <p className="flex items-center gap-2">
+                  {isCorrectQ[idx] ? <FaCheckCircle /> : <FaTimesCircle />}
+                  {isCorrectQ[idx] ? "¡Correcto!" : "Incorrecto."}
+                </p>
+                {feedbacks[idx] && (
+                  <p className="mt-1 text-sm text-gray-700">
+                    <span className="text-gray-600 font-semibold mr-1">Feedback:</span>{feedbacks[idx]}
+                  </p>
+                )}
               </div>
             )}
           </div>
@@ -348,14 +376,22 @@ const Evaluacion: React.FC<Props> = ({ evaluations = [], course }) => {
       })}
 
       {allAnswered && (
-        <div className="p-4 bg-gray-100 rounded text-center mt-6">
-          <p className="text-xl font-semibold">
-            Resultado final: {finalScore}/5
-          </p>
-        </div>
+        <div
+              className={`p-4 border border-gray-300 rounded-md mt-6 text-center ${parseFloat(finalScore) >= 3
+                ? "bg-green-50 text-green-700"
+                : "bg-red-50 text-red-700"
+              }`}
+            >
+              <p className="text-md font-semibold">
+                Resultado obtenido: {totalCorrect}/{evaluations.length}
+              </p>
+              <p className="text-sm">
+                Nota final: <span className="font-bold">{finalScore}</span>
+              </p>
+            </div>
       )}
     </div>
   );
 };
 
-export default Evaluacion;
+export default EvaluacionViewStudent;
