@@ -23,41 +23,35 @@ interface Course {
 }
 
 interface StudentRow {
-  username: string;        // correo
+  username: string; // correo
   firstname: string;
   lastname: string;
-  hasSubmission: boolean;  // true => mostrar botón retroalimentar
+  hasSubmission: boolean;
 }
 
 interface GradeQuestion {
   response: string;
-  feeback?: string;  // (sic) tu backend/cliente lo usa así
-  feedback?: string; // por si el backend lo devuelve bien escrito
+  feeback?: string;
+  feedback?: string;
 }
 interface GradeBlock {
   questions: GradeQuestion[];
 }
 interface Grade {
-  id?: string;                 // necesario para PUT /grades/{id}
-  studentId: string;           // email
+  id?: string;
+  studentId: string;
   courseId: string;
   aulaVirtual?: GradeBlock;
   tallerHabilidad?: GradeBlock;
   actividadExperiencial?: GradeBlock;
 }
 
-interface FeedbackProps {
-  course: Course | null;
-  onClose: () => void;
-}
-
-/** ===== Constantes/UI ===== */
+/** ===== Constantes ===== */
 const token = Cookies.get("token") ?? "";
 const authHeaders = {
   Authorization: `Bearer ${token}`,
   "Content-Type": "application/json",
 };
-
 const momentNames: Record<MomentKey, string> = {
   beforeClass: "Aula Invertida",
   duringClass: "Taller de Habilidad",
@@ -65,7 +59,7 @@ const momentNames: Record<MomentKey, string> = {
 };
 const orderedMoments: MomentKey[] = ["beforeClass", "duringClass", "afterClass"];
 
-/** ===== Helpers de datos ===== */
+/** ===== Helpers ===== */
 const fetchJSON = async (url: string) => {
   const res = await fetch(url, { headers: authHeaders });
   if (!res.ok) throw new Error(String(res.status));
@@ -73,7 +67,6 @@ const fetchJSON = async (url: string) => {
 };
 
 const getUserName = async (email: string): Promise<{ firstname: string; lastname: string }> => {
-  // 1) path variable
   try {
     const d = await fetchJSON(`http://localhost:8081/api/users/${encodeURIComponent(email)}`);
     if (Array.isArray(d)) {
@@ -82,13 +75,7 @@ const getUserName = async (email: string): Promise<{ firstname: string; lastname
     } else if (d) {
       return { firstname: d.firstname ?? "", lastname: d.lastname ?? "" };
     }
-  } catch {}
-  // 2) query param
-  try {
-    const d = await fetchJSON(`http://localhost:8081/api/users?id=${encodeURIComponent(email)}`);
-    const hit = Array.isArray(d) ? d.find((u: any) => u?.username === email) : d;
-    if (hit) return { firstname: hit.firstname ?? "", lastname: hit.lastname ?? "" };
-  } catch {}
+  } catch { }
   return { firstname: "", lastname: "" };
 };
 
@@ -96,10 +83,9 @@ const getGrade = async (email: string, courseId: string): Promise<Grade | null> 
   const url = `http://localhost:8081/api/grades/student/${encodeURIComponent(email)}/course/${courseId}`;
   try {
     const res = await fetch(url, { headers: authHeaders });
-    if (res.status === 404) return null;       // no hay entrega
+    if (res.status === 404) return null;
     if (!res.ok) throw new Error(String(res.status));
-    const g = (await res.json()) as Grade;
-    return g;
+    return (await res.json()) as Grade;
   } catch {
     return null;
   }
@@ -122,23 +108,22 @@ const setGradeBlockFor = (g: Grade, key: MomentKey, block: GradeBlock) => {
 };
 
 /** ===== Componente principal ===== */
-export default function Feedback({ course, onClose }: FeedbackProps) {
+export default function Feedback({ course, onClose }: { course: Course | null; onClose: () => void }) {
   const [rows, setRows] = useState<StudentRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
 
-  // Editor lateral
-  const [openEditor, setOpenEditor] = useState(false);
+  // Editor modal
+  const [editorOpen, setEditorOpen] = useState(false);
   const [editorLoading, setEditorLoading] = useState(false);
   const [editorStudent, setEditorStudent] = useState<StudentRow | null>(null);
   const [editorGrade, setEditorGrade] = useState<Grade | null>(null);
   const [editorMoment, setEditorMoment] = useState<MomentKey>("beforeClass");
-  const [editorText, setEditorText] = useState<string[]>([]); // feedback por pregunta
+  const [editorText, setEditorText] = useState<string[]>([]);
 
   const activeKey = orderedMoments[activeIndex];
-  const activeLabel = momentNames[activeKey];
 
-  /** Cargar filas (estudiantes + estado de entrega) */
+  /** Cargar filas */
   useEffect(() => {
     if (!course || !token) return;
     let cancelled = false;
@@ -149,18 +134,7 @@ export default function Feedback({ course, onClose }: FeedbackProps) {
         const out: StudentRow[] = [];
         for (const email of course.studentIds ?? []) {
           const grade = await getGrade(email, course.courseId);
-          let firstname = "";
-          let lastname = "";
-
-          if ((grade as any)?.firstname || (grade as any)?.lastname) {
-            firstname = (grade as any).firstname ?? "";
-            lastname  = (grade as any).lastname ?? "";
-          } else {
-            const u = await getUserName(email);
-            firstname = u.firstname;
-            lastname  = u.lastname;
-          }
-
+          const { firstname, lastname } = await getUserName(email);
           out.push({
             username: email,
             firstname,
@@ -174,21 +148,22 @@ export default function Feedback({ course, onClose }: FeedbackProps) {
       }
     })();
 
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [course?.courseId]);
 
-  /** Abrir editor lateral con grade y prefill */
+  /** Abrir modal */
   const onOpenEditor = async (row: StudentRow) => {
     if (!course) return;
     setEditorStudent(row);
     setEditorMoment(activeKey);
-    setOpenEditor(true);
+    setEditorOpen(true);
     setEditorLoading(true);
 
     try {
       let grade = await getGrade(row.username, course.courseId);
       if (!grade) {
-        // por seguridad, aunque el botón solo aparece si hay entrega
         grade = {
           studentId: row.username,
           courseId: course.courseId,
@@ -202,7 +177,6 @@ export default function Feedback({ course, onClose }: FeedbackProps) {
         grade.actividadExperiencial ??= { questions: [] };
       }
 
-      // preparar feedbacks del momento activo
       const evs = courseEvaluationsFor(course, activeKey);
       const block = gradeBlockFor(grade, activeKey) ?? { questions: [] };
       const qs: GradeQuestion[] = [...(block.questions ?? [])];
@@ -216,12 +190,11 @@ export default function Feedback({ course, onClose }: FeedbackProps) {
     }
   };
 
-  /** Guardar feedback: PUT /api/grades/{id} si existe; si no, POST /api/grades */
+  /** Guardar feedback */
   const onSaveFeedback = async () => {
     if (!course || !editorStudent || !editorGrade) return;
     setEditorLoading(true);
     try {
-      // reconstruir bloque para el momento seleccionado en el panel
       const evs = courseEvaluationsFor(course, editorMoment);
       const current = JSON.parse(JSON.stringify(editorGrade)) as Grade;
 
@@ -232,7 +205,6 @@ export default function Feedback({ course, onClose }: FeedbackProps) {
       const updated = qs.map((q, i) => ({ ...q, feeback: editorText[i] ?? "" }));
       setGradeBlockFor(current, editorMoment, { questions: updated });
 
-      // decide método/URL
       let url = "http://localhost:8081/api/grades";
       let method: "POST" | "PUT" = "POST";
       if (current.id) {
@@ -241,12 +213,16 @@ export default function Feedback({ course, onClose }: FeedbackProps) {
       }
 
       const res = await fetch(url, { method, headers: authHeaders, body: JSON.stringify(current) });
-      if (!res.ok) {
-        const txt = await res.text().catch(() => "");
-        throw new Error(`Guardar feedback falló: ${res.status} ${txt}`);
-      }
+      if (!res.ok) throw new Error(`Guardar feedback falló: ${res.status}`);
 
-      setOpenEditor(false);
+      setEditorOpen(false);
+
+      // ✅ Actualiza la grade en el estado para que la badge se refresque inmediatamente
+      setGrades((prev) => ({
+        ...prev,
+        [editorStudent!.username]: current,
+      }));
+
     } catch (e) {
       console.error(e);
       alert("No se pudo guardar el feedback. Revisa la consola para detalles.");
@@ -255,120 +231,280 @@ export default function Feedback({ course, onClose }: FeedbackProps) {
     }
   };
 
-  /** Navegación del stepper */
+  /** Stepper nav */
   const next = () => setActiveIndex((i) => Math.min(i + 1, orderedMoments.length - 1));
   const prev = () => setActiveIndex((i) => Math.max(i - 1, 0));
 
+  /** ===== Helpers adicionales ===== */
+  const isFeedbackComplete = (block: GradeBlock | undefined) => {
+    if (!block) return false;
+    return block.questions.every(q => (q.feedback ?? q.feeback ?? "").trim() !== "");
+  };
+
+  const FeedbackBadge = ({ block }: { block: GradeBlock | undefined }) => {
+    if (!block) return null;
+
+    const complete = isFeedbackComplete(block);
+
+    return complete ? (
+      <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-green-50 text-green-800 text-sm font-medium shadow-sm">
+        <span className="text-green-600 font-bold">✔</span> Completo
+      </span>
+    ) : (
+      <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-yellow-50 text-yellow-800 text-sm font-medium shadow-sm">
+        <span className="text-yellow-700 font-bold">⚠️</span> Incompleto
+      </span>
+    );
+  };
+  const [grades, setGrades] = useState<Record<string, Grade | null>>({});
+
+  useEffect(() => {
+    if (!course || !token) return;
+    let cancelled = false;
+
+    (async () => {
+      setLoading(true);
+      try {
+        const out: StudentRow[] = [];
+        const gradeMap: Record<string, Grade | null> = {};
+
+        for (const email of course.studentIds ?? []) {
+          const grade = await getGrade(email, course.courseId);
+          const { firstname, lastname } = await getUserName(email);
+
+          out.push({
+            username: email,
+            firstname,
+            lastname,
+            hasSubmission: !!grade,
+          });
+
+          gradeMap[email] = grade;
+        }
+
+        if (!cancelled) {
+          setRows(out);
+          setGrades(gradeMap);
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+
+    return () => { cancelled = true; };
+  }, [course?.courseId]);
+
+
   /** ===== UI ===== */
   return (
-    <div className="max-w-5xl mx-auto">
-      <button onClick={onClose} className="text-sm text-primary-40 hover:underline mb-4">← Salir</button>
+    <div className="max-w-6xl mx-auto p-4">
+      <button onClick={onClose} className="text-sm text-primary-40 hover:underline mb-4">
+        ← Volver al curso
+      </button>
 
       {/* Stepper */}
-      <div className="flex items-center gap-10 mb-8">
-        {orderedMoments.map((key, idx) => {
-          const active = idx === activeIndex;
-          return (
-            <div key={key} className="flex items-center gap-3">
-              <div className={`w-8 h-8 flex items-center justify-center rounded-full border ${active ? "bg-primary-40 text-white border-primary-40" : "bg-gray-200 text-gray-700 border-gray-300"}`}>{idx + 1}</div>
-              <div className="text-sm text-gray-700 w-28">{momentNames[key]}</div>
-              {idx < orderedMoments.length - 1 && <div className="w-16 h-[2px] bg-gray-300" />}
-            </div>
-          );
-        })}
+      <div className="flex flex-col items-center w-full my-8">
+        <div className="flex items-center w-full justify-center relative">
+          {orderedMoments.map((key, idx) => {
+            const active = idx === activeIndex;
+            const isMoment = idx >= 0 && idx <= 2; // all three are "momentos"
+            const isCompleted = idx < activeIndex;
+
+            return (
+              <div
+                key={key}
+                className={`flex items-center ${idx === orderedMoments.length - 1 ? "flex-none" : "flex-1"}`}
+              >
+                <div className="flex flex-col items-center relative">
+                  <div
+                    className={`w-10 h-10 flex items-center justify-center rounded-full font-bold transition-all
+                ${isCompleted
+                        ? isMoment
+                          ? "bg-primary-95 text-primary-40"
+                          : "bg-primary-95 text-primary-40"
+                        : active
+                          ? isMoment
+                            ? "bg-primary-40 text-white"
+                            : "bg-primary-40 text-white"
+                          : "bg-gray-300 text-gray-600"
+                      }`}
+                  >
+                    {isCompleted ? "✔" : idx + 1}
+                  </div>
+                  <span className="absolute top-12 text-sm text-center w-28">
+                    {momentNames[key]}
+                  </span>
+                </div>
+                {idx < orderedMoments.length - 1 && (
+                  <div
+                    className={`h-1 flex-1 mx-2 transition-all ${activeIndex > idx ? "bg-primary-95" : "bg-gray-300"}`}
+                  ></div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Space to next element */}
+        <div className="mt-6 flex justify-center">
+          <span className="px-3 py-1 rounded-full bg-blue-50 text-blue-700 text-xs font-semibold">
+          </span>
+        </div>
       </div>
 
-      <h2 className="text-2xl font-bold mb-1">Revisión de resultados - {momentNames[orderedMoments[activeIndex]]}</h2>
-      <p className="text-gray-600 mb-6">Selecciona a un estudiante para brindar retroalimentación</p>
+      <h2 className="text-2xl font-bold mb-1">Revisión — {momentNames[activeKey]}</h2>
+      <p className="text-gray-600 mb-6">Selecciona un estudiante para revisar y agregar retroalimentación.</p>
 
-      {/* Tabla */}
-      <div className="overflow-x-auto bg-white rounded-md shadow">
-        <table className="min-w-full">
+      {/* Tabla / Cards responsive */}
+      <div className="overflow-x-auto bg-white rounded-md shadow hidden md:block">
+        <table className="min-w-full text-sm">
           <thead>
             <tr className="text-left text-gray-600 border-b">
               <th className="py-3 px-4">Nombre</th>
               <th className="py-3 px-4">Apellido</th>
               <th className="py-3 px-4">Usuario</th>
-              <th className="py-3 px-4">Estado / Acción</th>
+              <th className="py-3 px-4">Acción</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={4} className="py-6 px-4 text-center text-gray-500">Cargando estudiantes...</td></tr>
+              <tr>
+                <td colSpan={4} className="py-6 px-4 text-center text-gray-500">
+                  Cargando estudiantes...
+                </td>
+              </tr>
             ) : rows.length === 0 ? (
-              <tr><td colSpan={4} className="py-6 px-4 text-center text-gray-500">Sin inscritos aún</td></tr>
+              <tr>
+                <td colSpan={4} className="py-6 px-4 text-center text-gray-500">
+                  Sin estudiantes inscritos
+                </td>
+              </tr>
             ) : (
-              rows.map((r) => (
-                <tr key={r.username} className="border-b last:border-b-0">
-                  <td className="py-3 px-4">{r.firstname || "-"}</td>
-                  <td className="py-3 px-4">{r.lastname || "-"}</td>
-                  <td className="py-3 px-4">{r.username}</td>
-                  <td className="py-3 px-4">
-                    {r.hasSubmission ? (
-                      <button
-                        onClick={() => onOpenEditor(r)}
-                        className="px-4 py-2 rounded bg-primary-40 text-white hover:bg-primary-30"
-                      >
-                        Retroalimentar
-                      </button>
-                    ) : (
-                      <span className="text-gray-600 text-sm">El estudiante aún no ha presentado la evaluación</span>
-                    )}
-                  </td>
-                </tr>
-              ))
+              rows.map((r) => {
+                const evs = courseEvaluationsFor(course, activeKey);
+
+                return (
+                  <tr key={r.username} className="border-b last:border-b-0">
+                    <td className="py-3 px-4">{r.firstname || "-"}</td>
+                    <td className="py-3 px-4">{r.lastname || "-"}</td>
+                    <td className="py-3 px-4">{r.username}</td>
+                    <td className="py-3 px-4">
+                      {evs[0]?.question === "NA" ? (
+                        <span className="text-gray-500 text-sm">
+                          Esta sección no cuenta con evaluación
+                        </span>
+                      ) : !r.hasSubmission ? (
+                        <span className="text-gray-500 text-sm">
+                          El estudiante aún no ha completado esta evaluación
+                        </span>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => onOpenEditor(r)}
+                            className="px-4 py-2 rounded bg-primary-40 text-white hover:bg-primary-30"
+                          >
+                            Retroalimentar
+                          </button>
+                          <FeedbackBadge block={gradeBlockFor(grades[r.username] ?? null, activeKey)} />
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })
             )}
           </tbody>
         </table>
       </div>
 
+      {/* Cards en mobile */}
+      <div className="grid gap-4 md:hidden">
+        {rows.map((r) => {
+          const evs = courseEvaluationsFor(course, activeKey);
+
+          return (
+            <div key={r.username} className="border rounded-lg p-4 shadow-sm bg-white">
+              <p className="font-medium text-gray-800">{r.firstname} {r.lastname}</p>
+              <p className="text-sm text-gray-500">{r.username}</p>
+              <div className="mt-3">
+                {evs[0]?.question === "NA" ? (
+                  <span className="text-gray-500 text-sm">
+                    Esta sección no cuenta con evaluación
+                  </span>
+                ) : !r.hasSubmission ? (
+                  <span className="text-gray-500 text-sm">
+                    El estudiante aún no ha completado esta evaluación
+                  </span>
+                ) : (
+                  <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => onOpenEditor(r)}
+                            className="px-4 py-2 rounded bg-primary-40 text-white hover:bg-primary-30"
+                          >
+                            Retroalimentar
+                          </button>
+                          <FeedbackBadge block={gradeBlockFor(grades[r.username] ?? null, activeKey)} />
+                        </div>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
       {/* Footer */}
       <div className="flex justify-end gap-3 mt-6">
-        <button onClick={prev} disabled={activeIndex === 0}
-          className={`px-4 py-2 rounded border ${activeIndex === 0 ? "text-gray-400 border-gray-200 cursor-not-allowed" : "text-gray-700 border-gray-300 hover:bg-gray-50"}`}>
+        <button
+          onClick={prev}
+          disabled={activeIndex === 0}
+          className={`px-4 py-2 rounded border text-sm ${activeIndex === 0
+            ? "text-gray-400 border-gray-200 cursor-not-allowed"
+            : "text-gray-700 border-gray-300 hover:bg-gray-50"
+            }`}
+        >
           Anterior
         </button>
         {activeIndex < orderedMoments.length - 1 ? (
-          <button onClick={next} className="px-4 py-2 rounded bg-primary-40 text-white hover:bg-primary-30">Siguiente</button>
+          <button
+            onClick={next}
+            className="px-4 py-2 rounded bg-primary-40 text-white hover:bg-primary-30 text-sm"
+          >
+            Siguiente
+          </button>
         ) : (
-          <button onClick={onClose} className="px-4 py-2 rounded bg-primary-40 text-white hover:bg-primary-30">Finalizar</button>
+          <button
+            onClick={onClose}
+            className="px-4 py-2 rounded bg-primary-40 text-white hover:bg-primary-30 text-sm"
+          >
+            Finalizar
+          </button>
         )}
       </div>
 
-      {/* Slide-over editor */}
-      {openEditor && (
-        <div className="fixed inset-0 z-50 flex">
-          {/* overlay */}
-          <div className="flex-1 bg-black/30" onClick={() => !editorLoading && setOpenEditor(false)} />
-          {/* panel */}
-          <div className="w-full max-w-xl bg-white h-full p-5 overflow-y-auto shadow-xl">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-semibold">
-                Retroalimentar — {editorStudent?.firstname} {editorStudent?.lastname} ({editorStudent?.username})
-              </h3>
-              <button className="text-gray-500 hover:text-gray-700" onClick={() => !editorLoading && setOpenEditor(false)}>✕</button>
-            </div>
+      {/* === Modal === */}
+      {editorOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white w-full max-w-3xl rounded-xl shadow-lg p-6 relative max-h-[90vh] overflow-y-auto">
+            <button
+              onClick={() => setEditorOpen(false)}
+              className="absolute top-3 right-3 text-gray-400 hover:text-gray-600"
+            >
+              ✕
+            </button>
 
-            {/* Selector de momento dentro del panel */}
-            <div className="flex gap-2 mb-4">
-              {orderedMoments.map((k) => (
-                <button
-                  key={k}
-                  onClick={() => setEditorMoment(k)}
-                  className={`px-3 py-1 rounded border ${editorMoment === k ? "bg-primary-40 text-white border-primary-40" : "bg-white text-gray-700 border-gray-300"}`}
-                  disabled={editorLoading}
-                >
-                  {momentNames[k]}
-                </button>
-              ))}
-            </div>
+            <h3 className="text-lg font-bold mb-2">
+              Retroalimentación — {editorStudent?.firstname} {editorStudent?.lastname}
+            </h3>
+            <p className="text-sm text-gray-500 mb-4">
+              Revise las respuestas del estudiante y ofrezca retroalimentación respecto a los errores identificados.
+            </p>
 
             {editorLoading ? (
-              <p className="text-gray-500">Cargando…</p>
+              <div className="text-center py-6 text-gray-500">Cargando respuestas...</div>
             ) : !editorGrade ? (
               <p className="text-gray-500">No hay respuestas para este estudiante.</p>
             ) : (
-              <div className="space-y-4">
+              <div className="space-y-5">
                 {(() => {
                   const evs = courseEvaluationsFor(course, editorMoment);
                   const block = gradeBlockFor(editorGrade, editorMoment) ?? { questions: [] };
@@ -381,37 +517,59 @@ export default function Feedback({ course, onClose }: FeedbackProps) {
                       ...(ev.correctAnswers ?? []),
                       ...(ev.correctAnswer ? [ev.correctAnswer] : []),
                     ].filter(Boolean);
+                    const isCorrect = corrects.length > 0 && corrects.includes(resp);
 
                     return (
-                      <div key={i} className="border rounded p-3">
-                        <p className="font-medium mb-1">Pregunta {i + 1}</p>
-                        <p className="text-gray-800 mb-2">{ev.question}</p>
+                      <div
+                        key={i}
+                        className={`rounded-lg p-4 shadow-sm ${isCorrect
+                          ? "bg-green-50 border border-green-400"
+                          : "bg-red-50 border border-red-400"
+                          }`}
+                      >
+                        <p className="font-bold text-lg text-gray-600 mb-2">Pregunta {i + 1}</p>
 
-                        <div className="text-sm mb-2">
-                          <span className="font-semibold">Respuesta del estudiante: </span>
-                          <span className="text-gray-700 break-words">{resp || "—"}</span>
-                        </div>
+                        <p className="mb-2 text-gray-800 text-justify">{ev.question}</p>
+
+                        <hr
+                          className={`my-2 border-t ${isCorrect ? "border-green-400" : "border-red-400"
+                            }`}
+                        />
+
+                        <p className="text-sm mb-2 text-gray-600">
+                          <span className="font-semibold">Respuesta del estudiante:</span>{" "}
+                          {resp || "—"}
+                        </p>
 
                         {corrects.length > 0 && (
-                          <div className="text-sm mb-2">
-                            <span className="font-semibold">Respuesta(s) correcta(s): </span>
-                            <span className="text-gray-700">{corrects.join(" | ")}</span>
-                          </div>
+                          <p className="text-sm mb-2 text-gray-600">
+                            <span className="font-semibold">Respuesta correcta:</span>{" "}
+                            {corrects.join(" | ")}
+                          </p>
                         )}
 
-                        <label className="block text-sm font-medium mb-1">Feedback</label>
-                        <textarea
-                          className="w-full border rounded px-3 py-2 text-sm"
-                          rows={3}
-                          value={editorText[i] ?? ""}
-                          onChange={(e) => {
-                            const copy = [...editorText];
-                            copy[i] = e.target.value;
-                            setEditorText(copy);
-                          }}
-                          disabled={editorLoading}
-                          placeholder="Escribe tu retroalimentación…"
-                        />
+                        {!isCorrect && (
+                          <>
+                            <hr
+                              className={`my-2 border-t ${isCorrect ? "border-green-400" : "border-red-400"
+                                }`}
+                            />
+                            <p className="text-sm mb-2 text-gray-600">
+                              <span className="font-semibold">Retroalimentación:</span>
+                            </p>
+                            <textarea
+                              className="w-full border rounded-md p-3 text-sm"
+                              rows={2}
+                              placeholder="Escribe tu retroalimentación..."
+                              value={editorText[i] ?? ""}
+                              onChange={(e) => {
+                                const copy = [...editorText];
+                                copy[i] = e.target.value;
+                                setEditorText(copy);
+                              }}
+                            />
+                          </>
+                        )}
                       </div>
                     );
                   });
@@ -419,20 +577,20 @@ export default function Feedback({ course, onClose }: FeedbackProps) {
               </div>
             )}
 
-            <div className="mt-6 flex justify-end gap-2">
+            <div className="flex justify-end gap-3 mt-6">
               <button
-                className="px-4 py-2 rounded border border-gray-300 text-gray-700 hover:bg-gray-50"
-                onClick={() => setOpenEditor(false)}
+                onClick={() => setEditorOpen(false)}
+                className="px-4 py-2 rounded border text-gray-700 border-gray-300 hover:bg-gray-50 text-sm"
                 disabled={editorLoading}
               >
                 Cancelar
               </button>
               <button
-                className="px-4 py-2 rounded bg-primary-40 text-white hover:bg-primary-30 disabled:opacity-60"
                 onClick={onSaveFeedback}
                 disabled={editorLoading || !editorGrade}
+                className="px-4 py-2 rounded bg-primary-40 text-white hover:bg-primary-30 text-sm disabled:opacity-50"
               >
-                {editorLoading ? "Guardando…" : "Guardar"}
+                {editorLoading ? "Guardando..." : "Guardar"}
               </button>
             </div>
           </div>
