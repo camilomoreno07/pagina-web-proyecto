@@ -122,6 +122,7 @@ export default function Feedback({ course, onClose }: { course: Course | null; o
   const [editorText, setEditorText] = useState<string[]>([]);
 
   const activeKey = orderedMoments[activeIndex];
+  const [grades, setGrades] = useState<Record<string, Grade | null>>({});
 
   /** Cargar filas */
   useEffect(() => {
@@ -132,17 +133,26 @@ export default function Feedback({ course, onClose }: { course: Course | null; o
       setLoading(true);
       try {
         const out: StudentRow[] = [];
+        const gradeMap: Record<string, Grade | null> = {};
+
         for (const email of course.studentIds ?? []) {
           const grade = await getGrade(email, course.courseId);
           const { firstname, lastname } = await getUserName(email);
+
           out.push({
             username: email,
             firstname,
             lastname,
             hasSubmission: !!grade,
           });
+
+          gradeMap[email] = grade;
         }
-        if (!cancelled) setRows(out);
+
+        if (!cancelled) {
+          setRows(out);
+          setGrades(gradeMap);
+        }
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -217,12 +227,10 @@ export default function Feedback({ course, onClose }: { course: Course | null; o
 
       setEditorOpen(false);
 
-      // ✅ Actualiza la grade en el estado para que la badge se refresque inmediatamente
       setGrades((prev) => ({
         ...prev,
         [editorStudent!.username]: current,
       }));
-
     } catch (e) {
       console.error(e);
       alert("No se pudo guardar el feedback. Revisa la consola para detalles.");
@@ -235,16 +243,34 @@ export default function Feedback({ course, onClose }: { course: Course | null; o
   const next = () => setActiveIndex((i) => Math.min(i + 1, orderedMoments.length - 1));
   const prev = () => setActiveIndex((i) => Math.max(i - 1, 0));
 
-  /** ===== Helpers adicionales ===== */
-  const isFeedbackComplete = (block: GradeBlock | undefined) => {
-    if (!block) return false;
-    return block.questions.every(q => (q.feedback ?? q.feeback ?? "").trim() !== "");
+  /** Helpers */
+  /** Helpers */
+  const isFeedbackComplete = (block: GradeBlock | undefined, evs?: Evaluation[]) => {
+    if (!block || !evs) return false;
+
+    return evs.every((ev, i) => {
+      const q = block.questions[i];
+      if (!q) return true;
+
+      const corrects = [
+        ...(ev.correctAnswers ?? []),
+        ...(ev.correctAnswer ? [ev.correctAnswer] : []),
+      ].filter(Boolean);
+
+      const isCorrect = corrects.length > 0 && corrects.includes(q.response);
+
+      // Si es correcta, no requiere feedback
+      if (isCorrect) return true;
+
+      // Si es incorrecta, feedback obligatorio
+      return (q.feedback ?? q.feeback ?? "").trim() !== "";
+    });
   };
 
-  const FeedbackBadge = ({ block }: { block: GradeBlock | undefined }) => {
-    if (!block) return null;
 
-    const complete = isFeedbackComplete(block);
+  const FeedbackBadge = ({ block, evs }: { block: GradeBlock | undefined; evs: Evaluation[] }) => {
+    if (!block) return null;
+    const complete = isFeedbackComplete(block, evs);
 
     return complete ? (
       <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-green-50 text-green-800 text-sm font-medium shadow-sm">
@@ -256,44 +282,6 @@ export default function Feedback({ course, onClose }: { course: Course | null; o
       </span>
     );
   };
-  const [grades, setGrades] = useState<Record<string, Grade | null>>({});
-
-  useEffect(() => {
-    if (!course || !token) return;
-    let cancelled = false;
-
-    (async () => {
-      setLoading(true);
-      try {
-        const out: StudentRow[] = [];
-        const gradeMap: Record<string, Grade | null> = {};
-
-        for (const email of course.studentIds ?? []) {
-          const grade = await getGrade(email, course.courseId);
-          const { firstname, lastname } = await getUserName(email);
-
-          out.push({
-            username: email,
-            firstname,
-            lastname,
-            hasSubmission: !!grade,
-          });
-
-          gradeMap[email] = grade;
-        }
-
-        if (!cancelled) {
-          setRows(out);
-          setGrades(gradeMap);
-        }
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-
-    return () => { cancelled = true; };
-  }, [course?.courseId]);
-
 
   /** ===== UI ===== */
   return (
@@ -355,7 +343,7 @@ export default function Feedback({ course, onClose }: { course: Course | null; o
       <h2 className="text-2xl font-bold mb-1">Revisión — {momentNames[activeKey]}</h2>
       <p className="text-gray-600 mb-6">Selecciona un estudiante para revisar y agregar retroalimentación.</p>
 
-      {/* Tabla / Cards responsive */}
+      {/* Tabla */}
       <div className="overflow-x-auto bg-white rounded-md shadow hidden md:block">
         <table className="min-w-full text-sm">
           <thead>
@@ -382,6 +370,7 @@ export default function Feedback({ course, onClose }: { course: Course | null; o
             ) : (
               rows.map((r) => {
                 const evs = courseEvaluationsFor(course, activeKey);
+                const block = gradeBlockFor(grades[r.username] ?? null, activeKey);
 
                 return (
                   <tr key={r.username} className="border-b last:border-b-0">
@@ -393,7 +382,7 @@ export default function Feedback({ course, onClose }: { course: Course | null; o
                         <span className="text-gray-500 text-sm">
                           Esta sección no cuenta con evaluación
                         </span>
-                      ) : !r.hasSubmission ? (
+                      ) : !r.hasSubmission || !(block?.questions?.length) ? (
                         <span className="text-gray-500 text-sm">
                           El estudiante aún no ha completado esta evaluación
                         </span>
@@ -405,7 +394,7 @@ export default function Feedback({ course, onClose }: { course: Course | null; o
                           >
                             Retroalimentar
                           </button>
-                          <FeedbackBadge block={gradeBlockFor(grades[r.username] ?? null, activeKey)} />
+                          <FeedbackBadge block={block} evs={evs} />
                         </div>
                       )}
                     </td>
@@ -421,6 +410,7 @@ export default function Feedback({ course, onClose }: { course: Course | null; o
       <div className="grid gap-4 md:hidden">
         {rows.map((r) => {
           const evs = courseEvaluationsFor(course, activeKey);
+          const block = gradeBlockFor(grades[r.username] ?? null, activeKey);
 
           return (
             <div key={r.username} className="border rounded-lg p-4 shadow-sm bg-white">
@@ -431,26 +421,28 @@ export default function Feedback({ course, onClose }: { course: Course | null; o
                   <span className="text-gray-500 text-sm">
                     Esta sección no cuenta con evaluación
                   </span>
-                ) : !r.hasSubmission ? (
+                ) : !r.hasSubmission || !(block?.questions?.length) ? (
                   <span className="text-gray-500 text-sm">
                     El estudiante aún no ha completado esta evaluación
                   </span>
                 ) : (
                   <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => onOpenEditor(r)}
-                            className="px-4 py-2 rounded bg-primary-40 text-white hover:bg-primary-30"
-                          >
-                            Retroalimentar
-                          </button>
-                          <FeedbackBadge block={gradeBlockFor(grades[r.username] ?? null, activeKey)} />
-                        </div>
+                    <button
+                      onClick={() => onOpenEditor(r)}
+                      className="px-4 py-2 rounded bg-primary-40 text-white hover:bg-primary-30"
+                    >
+                      Retroalimentar
+                    </button>
+                    <FeedbackBadge block={block} evs={evs} />
+                  </div>
                 )}
               </div>
             </div>
           );
         })}
       </div>
+
+      {/* Footer + Modal unchanged ... */}
 
       {/* Footer */}
       <div className="flex justify-end gap-3 mt-6">
