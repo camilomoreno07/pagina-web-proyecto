@@ -8,7 +8,7 @@ import EvaluacionViewStudent from "../components/EvaluacionViewStudent";
 import ReviewExperience from "../components/ReviewExperience";
 
 const token = Cookies.get("token");
-let username = null;
+let username: string | null = null;
 
 if (token) {
   try {
@@ -19,19 +19,29 @@ if (token) {
   }
 }
 
+interface Course {
+  courseId: string;
+  courseName: string;
+  beforeClass?: any;
+  duringClass?: any;
+  afterClass?: any;
+}
+
 interface ContentSectionProps {
-  title: string;
+  title: "Antes de clase" | "Durante la clase" | "Después de la clase";
   onBack: () => void;
   course: Course;
 }
 
-interface TokenPayload {
-  sub: string;
-  role?: string;
-}
-
 const TABS = ["Instrucciones", "Contenido", "Evaluación"] as const;
 type Tab = (typeof TABS)[number];
+
+// 🔑 Mapeo de título visible → clave de sección (lo que espera EvaluacionViewStudent)
+const SECTION_KEY_BY_TITLE: Record<ContentSectionProps["title"], "aulaVirtual" | "tallerHabilidad" | "actividadExperiencial"> = {
+  "Antes de clase": "aulaVirtual",
+  "Durante la clase": "tallerHabilidad",
+  "Después de la clase": "actividadExperiencial",
+};
 
 const ContentSection = ({ title, onBack, course }: ContentSectionProps) => {
   const [activeTab, setActiveTab] = useState<Tab>("Instrucciones");
@@ -42,15 +52,16 @@ const ContentSection = ({ title, onBack, course }: ContentSectionProps) => {
     "Antes de clase": course.beforeClass,
     "Durante la clase": course.duringClass,
     "Después de la clase": course.afterClass,
-  };
+  } as const;
 
   const sectionName = {
     "Antes de clase": "Aula Invertida",
     "Durante la clase": "Taller de Habilidad",
     "Después de la clase": "Actividad Experiencial",
-  };
+  } as const;
 
   const currentSection = sectionMap[title];
+  const sectionKey = SECTION_KEY_BY_TITLE[title]; // <- AQUÍ OBTIENES LA SECTION CORRECTA
 
   // Estado de completado
   const [instructionsCompleted, setInstructionsCompleted] = useState(false);
@@ -59,23 +70,21 @@ const ContentSection = ({ title, onBack, course }: ContentSectionProps) => {
   // Inicializar contenidos
   useEffect(() => {
     if (currentSection?.contents?.length) {
-      setCompletedContents(
-        new Array(currentSection.contents.length).fill(false)
-      );
+      setCompletedContents(new Array(currentSection.contents.length).fill(false));
+    } else {
+      setCompletedContents([]);
     }
   }, [currentSection]);
 
   const toggleCompleted = (index: number) => {
     setCompletedContents((prev) => {
-      const newState = [...prev];
-      newState[index] = !newState[index];
-      return newState;
+      const next = [...prev];
+      next[index] = !next[index];
+      return next;
     });
   };
 
-  const toggleInstructions = () => {
-    setInstructionsCompleted((prev) => !prev);
-  };
+  const toggleInstructions = () => setInstructionsCompleted((p) => !p);
 
   // Cargar imágenes autenticadas
   useEffect(() => {
@@ -84,28 +93,25 @@ const ContentSection = ({ title, onBack, course }: ContentSectionProps) => {
       if (!token) return;
 
       const contents = currentSection?.contents || [];
-      const loadedImages: Record<string, string> = {};
+      const loaded: Record<string, string> = {};
 
       await Promise.all(
-        contents.map(async (content) => {
+        contents.map(async (content: any) => {
           if (!content.imageUrl || content.imageUrl.startsWith("blob:")) return;
           try {
             const res = await fetch(content.imageUrl, {
               headers: { Authorization: `Bearer ${token}` },
             });
             if (!res.ok) return;
-
             const blob = await res.blob();
-            const objectURL = URL.createObjectURL(blob);
-            loadedImages[content.imageUrl] = objectURL;
-            console.log("EVALUACIONES:", currentSection?.evaluations);
+            loaded[content.imageUrl] = URL.createObjectURL(blob);
           } catch (err) {
             console.error("Error al cargar imagen de contenido:", err);
           }
         })
       );
 
-      setImages(loadedImages);
+      setImages(loaded);
     };
 
     loadImages();
@@ -113,47 +119,36 @@ const ContentSection = ({ title, onBack, course }: ContentSectionProps) => {
 
   const getMimeTypeFromUrl = (url: string): string => {
     const lowerUrl = url.toLowerCase();
-
     if (lowerUrl.endsWith(".pdf")) return "application/pdf";
     if (lowerUrl.endsWith(".doc")) return "application/msword";
-    if (lowerUrl.endsWith(".docx"))
-      return "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+    if (lowerUrl.endsWith(".docx")) return "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
     if (lowerUrl.endsWith(".xls")) return "application/vnd.ms-excel";
-    if (lowerUrl.endsWith(".xlsx"))
-      return "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+    if (lowerUrl.endsWith(".xlsx")) return "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
     if (lowerUrl.endsWith(".ppt")) return "application/vnd.ms-powerpoint";
-    if (lowerUrl.endsWith(".pptx"))
-      return "application/vnd.openxmlformats-officedocument.presentationml.presentation";
-
-    if (lowerUrl.endsWith(".jpg") || lowerUrl.endsWith(".jpeg"))
-      return "image/jpeg";
+    if (lowerUrl.endsWith(".pptx")) return "application/vnd.openxmlformats-officedocument.presentationml.presentation";
+    if (lowerUrl.endsWith(".jpg") || lowerUrl.endsWith(".jpeg")) return "image/jpeg";
     if (lowerUrl.endsWith(".png")) return "image/png";
     if (lowerUrl.endsWith(".gif")) return "image/gif";
     if (lowerUrl.endsWith(".svg")) return "image/svg+xml";
     if (lowerUrl.endsWith(".webp")) return "image/webp";
-
     if (lowerUrl.endsWith(".mp4")) return "video/mp4";
     if (lowerUrl.endsWith(".webm")) return "video/webm";
     if (lowerUrl.endsWith(".mov")) return "video/quicktime";
-
     if (lowerUrl.endsWith(".mp3")) return "audio/mpeg";
     if (lowerUrl.endsWith(".wav")) return "audio/wav";
     if (lowerUrl.endsWith(".ogg")) return "audio/ogg";
-
     if (lowerUrl.endsWith(".zip")) return "application/zip";
     if (lowerUrl.endsWith(".rar")) return "application/vnd.rar";
     if (lowerUrl.endsWith(".7z")) return "application/x-7z-compressed";
-
     if (lowerUrl.endsWith(".txt")) return "text/plain";
     if (lowerUrl.endsWith(".csv")) return "text/csv";
     if (lowerUrl.endsWith(".json")) return "application/json";
-
     return "unknown";
   };
 
   return (
     <div className="w-full px-6 py-6 space-y-6 bg-white">
-      {/* 🔙 Volver */}
+      {/* Volver */}
       <button
         onClick={onBack}
         className="mb-3 text-sm text-gray-500 hover:text-primary-600 transition flex items-center gap-1"
@@ -161,21 +156,19 @@ const ContentSection = ({ title, onBack, course }: ContentSectionProps) => {
         <span className="text-base">←</span> Volver a detalles del curso
       </button>
 
-      {/* 🔹 Título */}
+      {/* Título */}
       <h2 className="text-2xl font-bold text-gray-800 mb-4">
         {sectionName[title]}
       </h2>
 
-      {/* 🔹 Tabs */}
+      {/* Tabs */}
       <div className="grid grid-cols-3 mb-6 rounded-lg overflow-hidden border border-gray-200">
         {TABS.map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
             className={`py-3 text-center text-sm md:text-base font-medium transition-colors ${
-              activeTab === tab
-                ? "bg-[#EDFAFA] text-[#096874]"
-                : "bg-white text-gray-600 hover:bg-gray-100"
+              activeTab === tab ? "bg-[#EDFAFA] text-[#096874]" : "bg-white text-gray-600 hover:bg-gray-100"
             }`}
           >
             {tab}
@@ -183,7 +176,7 @@ const ContentSection = ({ title, onBack, course }: ContentSectionProps) => {
         ))}
       </div>
 
-      {/* CONTENIDO CENTRADO */}
+      {/* Contenido centrado */}
       <div className="w-full max-w-4xl mx-auto space-y-6">
         {/* Instrucciones */}
         {activeTab === "Instrucciones" && currentSection?.instructions && (
@@ -191,22 +184,18 @@ const ContentSection = ({ title, onBack, course }: ContentSectionProps) => {
             <h2 className="text-xl font-semibold mb-4">
               {currentSection.instructions.instructionTitle}
             </h2>
-            <Resumen
-              description={currentSection.instructions.instructionDescription}
-            />
+            <Resumen description={currentSection.instructions.instructionDescription} />
             {currentSection.instructions.steps?.length > 0 && (
               <ol className="list-decimal list-inside text-gray-700 space-y-1 mt-2">
                 {currentSection.instructions.steps
-                  .filter((step) => step.trim() !== "")
-                  .map((step, idx) => (
+                  .filter((step: string) => step.trim() !== "")
+                  .map((step: string, idx: number) => (
                     <li key={idx}>{step}</li>
                   ))}
               </ol>
             )}
             <div className="flex items-center gap-2 mb-2">
-              <h2 className="text-sm font-semibold text-gray-500">
-                Tiempo sugerido de estudio:
-              </h2>
+              <h2 className="text-sm font-semibold text-gray-500">Tiempo sugerido de estudio:</h2>
               <p className="text-sm px-2 py-1 rounded text-green-700 bg-green-100 inline-block">
                 {currentSection.instructions.time} min
               </p>
@@ -234,11 +223,8 @@ const ContentSection = ({ title, onBack, course }: ContentSectionProps) => {
                   {(() => {
                     const content = currentSection.contents[activeContentIndex];
 
-                    // 👉 Experiencia WebGL
-                    if (
-                      content.experienceUrl &&
-                      content.experienceUrl !== "NA"
-                    ) {
+                    // Experiencia WebGL
+                    if (content?.experienceUrl && content.experienceUrl !== "NA") {
                       return (
                         <>
                           <h4 className="text-lg font-semibold text-primary-10">
@@ -257,36 +243,32 @@ const ContentSection = ({ title, onBack, course }: ContentSectionProps) => {
                               Tiempo sugerido de estudio:
                             </h2>
                             <p className="text-sm px-2 py-1 rounded text-green-700 bg-green-100 inline-block">
-                              {content.time * 60} min
+                              {content.time} min
                             </p>
                           </div>
                           <div className="pt-2">
                             <label className="inline-flex items-center gap-2 text-sm text-primary-30">
                               <input
                                 type="checkbox"
-                                checked={
-                                  completedContents[activeContentIndex] || false
-                                }
-                                onChange={() =>
-                                  toggleCompleted(activeContentIndex)
-                                }
+                                checked={completedContents[activeContentIndex] || false}
+                                onChange={() => toggleCompleted(activeContentIndex)}
                               />
                               Marcar como completado
                             </label>
                           </div>
                         </>
                       );
-                    } else if (content.experienceUrl === "NA") {
+                    } else if (content?.experienceUrl === "NA") {
                       return (
                         <ReviewExperience
-                          idEstudiante={username}
+                          idEstudiante={username ?? ""}
                           nombreCurso={course.courseName}
                         />
                       );
                     }
 
-                    // 👉 Contenido normal (imagen/video/pdf/etc.)
-                    if (currentSection?.contents[0]?.contentTitle === "NA") {
+                    // Contenido normal (imagen/video/pdf/etc.)
+                    if (currentSection?.contents?.[0]?.contentTitle === "NA") {
                       return (
                         <div className="w-full min-h-[120px] border border-dashed border-gray-300 rounded flex items-center justify-center px-4 py-6 text-center text-gray-500 text-sm italic">
                           Esta sección no cuenta con ningún contenido asociado
@@ -294,12 +276,12 @@ const ContentSection = ({ title, onBack, course }: ContentSectionProps) => {
                       );
                     }
 
-                    const mimeType = content.imageUrl
+                    const mimeType = content?.imageUrl
                       ? getMimeTypeFromUrl(content.imageUrl)
                       : "unknown";
-                    const imageSrc = content.imageUrl?.startsWith("blob:")
+                    const imageSrc = content?.imageUrl?.startsWith("blob:")
                       ? content.imageUrl
-                      : images[content.imageUrl] || "";
+                      : (content?.imageUrl ? images[content.imageUrl] : "");
 
                     return (
                       <>
@@ -346,30 +328,23 @@ const ContentSection = ({ title, onBack, course }: ContentSectionProps) => {
                                 rel="noopener noreferrer"
                                 className="block text-center text-sm font-semibold text-primary-40 hover:underline"
                               >
-                                Descargar Documento{" "}
-                                <FaDownload className="text-base inline ml-1" />
+                                Descargar Documento <FaDownload className="text-base inline ml-1" />
                               </a>
                             </div>
                           )}
 
                         <div className="flex items-center gap-2 mb-2">
-                          <h2 className="text-sm font-semibold text-gray-500">
-                            Tiempo sugerido de estudio:
-                          </h2>
+                          <h2 className="text-sm font-semibold text-gray-500">Tiempo sugerido de estudio:</h2>
                           <p className="text-sm px-2 py-1 rounded text-green-700 bg-green-100 inline-block">
-                            {content.time} min
+                            {content?.time ?? 0} min
                           </p>
                         </div>
                         <div className="pt-2">
                           <label className="inline-flex items-center gap-2 text-sm text-primary-30">
                             <input
                               type="checkbox"
-                              checked={
-                                completedContents[activeContentIndex] || false
-                              }
-                              onChange={() =>
-                                toggleCompleted(activeContentIndex)
-                              }
+                              checked={completedContents[activeContentIndex] || false}
+                              onChange={() => toggleCompleted(activeContentIndex)}
                             />
                             Marcar como completado
                           </label>
@@ -382,9 +357,7 @@ const ContentSection = ({ title, onBack, course }: ContentSectionProps) => {
                 {/* Navegación */}
                 <div className="flex justify-between items-center pt-4">
                   <button
-                    onClick={() =>
-                      setActiveContentIndex((prev) => Math.max(prev - 1, 0))
-                    }
+                    onClick={() => setActiveContentIndex((prev) => Math.max(prev - 1, 0))}
                     disabled={activeContentIndex === 0}
                     className="text-primary-30 px-4 py-2 border border-primary-30 rounded disabled:opacity-30"
                   >
@@ -397,13 +370,9 @@ const ContentSection = ({ title, onBack, course }: ContentSectionProps) => {
 
                   <button
                     onClick={() =>
-                      setActiveContentIndex((prev) =>
-                        Math.min(prev + 1, currentSection.contents.length - 1)
-                      )
+                      setActiveContentIndex((prev) => Math.min(prev + 1, currentSection.contents.length - 1))
                     }
-                    disabled={
-                      activeContentIndex === currentSection.contents.length - 1
-                    }
+                    disabled={activeContentIndex === currentSection.contents.length - 1}
                     className="text-primary-100 bg-primary-40 px-4 py-2 rounded hover:opacity-90 disabled:opacity-30"
                   >
                     Siguiente
@@ -418,14 +387,15 @@ const ContentSection = ({ title, onBack, course }: ContentSectionProps) => {
 
         {/* Evaluaciones */}
         {activeTab === "Evaluación" &&
-          (currentSection?.evaluations[0].question === "NA" ? (
+          (currentSection?.evaluations?.[0]?.question === "NA" ? (
             <div className="w-full min-h-[120px] border border-dashed border-gray-300 rounded flex items-center justify-center px-4 py-6 text-center text-gray-500 text-sm italic">
               Esta sección no cuenta con una evaluación de conocimientos
             </div>
           ) : (
             <EvaluacionViewStudent
-              evaluations={currentSection?.evaluations}
-              course={course}
+              evaluations={currentSection?.evaluations ?? []}
+              course={{ courseId: course.courseId }}
+              section={sectionKey}              // <<<<<<<<<<<<<<<<<<<<<<<< AQUÍ PASAS SECTION
             />
           ))}
       </div>
