@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { FaTrash, FaPlus } from "react-icons/fa";
+import NumberStepper from "./NumberStepper";
 
-// ⬅️ Agregamos "TF"
+// Tipos
 type QuestionType = "OPEN" | "MC3" | "MC5" | "TF";
 
 interface Question {
@@ -78,7 +79,7 @@ export default function CrearEvaluacion({
       type,
     };
 
-    // ⬅️ TF con dos opciones fijas
+    // TF con dos opciones fijas
     const withType: Question =
       type === "OPEN"
         ? { ...base }
@@ -117,8 +118,10 @@ export default function CrearEvaluacion({
     const q = evaluations[qIndex];
     if (!q.options) return;
 
-    // Si es TF, mantenemos siempre 2 opciones (pero permitimos editar el texto si quisieras)
-    const nextOpts = q.options.map((opt, i) => (i === optIndex ? value : opt)).slice(0, q.type === "TF" ? 2 : undefined);
+    // Si es TF, mantener siempre 2 opciones
+    const nextOpts = q.options
+      .map((opt, i) => (i === optIndex ? value : opt))
+      .slice(0, q.type === "TF" ? 2 : undefined);
 
     const stillValid = nextOpts.includes(q.correctAnswer);
     const updated: Question = {
@@ -137,12 +140,6 @@ export default function CrearEvaluacion({
     const q = evaluations[qIndex];
     if (!q.options) return;
     handleQuestionChange(qIndex, "correctAnswer", q.options[optIndex] || "");
-  };
-
-  const updateTime = (index: number, delta: number) => {
-    const current = evaluations[index].time || 1;
-    const updated = Math.max(1, Math.min(30, current + delta));
-    handleQuestionChange(index, "time", updated);
   };
 
   const omitEvaluation = () => {
@@ -255,13 +252,6 @@ export default function CrearEvaluacion({
                         </label>
                       ))}
                     </div>
-                    {/* Si quieres permitir editar los textos de Verdadero/Falso, descomenta: 
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
-                        {(q.options ?? ["Verdadero","Falso"]).slice(0,2).map((opt,oi)=>(
-                          <input key={oi} value={opt} onChange={(e)=>handleOptionChange(index,oi,e.target.value)} className="p-2 border rounded bg-gray-50"/>
-                        ))}
-                      </div>
-                    */}
                     {q.correctAnswer === "" && (
                       <p className="text-xs text-amber-600 mt-2">Selecciona Verdadero o Falso como correcta.</p>
                     )}
@@ -295,22 +285,16 @@ export default function CrearEvaluacion({
                   </>
                 )}
 
-                <label className="block font-medium mb-1 mt-3">Tiempo límite</label>
-                <div className="flex items-center mb-1">
-                  <button
-                    onClick={() => updateTime(index, -1)}
-                    className="px-4 py-2 bg-gray-300 text-black rounded-l"
-                  >
-                    -
-                  </button>
-                  <span className="px-6 py-2 text-lg">{q.time} min</span>
-                  <button
-                    onClick={() => updateTime(index, 1)}
-                    className="px-4 py-2 bg-gray-300 text-black rounded-r"
-                  >
-                    +
-                  </button>
-                </div>
+                {/* ⬇️ Aquí va el NumberStepper CORRECTO por pregunta */}
+                <label className="block font-medium mb-1 mt-3">Tiempo de estudio</label>
+                <NumberStepper
+                  value={q.time}
+                  onChange={(next) => handleQuestionChange(index, "time", next)}
+                  min={1}
+                  max={30}     // ajustable
+                  step={1}
+                  suffix="min"
+                />
                 <p className="text-xs text-gray-500">Entre 1 y 30 minutos.</p>
               </div>
             ))}

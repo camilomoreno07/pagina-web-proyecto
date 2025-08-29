@@ -10,12 +10,15 @@ import {
   FaFileAlt,
 } from "react-icons/fa";
 import Cookies from "js-cookie";
+import NumberStepper from "./NumberStepper";
 
 interface SubirContenidoProps {
   courseData: any;
   setCourseData: (data: any) => void;
   handleInputChange: (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >
   ) => void;
   name: string;
   hasSimulation: boolean;
@@ -145,8 +148,7 @@ export default function SubirContenido({
           className="w-full h-full object-cover rounded-lg"
         />
       );
-    }
-    else if (mimeType.startsWith("video/")) {
+    } else if (mimeType.startsWith("video/")) {
       return (
         <video
           src={images[url]}
@@ -154,17 +156,11 @@ export default function SubirContenido({
           className="w-full h-full object-cover rounded-lg"
         />
       );
-    }
-    else if (mimeType.startsWith("audio/")) {
+    } else if (mimeType.startsWith("audio/")) {
       return (
-        <audio
-          src={images[url]}
-          controls
-          className="w-full rounded-lg"
-        ></audio>
+        <audio src={images[url]} controls className="w-full rounded-lg"></audio>
       );
-    }
-    else {
+    } else {
       return <FaFileAlt className="text-gray-500 text-7xl" />;
     }
   };
@@ -174,13 +170,17 @@ export default function SubirContenido({
 
     if (lowerUrl.endsWith(".pdf")) return "application/pdf";
     if (lowerUrl.endsWith(".doc")) return "application/msword";
-    if (lowerUrl.endsWith(".docx")) return "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+    if (lowerUrl.endsWith(".docx"))
+      return "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
     if (lowerUrl.endsWith(".xls")) return "application/vnd.ms-excel";
-    if (lowerUrl.endsWith(".xlsx")) return "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+    if (lowerUrl.endsWith(".xlsx"))
+      return "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
     if (lowerUrl.endsWith(".ppt")) return "application/vnd.ms-powerpoint";
-    if (lowerUrl.endsWith(".pptx")) return "application/vnd.openxmlformats-officedocument.presentationml.presentation";
+    if (lowerUrl.endsWith(".pptx"))
+      return "application/vnd.openxmlformats-officedocument.presentationml.presentation";
 
-    if (lowerUrl.endsWith(".jpg") || lowerUrl.endsWith(".jpeg")) return "image/jpeg";
+    if (lowerUrl.endsWith(".jpg") || lowerUrl.endsWith(".jpeg"))
+      return "image/jpeg";
     if (lowerUrl.endsWith(".png")) return "image/png";
     if (lowerUrl.endsWith(".gif")) return "image/gif";
     if (lowerUrl.endsWith(".svg")) return "image/svg+xml";
@@ -231,7 +231,9 @@ export default function SubirContenido({
 
   return (
     <div>
-      <h3 className="text-3xl font-medium mb-4">{hasSimulation ? "Briefing" : "Subir Contenido"}</h3>
+      <h3 className="text-3xl font-medium mb-4">
+        {hasSimulation ? "Briefing" : "Subir Contenido"}
+      </h3>
       <hr className="mb-4 border-gray-300" />
 
       {isOmitted ? (
@@ -250,7 +252,10 @@ export default function SubirContenido({
       ) : (
         <>
           {contents.map((c, i) => (
-            <div key={i} className="p-4 border border-gray-300 rounded-lg mb-4 shadow relative">
+            <div
+              key={i}
+              className="p-4 border border-gray-300 rounded-lg mb-4 shadow relative"
+            >
               <div className="flex flex-col md:flex-row gap-4">
                 <div className="flex-1 space-y-3">
                   {!c.completed && (
@@ -278,41 +283,46 @@ export default function SubirContenido({
                         <h4 className="text-lg font-bold">{c.contentTitle}</h4>
                       </div>
                       <p className="text-gray-600">{c.contentDescription}</p>
-                      <p className="text-sm text-gray-500">Tiempo: {c.time} min</p>
+                      <p className="text-sm text-gray-500">
+                        Tiempo: {c.time} min
+                      </p>
                     </>
                   ) : (
                     <>
-                      <label className="block font-medium mb-1">Título del contenido</label>
+                      <label className="block font-medium mb-1">
+                        Título del contenido
+                      </label>
                       <input
                         type="text"
                         value={c.contentTitle}
-                        onChange={(e) => updateContent(i, "contentTitle", e.target.value)}
+                        onChange={(e) =>
+                          updateContent(i, "contentTitle", e.target.value)
+                        }
                         className="w-full p-2 border border-gray-300 rounded-lg bg-gray-50"
                       />
-                      <label className="block font-medium mb-1">Descripción del contenido</label>
+                      <label className="block font-medium mb-1">
+                        Descripción del contenido
+                      </label>
                       <textarea
                         value={c.contentDescription}
-                        onChange={(e) => updateContent(i, "contentDescription", e.target.value)}
+                        onChange={(e) =>
+                          updateContent(i, "contentDescription", e.target.value)
+                        }
                         className="w-full p-2 border border-gray-300 rounded-lg bg-gray-50"
                         rows={3}
                       />
 
-                      <label className="block font-medium mb-1">Tiempo de estudio</label>
-                      <div className="flex items-center">
-                        <button
-                          onClick={() => updateContent(i, "time", Math.max(1, c.time - 1))}
-                          className="px-4 py-2 bg-gray-300 text-black rounded-l"
-                        >
-                          -
-                        </button>
-                        <span className="px-6 py-2 text-lg">{c.time} min</span>
-                        <button
-                          onClick={() => updateContent(i, "time", Math.min(30, c.time + 1))}
-                          className="px-4 py-2 bg-gray-300 text-black rounded-r"
-                        >
-                          +
-                        </button>
-                      </div>
+                      <label className="block font-medium mb-1">
+                        Tiempo de estudio
+                      </label>
+                      <NumberStepper
+                        value={c.time}
+                        onChange={(next) => updateContent(i, "time", next)}
+                        min={1}
+                        max={30} // límite superior (puedes ajustarlo)
+                        step={1}
+                        suffix="min"
+                      />
                     </>
                   )}
                 </div>
@@ -370,7 +380,8 @@ export default function SubirContenido({
               onClick={addContent}
               className="p-2 border-2 border-primary-40 text-primary-40 bg-white rounded-lg font-semibold flex items-center justify-center"
             >
-              <FaPlus className="text-2xl leading-none mr-2" /> Agregar Contenido
+              <FaPlus className="text-2xl leading-none mr-2" /> Agregar
+              Contenido
             </button>
 
             <button

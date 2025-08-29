@@ -39,7 +39,9 @@ const AddNewCourseCard = ({ onClick }: { onClick: () => void }) => (
     className="w-64 h-64 flex flex-col items-center justify-center border-2 border-dashed border-primary-40 rounded cursor-pointer hover:bg-primary-95 transition"
   >
     <span className="text-4xl text-primary-40 mb-4">+</span>
-    <span className="text-lg font-bold text-primary-40">Agregar nuevo curso</span>
+    <span className="text-lg font-bold text-primary-40">
+      Agregar nuevo curso
+    </span>
   </div>
 );
 
@@ -173,7 +175,11 @@ const Dashboard = () => {
           onClick={() => setIsSidebarOpen(!isSidebarOpen)}
           className="block sm:hidden px-4 py-2 text-white"
         >
-          {isSidebarOpen ? <FaTimes className="text-2xl" /> : <FaBars className="text-2xl" />}
+          {isSidebarOpen ? (
+            <FaTimes className="text-2xl" />
+          ) : (
+            <FaBars className="text-2xl" />
+          )}
         </button>
       </header>
 
@@ -185,7 +191,10 @@ const Dashboard = () => {
           } sm:block sm:relative sm:inset-auto sm:z-auto w-full sm:w-48 bg-white shadow-md p-4 space-y-6`}
         >
           <div className="flex justify-end sm:hidden">
-            <button onClick={() => setIsSidebarOpen(false)} className="text-gray-600 hover:text-gray-800">
+            <button
+              onClick={() => setIsSidebarOpen(false)}
+              className="text-gray-600 hover:text-gray-800"
+            >
               <FaTimes className="text-2xl" />
             </button>
           </div>
@@ -217,7 +226,9 @@ const Dashboard = () => {
                   }}
                 >
                   <FaCog className="text-primary-40 text-xl mr-2" />
-                  <span className="text-primary-40 font-medium">Configuración</span>
+                  <span className="text-primary-40 font-medium">
+                    Configuración
+                  </span>
                 </li>
               )}
             </ul>
@@ -235,13 +246,18 @@ const Dashboard = () => {
 
         {/* Content Area */}
         <div className="flex-1 p-6 space-y-6 bg-white shadow-none border-none">
-          {!showWizard && !showCreateCourse && !showEditCourse && !showConfig && !showFeedback && hasMounted && (
-            <h2 className="text-2xl font-bold mb-4">
-              {isTeacher && "¡Hola, profesor!"}
-              {isStudent && "¡Hola, estudiante!"}
-              {isAdmin && "¡Hola, administrador!"}
-            </h2>
-          )}
+          {!showWizard &&
+            !showCreateCourse &&
+            !showEditCourse &&
+            !showConfig &&
+            !showFeedback &&
+            hasMounted && (
+              <h2 className="text-2xl font-bold mb-4">
+                {isTeacher && "¡Hola, profesor!"}
+                {isStudent && "¡Hola, estudiante!"}
+                {isAdmin && "¡Hola, administrador!"}
+              </h2>
+            )}
 
           {showConfig ? (
             <ConfigView onBack={() => setShowConfig(false)} />
@@ -251,7 +267,11 @@ const Dashboard = () => {
               onCancel={() => setShowEditCourse(false)}
               onComplete={(updatedCourse: Course) => {
                 setShowEditCourse(false);
-                setCourses(courses.map((c) => (c.courseId === updatedCourse.courseId ? updatedCourse : c)));
+                setCourses(
+                  courses.map((c) =>
+                    c.courseId === updatedCourse.courseId ? updatedCourse : c
+                  )
+                );
               }}
             />
           ) : showCreateCourse ? (
@@ -264,9 +284,16 @@ const Dashboard = () => {
             />
           ) : showWizard ? (
             isStudent ? (
-              <CourseViewStudent course={selectedCourse} onClose={handleWizardCancel} />
+              <CourseViewStudent
+                course={selectedCourse}
+                onClose={handleWizardCancel}
+              />
             ) : (
-              <Wizard course={selectedCourse} onComplete={handleWizardComplete} onCancel={handleWizardCancel} />
+              <Wizard
+                course={selectedCourse}
+                onComplete={handleWizardComplete}
+                onCancel={handleWizardCancel}
+              />
             )
           ) : showFeedback ? (
             <Feedback
@@ -292,8 +319,8 @@ const Dashboard = () => {
                         image={course.imageUrl}
                         title={course.courseName}
                         date="2025-2"
-                        onClick={() => handleCourseClick(course)}     // ✏️ Editar
-                        onView={() => handleCourseView(course)}        // 👁️ Ver/Feedback
+                        onClick={() => handleCourseClick(course)} // ✏️ Editar
+                        // 👁️ Para ADMIN NO pasamos onView => no aparece el botón de feedback
                       />
                     ))}
                     <AddNewCourseCard onClick={handleAddNewCourse} />
@@ -317,8 +344,8 @@ const Dashboard = () => {
                       image={course.imageUrl}
                       title={course.courseName}
                       date="2025-2"
-                      onClick={() => handleCourseClick(course)}   // ✏️
-                      onView={() => handleCourseView(course)}      // 👁️
+                      onClick={() => handleCourseClick(course)} // ✏️
+                      onView={() => handleCourseView(course)} // 👁️ otros roles sí pueden ver feedback
                     />
                   ))
                 )}

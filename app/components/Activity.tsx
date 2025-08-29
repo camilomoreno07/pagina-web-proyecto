@@ -5,14 +5,21 @@ import { FaPen, FaEye } from "react-icons/fa";
 
 interface ActivityProps {
   id: string;
-  image: string;  // URL protegida
+  image: string; // URL protegida
   title: string;
   date: string;
   onClick: () => void; // ✏️ editar (wizard)
-  onView: () => void;  // 👁️ feedback (nuevo)
+  onView?: () => void; // 👁️ feedback (opcional)
 }
 
-const Activity = ({ id, image, title, date, onClick, onView }: ActivityProps) => {
+const Activity = ({
+  id,
+  image,
+  title,
+  date,
+  onClick,
+  onView,
+}: ActivityProps) => {
   const [previewImage, setPreviewImage] = useState<string>("");
 
   useEffect(() => {
@@ -53,7 +60,9 @@ const Activity = ({ id, image, title, date, onClick, onView }: ActivityProps) =>
 
       {/* Info */}
       <div className="p-4">
-        <h3 className="text-xl font-semibold text-gray-800 truncate">{title}</h3>
+        <h3 className="text-xl font-semibold text-gray-800 truncate">
+          {title}
+        </h3>
         <p className="text-sm text-gray-500 mt-2">{date}</p>
 
         {/* Botones de acción */}
@@ -67,14 +76,16 @@ const Activity = ({ id, image, title, date, onClick, onView }: ActivityProps) =>
             <FaPen />
           </button>
 
-          {/* 👁️ Ver → Feedback */}
-          <button
-            onClick={onView}
-            className="p-2 bg-primary-40 text-white rounded-full hover:bg-primary-30 transition"
-            title="Revisar curso"
-          >
-            <FaEye />
-          </button>
+          {/* 👁️ Ver → Feedback (solo si hay onView) */}
+          {onView && (
+            <button
+              onClick={onView}
+              className="p-2 bg-primary-40 text-white rounded-full hover:bg-primary-30 transition"
+              title="Revisar curso"
+            >
+              <FaEye />
+            </button>
+          )}
         </div>
       </div>
     </div>
