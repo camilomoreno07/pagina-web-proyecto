@@ -162,12 +162,12 @@ export default function CrearEvaluacion({
     evaluations[0].question === "NA" &&
     evaluations[0].correctAnswer === "NA";
 
-  const typeLabel = (t: QuestionType) =>
-    t === "OPEN"
+  const typeLabel = (q: Question) =>
+    !q.options
       ? "Respuesta abierta"
-      : t === "TF"
+      : q.options.length === 2
       ? "Verdadero / Falso"
-      : t === "MC3"
+      : q.options.length === 3
       ? "Selección (3)"
       : "Selección (5)";
 
@@ -211,7 +211,7 @@ export default function CrearEvaluacion({
                 <div className="flex items-center justify-between mb-2">
                   <label className="block font-medium">Pregunta {index + 1}</label>
                   <span className="text-xs px-2 py-1 rounded-full bg-gray-100 border border-gray-300">
-                    {typeLabel(q.type)}
+                    {typeLabel(q)}
                   </span>
                 </div>
 
@@ -224,7 +224,7 @@ export default function CrearEvaluacion({
                 />
 
                 {/* Render según tipo */}
-                {q.type === "OPEN" ? (
+                {!q.options ? (
                   <>
                     <label className="block font-medium mb-1 mt-3">Respuesta correcta</label>
                     <input
@@ -235,7 +235,7 @@ export default function CrearEvaluacion({
                       className="w-full p-2 border border-gray-300 rounded-lg bg-gray-50"
                     />
                   </>
-                ) : q.type === "TF" ? (
+                ) : q.options?.length === 2 ? (
                   <>
                     <label className="block font-medium mb-2 mt-3">Marca la correcta</label>
                     <div className="space-y-2">
