@@ -379,8 +379,6 @@ const Dashboard = () => {
                         title={course.courseName}
                         date="2025-2"
                         onClick={() => handleCourseClick(course)} // ✏️ Editar
-                        onClone={() => handleCourseClone(course)} // 📋 Clonar
-                        onRepeat={() => handleCourseRepeat(course)} // 🔁 Reutilizar
                       />
                     ))}
                     <AddNewCourseCard onClick={handleAddNewCourse} />
@@ -406,7 +404,6 @@ const Dashboard = () => {
                       date="2025-2"
                       onClick={() => handleCourseClick(course)}
                       onView={() => handleCourseView(course)} // 👁️ Feedback
-                      onClone={() => handleCourseClone(course)} // 📋 Clonar
                       onRepeat={() => handleCourseRepeat(course)} // 🔁 Reutilizar
                     />
                   ))

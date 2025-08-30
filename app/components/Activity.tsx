@@ -1,7 +1,7 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import Cookies from "js-cookie";
-import { FaPen, FaEye, FaClone, FaRedo } from "react-icons/fa";
+import { FaPen, FaEye, FaClone, FaSyncAlt } from "react-icons/fa";
 
 interface ActivityProps {
   id: string;
@@ -80,17 +80,6 @@ const Activity = ({
             <FaPen />
           </button>
 
-          {/* 👁️ Ver → Feedback (solo si hay onView) */}
-          {onView && (
-            <button
-              onClick={onView}
-              className="p-2 bg-primary-40 text-white rounded-full hover:bg-primary-30 transition"
-              title="Revisar curso"
-            >
-              <FaEye />
-            </button>
-          )}
-
           {/* 📋 Clonar → Duplica el curso */}
           {onClone && (
             <button
@@ -109,7 +98,18 @@ const Activity = ({
               className="p-2 bg-primary-40 text-white rounded-full hover:bg-primary-30 transition"
               title="Reutilizar curso"
             >
-              <FaRedo />
+              <FaSyncAlt />
+            </button>
+          )}
+
+          {/* 👁️ Ver → Feedback (solo si hay onView) */}
+          {onView && (
+            <button
+              onClick={onView}
+              className="p-2 bg-primary-40 text-white rounded-full hover:bg-primary-30 transition"
+              title="Revisar curso"
+            >
+              <FaEye />
             </button>
           )}
         </div>

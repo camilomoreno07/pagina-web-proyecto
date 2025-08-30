@@ -48,6 +48,12 @@ const LABELS: Record<StageKey, string> = {
   afterClass: "Después de clase",
 };
 
+const SECTION_LABELS: Record<SectionKey, string> = {
+  instructions: "Instrucciones",
+  contents: "Contenido",
+  evaluations: "Evaluación",
+};
+
 export default function ReuseView({ onCancel, onSave, targetCourse }: ReuseViewProps) {
   // Lista de cursos (para elegir fuente)
   const [courses, setCourses] = useState<CourseDTO[]>([]);
@@ -65,7 +71,7 @@ export default function ReuseView({ onCancel, onSave, targetCourse }: ReuseViewP
   const [reuse, setReuse] = useState({
     beforeClass: { instructions: false, contents: false, evaluations: false },
     duringClass: { instructions: false, contents: false, evaluations: false },
-    afterClass:  { instructions: false, contents: false, evaluations: false },
+    afterClass: { instructions: false, contents: false, evaluations: false },
   });
 
   // Acordeones
@@ -85,7 +91,7 @@ export default function ReuseView({ onCancel, onSave, targetCourse }: ReuseViewP
         });
         if (!res.ok) throw new Error("No se pudo cargar la lista de cursos");
         const data: CourseDTO[] = await res.json();
-        setCourses(data);
+        setCourses(data.filter(c => c.courseId !== targetCourse.courseId));
         setLoadError(null);
       } catch (e: any) {
         setLoadError(e?.message || "Error cargando cursos");
@@ -101,7 +107,7 @@ export default function ReuseView({ onCancel, onSave, targetCourse }: ReuseViewP
     return (
       s.beforeClass.instructions || s.beforeClass.contents || s.beforeClass.evaluations ||
       s.duringClass.instructions || s.duringClass.contents || s.duringClass.evaluations ||
-      s.afterClass.instructions  || s.afterClass.contents  || s.afterClass.evaluations
+      s.afterClass.instructions || s.afterClass.contents || s.afterClass.evaluations
     );
   }, [reuse]);
 
@@ -117,12 +123,12 @@ export default function ReuseView({ onCancel, onSave, targetCourse }: ReuseViewP
   // Aplica reuso: copia lo marcado de source → target
   const applyReuse = (source: FullCourseDTO, target: FullCourseDTO): FullCourseDTO => {
     const out = deepClone(target);
-    (["beforeClass","duringClass","afterClass"] as StageKey[]).forEach((stage) => {
+    (["beforeClass", "duringClass", "afterClass"] as StageKey[]).forEach((stage) => {
       const marks = reuse[stage];
       (out as any)[stage] = (out as any)[stage] ?? {};
       const outStage = (out as any)[stage];
       const srcStage = (source as any)[stage] ?? {};
-      (["instructions","contents","evaluations"] as SectionKey[]).forEach((sec) => {
+      (["instructions", "contents", "evaluations"] as SectionKey[]).forEach((sec) => {
         if (marks[sec] && srcStage?.[sec] !== undefined) {
           outStage[sec] = deepClone(srcStage[sec]);
         }
@@ -187,7 +193,10 @@ export default function ReuseView({ onCancel, onSave, targetCourse }: ReuseViewP
     <div className="flex-1 p-6 space-y-6 bg-white shadow-none border-none">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h2 className="text-3xl font-bold text-gray-800">Reuso</h2>
+          <button onClick={onCancel} className="text-sm text-primary-40 hover:underline mb-4">
+            ← Volver al curso
+          </button>
+          <h2 className="text-3xl font-bold text-gray-800">Reutilización de Cursos</h2>
           {targetCourse && (
             <p className="text-sm text-gray-500">
               Reusando en: <span className="font-medium">{targetCourse.courseName}</span>
@@ -196,21 +205,23 @@ export default function ReuseView({ onCancel, onSave, targetCourse }: ReuseViewP
         </div>
       </div>
 
+
       {/* 1) Select del curso fuente */}
       <div className="space-y-2">
-        <label className="block text-gray-700">
+        <label className="block text-sm font-medium text-gray-700">
           Selecciona el curso del cual deseas reusar contenido
         </label>
-        <div className="w-full border rounded-lg px-4 py-3 bg-gray-50">
-          {loading ? (
-            <span className="text-gray-500">Cargando cursos...</span>
-          ) : loadError ? (
-            <span className="text-red-500">{loadError}</span>
-          ) : (
+
+        {loading ? (
+          <span className="text-gray-500">Cargando cursos...</span>
+        ) : loadError ? (
+          <span className="text-red-500">{loadError}</span>
+        ) : (
+          <div className="relative">
             <select
               value={sourceCourseId}
               onChange={(e) => setSourceCourseId(e.target.value)}
-              className="w-full bg-transparent outline-none"
+              className="w-full appearance-none rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-700 text-base focus:border-indigo-500 focus:ring-indigo-500"
             >
               <option value="">— Selecciona un curso —</option>
               {courses.map((c) => (
@@ -219,36 +230,66 @@ export default function ReuseView({ onCancel, onSave, targetCourse }: ReuseViewP
                 </option>
               ))}
             </select>
-          )}
-        </div>
+
+            {/* Custom arrow */}
+            <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-700 font-bold text-xl transform rotate-90">
+              ›
+            </span>
+          </div>
+        )}
       </div>
 
       {/* 2) Acordeones por etapa */}
       <div className="space-y-4">
-        {(["beforeClass","duringClass","afterClass"] as StageKey[]).map((stage) => (
-          <div key={stage} className="border rounded-lg">
+        <p className="block text-gray-700">
+          Selecciona los componentes a reutilizar de cada momento de aprendizaje
+        </p>
+
+        {(["beforeClass", "duringClass", "afterClass"] as StageKey[]).map((stage) => (
+          <div
+            key={stage}
+            className="rounded-xl border border-gray-200 shadow-sm overflow-hidden"
+          >
+            {/* Header */}
             <button
               type="button"
               onClick={() => toggleStage(stage)}
-              className="w-full flex items-center justify-between px-4 py-3"
+              className="w-full flex items-center justify-between px-5 py-4
+                   bg-gray-50 hover:bg-gray-100 transition-colors"
             >
-              <span className="font-medium">{LABELS[stage]}</span>
-              <span className="text-gray-500">{open[stage] ? "▴" : "▾"}</span>
+              <span className="font-semibold text-gray-800">{LABELS[stage]}</span>
+              <span className="text-gray-700 font-bold text-xl transform rotate-90 inline-block">
+                ›
+              </span>
             </button>
-            {open[stage] && (
-              <div className="px-4 pb-4 flex flex-wrap gap-6 items-center">
-                {(["instructions","contents","evaluations"] as SectionKey[]).map((sec) => (
-                  <label key={sec} className="flex items-center gap-2 capitalize">
-                    <input
-                      type="checkbox"
-                      checked={(reuse as any)[stage][sec]}
-                      onChange={() => toggleBox(stage, sec)}
-                    />
-                    <span className="font-medium">{sec}</span>
-                  </label>
-                ))}
+
+            {/* Content */}
+            <div
+              className={`transition-all duration-300 ease-in-out ${open[stage] ? "max-h-40 opacity-100" : "max-h-0 opacity-0"
+                } overflow-hidden`}
+            >
+              <div className="px-5 pb-4 pt-2 grid grid-cols-1 sm:grid-cols-3 gap-3">
+                {(["instructions", "contents", "evaluations"] as SectionKey[]).map(
+                  (sec) => (
+                    <label
+                      key={sec}
+                      className="flex items-center gap-2 rounded-lg px-3 py-2 
+                           hover:bg-gray-50 cursor-pointer"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={(reuse as any)[stage][sec]}
+                        onChange={() => toggleBox(stage, sec)}
+                        className="accent-primary-40 w-4 h-4"
+                      />
+                      <span className="text-gray-700 font-medium">
+                        {SECTION_LABELS[sec]}
+                      </span>
+                    </label>
+                  )
+                )}
               </div>
-            )}
+            </div>
           </div>
         ))}
       </div>
