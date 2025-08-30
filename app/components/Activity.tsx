@@ -1,7 +1,7 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import Cookies from "js-cookie";
-import { FaPen, FaEye } from "react-icons/fa";
+import { FaPen, FaEye, FaClone, FaRedo } from "react-icons/fa";
 
 interface ActivityProps {
   id: string;
@@ -10,6 +10,8 @@ interface ActivityProps {
   date: string;
   onClick: () => void; // ✏️ editar (wizard)
   onView?: () => void; // 👁️ feedback (opcional)
+  onClone?: () => void; // 📋 clonar curso
+  onRepeat?: () => void; // 🔁 reutilizar curso
 }
 
 const Activity = ({
@@ -19,6 +21,8 @@ const Activity = ({
   date,
   onClick,
   onView,
+  onClone,
+  onRepeat,
 }: ActivityProps) => {
   const [previewImage, setPreviewImage] = useState<string>("");
 
@@ -84,6 +88,28 @@ const Activity = ({
               title="Revisar curso"
             >
               <FaEye />
+            </button>
+          )}
+
+          {/* 📋 Clonar → Duplica el curso */}
+          {onClone && (
+            <button
+              onClick={onClone}
+              className="p-2 bg-primary-40 text-white rounded-full hover:bg-primary-30 transition"
+              title="Clonar curso"
+            >
+              <FaClone />
+            </button>
+          )}
+
+          {/* 🔁 Reutilizar → Basado en curso existente */}
+          {onRepeat && (
+            <button
+              onClick={onRepeat}
+              className="p-2 bg-primary-40 text-white rounded-full hover:bg-primary-30 transition"
+              title="Reutilizar curso"
+            >
+              <FaRedo />
             </button>
           )}
         </div>

@@ -10,7 +10,8 @@ import Wizard from "../components/Wizard";
 import CreateCourse from "../components/CreateCourse";
 import EditCourse from "../components/EditCourse";
 import ConfigView from "../components/ConfigView";
-import Feedback from "../components/Feedback"; // 👁️ NUEVO
+import Feedback from "../components/Feedback";
+import ReuseView from "../components/ReuseView"; // 👁️ NUEVO
 
 import { useAuth } from "../hooks/useAuth";
 import {
@@ -59,11 +60,12 @@ const Dashboard = () => {
   const [showCreateCourse, setShowCreateCourse] = useState<boolean>(false);
   const [showConfig, setShowConfig] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false); // 👁️ NUEVO
+  const [showReuse, setShowReuse] = useState(false);
 
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
 
+  // ✅ Solo un estado de montaje
   const [hasMounted, setHasMounted] = useState(false);
-  const [mounted, setMounted] = useState(false);
 
   const { role } = useAuth();
   const isTeacher = role === "TEACHER";
@@ -72,7 +74,6 @@ const Dashboard = () => {
 
   useEffect(() => {
     setHasMounted(true);
-    setMounted(true);
 
     const fetchCourses = async () => {
       try {
@@ -137,6 +138,23 @@ const Dashboard = () => {
     setShowCreateCourse(false);
     setShowConfig(false);
     setShowFeedback(true);
+  };
+
+  // 📋 Clonar
+  const handleCourseClone = (course: Course) => {
+    console.log("Clonar curso:", course);
+    // Aquí puedes abrir un Wizard con data precargada o crear un duplicado
+  };
+
+  // 🔁 Reutilizar
+  const handleCourseRepeat = (course: Course) => {
+    setSelectedCourse(course);
+    setShowWizard(false);
+    setShowEditCourse(false);
+    setShowCreateCourse(false);
+    setShowConfig(false);
+    setShowFeedback(false);
+    setShowReuse(true);
   };
 
   const handleWizardComplete = (data: WizardData) => {
@@ -214,7 +232,7 @@ const Dashboard = () => {
                 <span className="text-primary-40 font-medium">Calendario</span>
               </li>
 
-              {mounted && isAdmin && (
+              {hasMounted && isAdmin && (
                 <li
                   className="p-2 flex flex-row items-center rounded hover:bg-primary-95 cursor-pointer"
                   onClick={() => {
@@ -251,6 +269,7 @@ const Dashboard = () => {
             !showEditCourse &&
             !showConfig &&
             !showFeedback &&
+            !showReuse && // 👈 añade esto
             hasMounted && (
               <h2 className="text-2xl font-bold mb-4">
                 {isTeacher && "¡Hola, profesor!"}
@@ -303,6 +322,46 @@ const Dashboard = () => {
                 setSelectedCourse(null);
               }}
             />
+          ) : showReuse ? (
+            <ReuseView
+              targetCourse={
+                selectedCourse
+                  ? {
+                      courseId: selectedCourse.courseId,
+                      courseName: selectedCourse.courseName,
+                    }
+                  : (undefined as any)
+              }
+              onCancel={() => {
+                setShowReuse(false);
+                setSelectedCourse(null);
+              }}
+              onSave={async ({ sourceCourseId, targetCourseId, reuse }) => {
+                console.log("Reuso guardado:", {
+                  sourceCourseId,
+                  targetCourseId,
+                  reuse,
+                });
+                // refrescar cursos después de guardar
+                try {
+                  const token = Cookies.get("token");
+                  const resp = await fetch(
+                    "http://localhost:8081/api/courses",
+                    {
+                      headers: { Authorization: `Bearer ${token}` },
+                    }
+                  );
+                  if (resp.ok) {
+                    const data: Course[] = await resp.json();
+                    setCourses(data);
+                  }
+                } catch (e) {
+                  console.error("No se pudieron refrescar los cursos", e);
+                }
+                setShowReuse(false);
+                setSelectedCourse(null);
+              }}
+            />
           ) : (
             <section>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-6">
@@ -320,7 +379,8 @@ const Dashboard = () => {
                         title={course.courseName}
                         date="2025-2"
                         onClick={() => handleCourseClick(course)} // ✏️ Editar
-                        // 👁️ Para ADMIN NO pasamos onView => no aparece el botón de feedback
+                        onClone={() => handleCourseClone(course)} // 📋 Clonar
+                        onRepeat={() => handleCourseRepeat(course)} // 🔁 Reutilizar
                       />
                     ))}
                     <AddNewCourseCard onClick={handleAddNewCourse} />
@@ -333,7 +393,7 @@ const Dashboard = () => {
                       image={course.imageUrl}
                       title={course.courseName}
                       date="2025-2"
-                      onClick={() => handleCourseClick(course)} // Para alumno abre CourseViewStudent
+                      onClick={() => handleCourseClick(course)}
                     />
                   ))
                 ) : (
@@ -344,8 +404,10 @@ const Dashboard = () => {
                       image={course.imageUrl}
                       title={course.courseName}
                       date="2025-2"
-                      onClick={() => handleCourseClick(course)} // ✏️
-                      onView={() => handleCourseView(course)} // 👁️ otros roles sí pueden ver feedback
+                      onClick={() => handleCourseClick(course)}
+                      onView={() => handleCourseView(course)} // 👁️ Feedback
+                      onClone={() => handleCourseClone(course)} // 📋 Clonar
+                      onRepeat={() => handleCourseRepeat(course)} // 🔁 Reutilizar
                     />
                   ))
                 )}
