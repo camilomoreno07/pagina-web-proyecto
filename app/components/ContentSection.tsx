@@ -36,8 +36,10 @@ interface ContentSectionProps {
 const TABS = ["Instrucciones", "Contenido", "Evaluación"] as const;
 type Tab = (typeof TABS)[number];
 
-// 🔑 Mapeo de título visible → clave de sección (lo que espera EvaluacionViewStudent)
-const SECTION_KEY_BY_TITLE: Record<ContentSectionProps["title"], "aulaVirtual" | "tallerHabilidad" | "actividadExperiencial"> = {
+const SECTION_KEY_BY_TITLE: Record<
+  ContentSectionProps["title"],
+  "aulaVirtual" | "tallerHabilidad" | "actividadExperiencial"
+> = {
   "Antes de clase": "aulaVirtual",
   "Durante la clase": "tallerHabilidad",
   "Después de la clase": "actividadExperiencial",
@@ -45,8 +47,14 @@ const SECTION_KEY_BY_TITLE: Record<ContentSectionProps["title"], "aulaVirtual" |
 
 const ContentSection = ({ title, onBack, course }: ContentSectionProps) => {
   const [activeTab, setActiveTab] = useState<Tab>("Instrucciones");
+  const [evaluationLocked, setEvaluationLocked] = useState(false);
+  const [allTabsLocked, setAllTabsLocked] = useState(false);
   const [images, setImages] = useState<Record<string, string>>({});
   const [activeContentIndex, setActiveContentIndex] = useState(0);
+
+  // 🔹 estados para el modal
+  const [showEvalModal, setShowEvalModal] = useState(false);
+  const [selectedEvalTime, setSelectedEvalTime] = useState<number>(0);
 
   const sectionMap = {
     "Antes de clase": course.beforeClass,
@@ -61,11 +69,14 @@ const ContentSection = ({ title, onBack, course }: ContentSectionProps) => {
   } as const;
 
   const currentSection = sectionMap[title];
-  const sectionKey = SECTION_KEY_BY_TITLE[title]; // <- AQUÍ OBTIENES LA SECTION CORRECTA
+  const sectionKey = SECTION_KEY_BY_TITLE[title];
 
   // Estado de completado
   const [instructionsCompleted, setInstructionsCompleted] = useState(false);
   const [completedContents, setCompletedContents] = useState<boolean[]>([]);
+
+  // Estado de existencia de la evaluación
+  const [existingSectionGrade, setExistingSectionGrade] = useState<any | null>(null);
 
   // Inicializar contenidos
   useEffect(() => {
@@ -117,15 +128,35 @@ const ContentSection = ({ title, onBack, course }: ContentSectionProps) => {
     loadImages();
   }, [course, title]);
 
+  // 🔹 Obtener grade existente de la sección
+  useEffect(() => {
+    if (!username || !course?.courseId) return;
+
+    const url = `http://localhost:8081/api/grades/student/${encodeURIComponent(
+      username
+    )}/course/${encodeURIComponent(course.courseId)}`;
+
+    fetch(url, { headers: { Authorization: `Bearer ${token}` } })
+      .then((res) => (res.status === 404 ? null : res.json()))
+      .then((data) => {
+        if (!data) return;
+        setExistingSectionGrade(data?.[sectionKey] ?? null);
+      })
+      .catch((err) => console.error("Error fetching grade:", err));
+  }, [username, course?.courseId, sectionKey]);
+
   const getMimeTypeFromUrl = (url: string): string => {
     const lowerUrl = url.toLowerCase();
     if (lowerUrl.endsWith(".pdf")) return "application/pdf";
     if (lowerUrl.endsWith(".doc")) return "application/msword";
-    if (lowerUrl.endsWith(".docx")) return "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+    if (lowerUrl.endsWith(".docx"))
+      return "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
     if (lowerUrl.endsWith(".xls")) return "application/vnd.ms-excel";
-    if (lowerUrl.endsWith(".xlsx")) return "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+    if (lowerUrl.endsWith(".xlsx"))
+      return "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
     if (lowerUrl.endsWith(".ppt")) return "application/vnd.ms-powerpoint";
-    if (lowerUrl.endsWith(".pptx")) return "application/vnd.openxmlformats-officedocument.presentationml.presentation";
+    if (lowerUrl.endsWith(".pptx"))
+      return "application/vnd.openxmlformats-officedocument.presentationml.presentation";
     if (lowerUrl.endsWith(".jpg") || lowerUrl.endsWith(".jpeg")) return "image/jpeg";
     if (lowerUrl.endsWith(".png")) return "image/png";
     if (lowerUrl.endsWith(".gif")) return "image/gif";
@@ -146,6 +177,9 @@ const ContentSection = ({ title, onBack, course }: ContentSectionProps) => {
     return "unknown";
   };
 
+  // 🔹 Computed evaluation lock
+  const evaluationLockedEffective = existingSectionGrade ? false : evaluationLocked;
+
   return (
     <div className="w-full px-6 py-6 space-y-6 bg-white">
       {/* Volver */}
@@ -157,23 +191,46 @@ const ContentSection = ({ title, onBack, course }: ContentSectionProps) => {
       </button>
 
       {/* Título */}
-      <h2 className="text-2xl font-bold text-gray-800 mb-4">
-        {sectionName[title]}
-      </h2>
+      <h2 className="text-2xl font-bold text-gray-800 mb-4">{sectionName[title]}</h2>
 
       {/* Tabs */}
       <div className="grid grid-cols-3 mb-6 rounded-lg overflow-hidden border border-gray-200">
-        {TABS.map((tab) => (
-          <button
-            key={tab}
-            onClick={() => setActiveTab(tab)}
-            className={`py-3 text-center text-sm md:text-base font-medium transition-colors ${
-              activeTab === tab ? "bg-[#EDFAFA] text-[#096874]" : "bg-white text-gray-600 hover:bg-gray-100"
-            }`}
-          >
-            {tab}
-          </button>
-        ))}
+        {TABS.map((tab) => {
+          const isDisabled = allTabsLocked || (tab === "Evaluación" && evaluationLockedEffective);
+          return (
+            <button
+              key={tab}
+              onClick={() => {
+                if (isDisabled) return; // block tab click if locked
+
+                if (tab === "Evaluación") {
+                  if (existingSectionGrade && existingSectionGrade.questions?.length > 0) {
+                    setActiveTab("Evaluación");
+                    return;
+                  }
+
+                  const totalTime = (currentSection?.evaluations ?? []).reduce(
+                    (sum: number, ev: any) => sum + (ev?.time ?? 0),
+                    0
+                  );
+                  setSelectedEvalTime(totalTime);
+                  setShowEvalModal(true);
+                } else {
+                  setActiveTab(tab);
+                }
+              }}
+              className={clsx(
+                "py-3 text-center text-sm md:text-base font-medium transition-colors",
+                activeTab === tab
+                  ? "bg-[#EDFAFA] text-[#096874]"
+                  : "bg-white text-gray-600 hover:bg-gray-100",
+                isDisabled && "opacity-50 cursor-not-allowed"
+              )}
+            >
+              {tab}
+            </button>
+          );
+        })}
       </div>
 
       {/* Contenido centrado */}
@@ -395,10 +452,47 @@ const ContentSection = ({ title, onBack, course }: ContentSectionProps) => {
             <EvaluacionViewStudent
               evaluations={currentSection?.evaluations ?? []}
               course={{ courseId: course.courseId }}
-              section={sectionKey}              // <<<<<<<<<<<<<<<<<<<<<<<< AQUÍ PASAS SECTION
+              section={sectionKey}
+              onComplete={() => setAllTabsLocked(false)} // unlock tabs after grade
             />
           ))}
       </div>
+
+      {/* 🔹 Modal de confirmación */}
+      {showEvalModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl shadow-lg p-6 w-full max-w-md flex flex-col items-center text-center">
+            <h3 className="text-lg font-semibold text-gray-800 mb-4">
+              ¿Desea proceder con la presentación de la evaluación?
+            </h3>
+            <div className="flex items-center gap-2 mb-6 justify-center">
+              <h2 className="text-sm font-semibold text-gray-500">Tiempo estimado:</h2>
+              <p className="text-sm px-2 py-1 rounded text-green-700 bg-green-100 inline-block">
+                {selectedEvalTime} min
+              </p>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowEvalModal(false)}
+                className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => {
+                  setActiveTab("Evaluación");
+                  setEvaluationLocked(true);
+                  setAllTabsLocked(true); // block all tabs until grade is complete
+                  setShowEvalModal(false);
+                }}
+                className="px-4 py-2 rounded-lg bg-primary-40 text-white hover:bg-primary-60"
+              >
+                Continuar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

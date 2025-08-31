@@ -30,10 +30,21 @@ interface EvalItem {
   options?: string[] | null;
 }
 
+interface QuestionGrade {
+  response: string;
+  feeback?: string | null;
+}
+
+interface SectionGrade {
+  questions: QuestionGrade[];
+  grade?: number;
+}
+
 interface Props {
   evaluations?: EvalItem[];
   course: { courseId: string };
-  section?: SectionKey; // puede venir undefined; haré fallback
+  section?: SectionKey;
+  onComplete?: (sectionGrade: SectionGrade) => void; // 🔹 new prop
 }
 
 const norm = (s?: string) =>
@@ -59,13 +70,13 @@ const EvaluacionViewStudent: React.FC<Props> = ({
   evaluations = [],
   course,
   section,
+  onComplete,
 }) => {
-  // Fallback si el padre no pasa section ⇒ aulaVirtual
   const resolvedSection: SectionKey = (section as SectionKey) ?? "aulaVirtual";
   useEffect(() => {
     if (!section) {
       console.warn(
-        '[grades] EvaluacionViewStudent SIN "section" (usando fallback "aulaVirtual"). Pásala desde el padre.'
+        '[grades] EvaluacionViewStudent SIN "section" (usando fallback "aulaVirtual").'
       );
     }
   }, [section]);
@@ -102,12 +113,9 @@ const EvaluacionViewStudent: React.FC<Props> = ({
   const [openAnswers, setOpenAnswers] = useState<string[]>([]);
   const [selectedOptIdx, setSelectedOptIdx] = useState<number[]>([]);
   const [finished, setFinished] = useState(false);
-
-  // grade cargado (con gradeId para PUT)
   const [existingGrade, setExistingGrade] = useState<any | null>(null);
   const [feedbacks, setFeedbacks] = useState<string[]>([]);
 
-  // Inicializa estados al montar/cambiar items
   useEffect(() => {
     setActiveIndex(0);
     setCheckedQ(Array(items.length).fill(false));
@@ -119,48 +127,26 @@ const EvaluacionViewStudent: React.FC<Props> = ({
     if (items.length) setTimeLeft(clampSecs(items[0]?.time));
   }, [items]);
 
-  // Timer por pregunta activa
-  useEffect(() => {
-    if (!items.length || finished || activeIndex >= items.length) return;
-    setTimeLeft(clampSecs(items[activeIndex]?.time));
-    const itv = setInterval(() => {
-      setTimeLeft((prev) => {
-        if (prev <= 1) {
-          clearInterval(itv);
-          handleCheck(activeIndex);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-    return () => clearInterval(itv);
-  }, [activeIndex, finished, items]); // handleCheck es estable
-
-  // Carga de calificación previa (lee resolvedSection y, si está vacía, prueba otras secciones)
   useEffect(() => {
     if (!username || !course?.courseId) return;
 
     const url = `http://localhost:8081/api/grades/student/${encodeURIComponent(
       username
     )}/course/${encodeURIComponent(course.courseId)}`;
-    console.log("[grades] GET", url, { section: resolvedSection });
 
     fetch(url, { headers: { Authorization: `Bearer ${token}` } })
       .then((res) => (res.status === 404 ? null : res.json()))
       .then((data) => {
         if (!data) return;
-
-        setExistingGrade(data); // tiene gradeId si ya existe
+        setExistingGrade(data);
 
         const safeNorm = (s?: string) =>
           (s ?? "").toLowerCase().trim().normalize("NFD").replace(/[̀-ͯ]/g, "");
 
-        // toma primero la sección actual
         let prev: any[] = Array.isArray(data?.[resolvedSection]?.questions)
           ? data[resolvedSection].questions
           : [];
 
-        // si está vacía, usa la mejor coincidencia de otras secciones (legacy)
         if (!prev.length) {
           const pools: Array<{ key: SectionKey; arr: any[] }> = [
             { key: "aulaVirtual", arr: data?.aulaVirtual?.questions ?? [] },
@@ -182,15 +168,9 @@ const EvaluacionViewStudent: React.FC<Props> = ({
             ).length;
             if (sc > best.score) best = { ...p, score: sc };
           }
-          if (best.score > 0) {
-            prev = best.arr;
-            console.warn(
-              `[grades] "${resolvedSection}" vacío. Fallback desde "${best.key}".`
-            );
-          }
+          if (best.score > 0) prev = best.arr;
         }
 
-        // Mapea por índice (tu schema no trae id/selectedIndex)
         const newChecked = Array(items.length).fill(false);
         const newIsCorrect = Array(items.length).fill(false);
         const newOpen = Array(items.length).fill("");
@@ -200,17 +180,12 @@ const EvaluacionViewStudent: React.FC<Props> = ({
         items.forEach((q, i) => {
           const saved = prev[i];
           if (!saved) return;
-
           const respText = (saved.response ?? "").trim();
           const fb = (saved.feeback ?? saved.feedback ?? "").trim();
-
           let hasResp = false;
           const isMC = q._type === "MC3" || q._type === "MC5";
-
           if (isMC) {
-            const matchIdx = q.options.findIndex(
-              (o: string) => norm(o) === norm(respText)
-            );
+            const matchIdx = q.options.findIndex((o: string) => norm(o) === norm(respText));
             if (matchIdx >= 0) {
               newSelected[i] = matchIdx;
               hasResp = true;
@@ -219,13 +194,9 @@ const EvaluacionViewStudent: React.FC<Props> = ({
             newOpen[i] = respText;
             hasResp = true;
           }
-
           if (!hasResp && !fb) return;
-
           newChecked[i] = true;
           newFeedbacks[i] = fb;
-
-          // correctitud local (si no viene fb explícito)
           if (isMC) {
             const selText = q.options[newSelected[i]] || "";
             newIsCorrect[i] = norm(selText) === norm(q.correctAnswer);
@@ -234,8 +205,8 @@ const EvaluacionViewStudent: React.FC<Props> = ({
               Array.isArray(q.correctAnswers) && q.correctAnswers.length > 0
                 ? q.correctAnswers
                 : q.correctAnswer
-                ? [q.correctAnswer]
-                : [];
+                  ? [q.correctAnswer]
+                  : [];
             newIsCorrect[i] = corrList.map(norm).includes(norm(newOpen[i]));
           }
         });
@@ -256,28 +227,28 @@ const EvaluacionViewStudent: React.FC<Props> = ({
   }, [username, course?.courseId, items, resolvedSection]);
 
   const handleCheck = useCallback(
-    (idx: number) => {
+    (idx: number, selected?: number[], open?: string[]) => {
+      const selIdx = selected ?? selectedOptIdx;
+      const openAns = open ?? openAnswers;
       if (checkedQ[idx] || finished) return;
 
       const q = items[idx];
       const isMC = q._type === "MC3" || q._type === "MC5";
 
-      // 1) ¿correcta?
       let ok = false;
       if (isMC) {
-        const selOptText = q.options[selectedOptIdx[idx]] || "";
+        const selOptText = q.options[selIdx[idx]] ?? "";
         ok = norm(selOptText) === norm(q.correctAnswer);
       } else {
         const corrList =
           Array.isArray(q.correctAnswers) && q.correctAnswers.length > 0
             ? q.correctAnswers
             : q.correctAnswer
-            ? [q.correctAnswer]
-            : [];
-        ok = corrList.map(norm).includes(norm(openAnswers[idx]));
+              ? [q.correctAnswer]
+              : [];
+        ok = corrList.map(norm).includes(norm(openAns[idx]));
       }
 
-      // 2) actualizar estado local
       const ch = [...checkedQ];
       ch[idx] = true;
       const ic = [...isCorrectQ];
@@ -285,60 +256,49 @@ const EvaluacionViewStudent: React.FC<Props> = ({
       setCheckedQ(ch);
       setIsCorrectQ(ic);
 
-      // 3) siguiente pendiente
       const nextIdx = ch.findIndex((v, i) => i > idx && !v);
       if (nextIdx !== -1) {
         setActiveIndex(nextIdx);
         return;
       }
+
       const firstPending = ch.findIndex((v) => !v);
       if (firstPending !== -1) {
         setActiveIndex(firstPending);
         return;
       }
 
-      // 4) finalizar y GUARDAR en la sección correcta
       setFinished(true);
 
-      const answeredForSection = items.map((qq, i) => {
-        const resp =
-          qq._type === "OPEN"
-            ? (openAnswers[i] ?? "")
-            : qq.options?.[selectedOptIdx[i]] ?? "";
-        return {
-          response: resp,
-          feeback: null, // tu schema
-        };
+      const answeredForSection: QuestionGrade[] = items.map((qq, i) => {
+        const resp = qq._type === "OPEN" ? openAns[i] ?? "" : qq.options?.[selIdx[i]] ?? "";
+        return { response: resp, feeback: null };
       });
 
-      // merge con lo existente para NO pisar otras secciones
-      const updated =
-        existingGrade && existingGrade.gradeId
-          ? {
-              ...existingGrade,
-              [resolvedSection]: { questions: answeredForSection },
-            }
-          : {
-              studentId: username,
-              courseId: course?.courseId || "",
-              aulaVirtual: { questions: [] },
-              tallerHabilidad: { questions: [] },
-              actividadExperiencial: { questions: [] },
-              [resolvedSection]: { questions: answeredForSection },
-            };
+      // calculate grade for section
+      const sectionGradeValue = items.length
+        ? (ic.filter(Boolean).length / items.length) * 5
+        : 0;
+      const answeredForSectionWithGrade: SectionGrade = {
+        questions: answeredForSection,
+        grade: parseFloat(sectionGradeValue.toFixed(1)),
+      };
+
+      const updated = existingGrade && existingGrade.gradeId
+        ? { ...existingGrade, [resolvedSection]: answeredForSectionWithGrade }
+        : {
+          studentId: username,
+          courseId: course?.courseId || "",
+          aulaVirtual: { questions: [], grade: 0 },
+          tallerHabilidad: { questions: [], grade: 0 },
+          actividadExperiencial: { questions: [], grade: 0 },
+          [resolvedSection]: answeredForSectionWithGrade,
+        };
 
       const isUpdate = Boolean(existingGrade?.gradeId);
       const url = isUpdate
-        ? `http://localhost:8081/api/grades/${encodeURIComponent(
-            existingGrade.gradeId
-          )}`
+        ? `http://localhost:8081/api/grades/${encodeURIComponent(existingGrade.gradeId)}`
         : "http://localhost:8081/api/grades";
-
-      console.log(
-        `[grades] ${isUpdate ? "PUT" : "POST"} ${url}`,
-        { section: resolvedSection },
-        updated
-      );
 
       fetch(url, {
         method: isUpdate ? "PUT" : "POST",
@@ -350,9 +310,11 @@ const EvaluacionViewStudent: React.FC<Props> = ({
       })
         .then((res) => res.json())
         .then((data) => {
-          console.log("Grade saved:", data);
-          // refresca gradeId por si POST devolvió uno nuevo
-          if (data && data.gradeId) setExistingGrade(data);
+          if (data && data.gradeId) {
+            setExistingGrade(data);
+            // 🔹 trigger onComplete when grade is saved
+            onComplete?.(answeredForSectionWithGrade);
+          }
         })
         .catch((err) => console.error("Error saving grade:", err));
     },
@@ -360,14 +322,40 @@ const EvaluacionViewStudent: React.FC<Props> = ({
       checkedQ,
       isCorrectQ,
       items,
-      openAnswers,
       selectedOptIdx,
+      openAnswers,
       course?.courseId,
       existingGrade,
       finished,
       resolvedSection,
+      onComplete, // 🔹 include dependency
     ]
   );
+
+  useEffect(() => {
+    if (!items.length || finished || activeIndex >= items.length) return;
+
+    setTimeLeft((prev) => prev === 0 ? clampSecs(items[activeIndex]?.time) : prev);
+
+    const itv = setInterval(() => {
+      setTimeLeft((prev) => {
+        if (prev <= 1) {
+          clearInterval(itv);
+          setSelectedOptIdx((sel) => {
+            setOpenAnswers((open) => {
+              handleCheck(activeIndex, sel, open);
+              return open;
+            });
+            return sel;
+          });
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(itv);
+  }, [activeIndex, finished, items, handleCheck]);
 
   const totalAnswered = checkedQ.filter(Boolean).length;
   const totalCorrect = isCorrectQ.filter(Boolean).length;
@@ -390,9 +378,7 @@ const EvaluacionViewStudent: React.FC<Props> = ({
         return (
           <div
             key={q.id ?? idx}
-            className={`border p-4 rounded-md relative ${
-              isDisabled ? "bg-gray-100 opacity-60" : "bg-gray-50"
-            }`}
+            className={`border p-4 rounded-md relative ${isDisabled ? "bg-gray-100 opacity-60" : "bg-gray-50"}`}
           >
             {isDisabled && (
               <div className="absolute inset-0 bg-gray-100 border border-gray-300 flex items-center justify-center rounded-md z-10">
@@ -424,10 +410,9 @@ const EvaluacionViewStudent: React.FC<Props> = ({
                   <label
                     key={oi}
                     className={`flex items-center border px-3 py-1 rounded cursor-pointer select-none
-                      ${
-                        selectedOptIdx[idx] === oi
-                          ? "bg-gray-200 text-gray-900 border-gray-400"
-                          : "bg-gray-50 text-gray-800 border-gray-300 hover:bg-gray-100 hover:border-gray-400"
+                      ${selectedOptIdx[idx] === oi
+                        ? "bg-gray-200 text-gray-900 border-gray-400"
+                        : "bg-gray-50 text-gray-800 border-gray-300 hover:bg-gray-100 hover:border-gray-400"
                       }`}
                   >
                     <input
@@ -452,7 +437,7 @@ const EvaluacionViewStudent: React.FC<Props> = ({
               <div className="flex items-center gap-2 mt-2">
                 <input
                   type="text"
-                  value={openAnswers[idx] ?? ""} // controlado siempre
+                  value={openAnswers[idx] ?? ""}
                   onChange={(e) => {
                     if (answered || isDisabled) return;
                     const next = [...openAnswers];
@@ -477,11 +462,10 @@ const EvaluacionViewStudent: React.FC<Props> = ({
 
             {answered && (
               <div
-                className={`mt-4 p-3 rounded ${
-                  isCorrectQ[idx]
-                    ? "bg-green-100 text-green-800"
-                    : "bg-red-100 text-red-800"
-                }`}
+                className={`mt-4 p-3 rounded ${isCorrectQ[idx]
+                  ? "bg-green-100 text-green-800"
+                  : "bg-red-100 text-red-800"
+                  }`}
               >
                 <p className="flex items-center gap-2">
                   {isCorrectQ[idx] ? <FaCheckCircle /> : <FaTimesCircle />}
@@ -503,11 +487,10 @@ const EvaluacionViewStudent: React.FC<Props> = ({
 
       {allAnswered && (
         <div
-          className={`p-4 border border-gray-300 rounded-md mt-6 text-center ${
-            parseFloat(finalScore) >= 3
-              ? "bg-green-50 text-green-700"
-              : "bg-red-50 text-red-700"
-          }`}
+          className={`p-4 border border-gray-300 rounded-md mt-6 text-center ${parseFloat(finalScore) >= 3
+            ? "bg-green-50 text-green-700"
+            : "bg-red-50 text-red-700"
+            }`}
         >
           <p className="text-md font-semibold">
             Resultado obtenido: {totalCorrect}/{items.length}
