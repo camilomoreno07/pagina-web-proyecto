@@ -244,6 +244,8 @@ export default function Feedback({ course, onClose }: { course: Course | null; o
   const prev = () => setActiveIndex((i) => Math.max(i - 1, 0));
 
   /** Helpers */
+  const normalizeText = (s?: string) => (s ?? "").toLowerCase().trim().normalize("NFD").replace(/[̀-ͯ]/g, "");
+
   /** Helpers */
   const isFeedbackComplete = (block: GradeBlock | undefined, evs?: Evaluation[]) => {
     if (!block || !evs) return false;
@@ -257,7 +259,7 @@ export default function Feedback({ course, onClose }: { course: Course | null; o
         ...(ev.correctAnswer ? [ev.correctAnswer] : []),
       ].filter(Boolean);
 
-      const isCorrect = corrects.length > 0 && corrects.includes(q.response);
+      const isCorrect = corrects.length > 0 && corrects.map(normalizeText).includes(normalizeText(q.response));
 
       // Si es correcta, no requiere feedback
       if (isCorrect) return true;
@@ -509,7 +511,7 @@ export default function Feedback({ course, onClose }: { course: Course | null; o
                       ...(ev.correctAnswers ?? []),
                       ...(ev.correctAnswer ? [ev.correctAnswer] : []),
                     ].filter(Boolean);
-                    const isCorrect = corrects.length > 0 && corrects.includes(resp);
+                    const isCorrect = corrects.length > 0 && corrects.map(normalizeText).includes(normalizeText(resp));
 
                     return (
                       <div
