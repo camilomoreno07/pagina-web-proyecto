@@ -2,10 +2,10 @@
 import React, { useEffect, useState } from "react";
 import clsx from "clsx";
 import Cookies from "js-cookie";
-import Resumen from "./Resumen";
 import { FaDownload } from "react-icons/fa";
-import EvaluacionViewStudent from "../components/EvaluacionViewStudent";
+import Resumen from "./Resumen";
 import ReviewExperience from "../components/ReviewExperience";
+import EvaluacionViewStudent from "../components/EvaluacionViewStudent";
 
 const token = Cookies.get("token");
 let username: string | null = null;
@@ -15,13 +15,13 @@ if (token) {
     const payload = JSON.parse(atob(token.split(".")[1]));
     username = payload.sub;
   } catch (err) {
-    console.error("Error al decodificar token:", err);
+    console.error("Error decoding token:", err);
   }
 }
 
 interface Course {
   courseId: string;
-  courseName: string;
+  courseName?: string;
   beforeClass?: any;
   duringClass?: any;
   afterClass?: any;
@@ -47,14 +47,22 @@ const SECTION_KEY_BY_TITLE: Record<
 
 const ContentSection = ({ title, onBack, course }: ContentSectionProps) => {
   const [activeTab, setActiveTab] = useState<Tab>("Instrucciones");
-  const [evaluationLocked, setEvaluationLocked] = useState(false);
   const [allTabsLocked, setAllTabsLocked] = useState(false);
-  const [images, setImages] = useState<Record<string, string>>({});
+
+  // eval modal
+  const [showEvalModal, setShowEvalModal] = useState(false);
+  const [selectedEvalTime, setSelectedEvalTime] = useState(0);
+  const [thirdTabCompleted, setThirdTabCompleted] = useState(false);
+
+  // completions
+  const [instructionsCompleted, setInstructionsCompleted] = useState(false);
+  const [completedContents, setCompletedContents] = useState<boolean[]>([]);
   const [activeContentIndex, setActiveContentIndex] = useState(0);
 
-  // 🔹 estados para el modal
-  const [showEvalModal, setShowEvalModal] = useState(false);
-  const [selectedEvalTime, setSelectedEvalTime] = useState<number>(0);
+  const [existingSectionGrade, setExistingSectionGrade] = useState<any | null>(null);
+  const [images, setImages] = useState<Record<string, string>>({});
+
+  const sectionKey = SECTION_KEY_BY_TITLE[title];
 
   const sectionMap = {
     "Antes de clase": course.beforeClass,
@@ -62,23 +70,28 @@ const ContentSection = ({ title, onBack, course }: ContentSectionProps) => {
     "Después de la clase": course.afterClass,
   } as const;
 
-  const sectionName = {
-    "Antes de clase": "Aula Invertida",
-    "Durante la clase": "Taller de Habilidad",
-    "Después de la clase": "Actividad Experiencial",
-  } as const;
-
   const currentSection = sectionMap[title];
-  const sectionKey = SECTION_KEY_BY_TITLE[title];
 
-  // Estado de completado
-  const [instructionsCompleted, setInstructionsCompleted] = useState(false);
-  const [completedContents, setCompletedContents] = useState<boolean[]>([]);
+  // fetch existing grade
+  useEffect(() => {
+    if (!username || !course?.courseId) return;
+    const url = `http://localhost:8081/api/grades/student/${encodeURIComponent(
+      username
+    )}/course/${encodeURIComponent(course.courseId)}`;
 
-  // Estado de existencia de la evaluación
-  const [existingSectionGrade, setExistingSectionGrade] = useState<any | null>(null);
+    fetch(url, { headers: { Authorization: `Bearer ${token}` } })
+      .then((res) => (res.status === 404 ? null : res.json()))
+      .then((data) => {
+        if (!data) return;
+        setExistingSectionGrade(data?.[sectionKey] ?? null);
+        if (data?.[sectionKey]?.questions?.length > 0) {
+          setThirdTabCompleted(true);
+        }
+      })
+      .catch((err) => console.error("Error fetching grade:", err));
+  }, [username, course?.courseId, sectionKey]);
 
-  // Inicializar contenidos
+  // init content completion state
   useEffect(() => {
     if (currentSection?.contents?.length) {
       setCompletedContents(new Array(currentSection.contents.length).fill(false));
@@ -87,22 +100,11 @@ const ContentSection = ({ title, onBack, course }: ContentSectionProps) => {
     }
   }, [currentSection]);
 
-  const toggleCompleted = (index: number) => {
-    setCompletedContents((prev) => {
-      const next = [...prev];
-      next[index] = !next[index];
-      return next;
-    });
-  };
-
-  const toggleInstructions = () => setInstructionsCompleted((p) => !p);
-
-  // Cargar imágenes autenticadas
+  // preload images with token
   useEffect(() => {
     const loadImages = async () => {
       const token = Cookies.get("token");
       if (!token) return;
-
       const contents = currentSection?.contents || [];
       const loaded: Record<string, string> = {};
 
@@ -117,107 +119,84 @@ const ContentSection = ({ title, onBack, course }: ContentSectionProps) => {
             const blob = await res.blob();
             loaded[content.imageUrl] = URL.createObjectURL(blob);
           } catch (err) {
-            console.error("Error al cargar imagen de contenido:", err);
+            console.error("Error loading content image:", err);
           }
         })
       );
-
       setImages(loaded);
     };
-
     loadImages();
   }, [course, title]);
 
-  // 🔹 Obtener grade existente de la sección
-  useEffect(() => {
-    if (!username || !course?.courseId) return;
-
-    const url = `http://localhost:8081/api/grades/student/${encodeURIComponent(
-      username
-    )}/course/${encodeURIComponent(course.courseId)}`;
-
-    fetch(url, { headers: { Authorization: `Bearer ${token}` } })
-      .then((res) => (res.status === 404 ? null : res.json()))
-      .then((data) => {
-        if (!data) return;
-        setExistingSectionGrade(data?.[sectionKey] ?? null);
-      })
-      .catch((err) => console.error("Error fetching grade:", err));
-  }, [username, course?.courseId, sectionKey]);
+  const toggleInstructions = () => setInstructionsCompleted((p) => !p);
+  const toggleCompleted = (i: number) =>
+    setCompletedContents((prev) => {
+      const next = [...prev];
+      next[i] = !next[i];
+      return next;
+    });
 
   const getMimeTypeFromUrl = (url: string): string => {
     const lowerUrl = url.toLowerCase();
-    if (lowerUrl.endsWith(".pdf")) return "application/pdf";
-    if (lowerUrl.endsWith(".doc")) return "application/msword";
-    if (lowerUrl.endsWith(".docx"))
-      return "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
-    if (lowerUrl.endsWith(".xls")) return "application/vnd.ms-excel";
-    if (lowerUrl.endsWith(".xlsx"))
-      return "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
-    if (lowerUrl.endsWith(".ppt")) return "application/vnd.ms-powerpoint";
-    if (lowerUrl.endsWith(".pptx"))
-      return "application/vnd.openxmlformats-officedocument.presentationml.presentation";
-    if (lowerUrl.endsWith(".jpg") || lowerUrl.endsWith(".jpeg")) return "image/jpeg";
-    if (lowerUrl.endsWith(".png")) return "image/png";
-    if (lowerUrl.endsWith(".gif")) return "image/gif";
-    if (lowerUrl.endsWith(".svg")) return "image/svg+xml";
-    if (lowerUrl.endsWith(".webp")) return "image/webp";
-    if (lowerUrl.endsWith(".mp4")) return "video/mp4";
-    if (lowerUrl.endsWith(".webm")) return "video/webm";
-    if (lowerUrl.endsWith(".mov")) return "video/quicktime";
-    if (lowerUrl.endsWith(".mp3")) return "audio/mpeg";
-    if (lowerUrl.endsWith(".wav")) return "audio/wav";
-    if (lowerUrl.endsWith(".ogg")) return "audio/ogg";
-    if (lowerUrl.endsWith(".zip")) return "application/zip";
-    if (lowerUrl.endsWith(".rar")) return "application/vnd.rar";
-    if (lowerUrl.endsWith(".7z")) return "application/x-7z-compressed";
-    if (lowerUrl.endsWith(".txt")) return "text/plain";
-    if (lowerUrl.endsWith(".csv")) return "text/csv";
-    if (lowerUrl.endsWith(".json")) return "application/json";
+
+    if (lowerUrl.endsWith(".jpg") || lowerUrl.endsWith(".jpeg") || lowerUrl.endsWith(".png") || lowerUrl.endsWith(".gif") || lowerUrl.endsWith(".svg") || lowerUrl.endsWith(".webp")) return "image/*";
+    if (lowerUrl.endsWith(".mp4") || lowerUrl.endsWith(".webm") || lowerUrl.endsWith(".mov")) return "video/*";
+    if (lowerUrl.endsWith(".mp3") || lowerUrl.endsWith(".wav") || lowerUrl.endsWith(".ogg")) return "audio/*";
+
     return "unknown";
   };
 
-  // 🔹 Computed evaluation lock
-  const evaluationLockedEffective = existingSectionGrade ? false : evaluationLocked;
+  // tab click handler
+  const handleTabClick = (tab: Tab) => {
+    const isLocked = allTabsLocked && tab !== "Evaluación";
+    if (isLocked) return;
 
+    if (tab === "Evaluación") {
+      if (thirdTabCompleted) {
+        setActiveTab("Evaluación");
+        return;
+      }
+      const totalTime = (currentSection?.evaluations ?? []).reduce(
+        (sum: number, ev: any) => sum + (ev?.time ?? 0),
+        0
+      );
+      setSelectedEvalTime(totalTime);
+      setShowEvalModal(true);
+      return;
+    }
+    setActiveTab(tab);
+  };
+
+  const confirmEvalModal = () => {
+    setActiveTab("Evaluación");
+    setShowEvalModal(false);
+    setAllTabsLocked(true); // block others during eval
+  };
   return (
     <div className="w-full px-6 py-6 space-y-6 bg-white">
-      {/* Volver */}
       <button
         onClick={onBack}
-        className="mb-3 text-sm text-gray-500 hover:text-primary-600 transition flex items-center gap-1"
+        className="mb-3 text-sm text-gray-500 hover:text-primary-600 flex items-center gap-1"
       >
-        <span className="text-base">←</span> Volver a detalles del curso
+        ← Volver a detalles del curso
       </button>
 
-      {/* Título */}
-      <h2 className="text-2xl font-bold text-gray-800 mb-4">{sectionName[title]}</h2>
+      <h2 className="text-2xl font-bold text-gray-800 mb-4">{title}</h2>
 
       {/* Tabs */}
       <div className="grid grid-cols-3 mb-6 rounded-lg overflow-hidden border border-gray-200">
         {TABS.map((tab) => {
-          const isDisabled = allTabsLocked || (tab === "Evaluación" && evaluationLockedEffective);
+          // 🔹 Disable ALL tabs when evaluation in progress
+          // 🔹 But allow "Evaluación" if already completed (for review)
+          const isDisabled =
+            allTabsLocked || (tab === "Evaluación" && !thirdTabCompleted && allTabsLocked);
+
           return (
             <button
               key={tab}
               onClick={() => {
-                if (isDisabled) return; // block tab click if locked
-
-                if (tab === "Evaluación") {
-                  if (existingSectionGrade && existingSectionGrade.questions?.length > 0) {
-                    setActiveTab("Evaluación");
-                    return;
-                  }
-
-                  const totalTime = (currentSection?.evaluations ?? []).reduce(
-                    (sum: number, ev: any) => sum + (ev?.time ?? 0),
-                    0
-                  );
-                  setSelectedEvalTime(totalTime);
-                  setShowEvalModal(true);
-                } else {
-                  setActiveTab(tab);
-                }
+                if (isDisabled) return;
+                handleTabClick(tab);
               }}
               className={clsx(
                 "py-3 text-center text-sm md:text-base font-medium transition-colors",
@@ -233,10 +212,11 @@ const ContentSection = ({ title, onBack, course }: ContentSectionProps) => {
         })}
       </div>
 
-      {/* Contenido centrado */}
+      {/* Tab Content */}
       <div className="w-full max-w-4xl mx-auto space-y-6">
-        {/* Instrucciones */}
-        {activeTab === "Instrucciones" && currentSection?.instructions && (
+
+        {/* Instrucciones*/}
+        {activeTab === "Instrucciones" && (
           <div className="space-y-3">
             <h2 className="text-xl font-semibold mb-4">
               {currentSection.instructions.instructionTitle}
@@ -442,27 +422,25 @@ const ContentSection = ({ title, onBack, course }: ContentSectionProps) => {
           </div>
         )}
 
-        {/* Evaluaciones */}
-        {activeTab === "Evaluación" &&
-          (currentSection?.evaluations?.[0]?.question === "NA" ? (
-            <div className="w-full min-h-[120px] border border-dashed border-gray-300 rounded flex items-center justify-center px-4 py-6 text-center text-gray-500 text-sm italic">
-              Esta sección no cuenta con una evaluación de conocimientos
-            </div>
-          ) : (
-            <EvaluacionViewStudent
-              evaluations={currentSection?.evaluations ?? []}
-              course={{ courseId: course.courseId }}
-              section={sectionKey}
-              onComplete={() => setAllTabsLocked(false)} // unlock tabs after grade
-            />
-          ))}
+        {/* Evaluacion */}
+        {activeTab === "Evaluación" && currentSection?.evaluations?.[0]?.question !== "NA" && (
+          <EvaluacionViewStudent
+            evaluations={currentSection?.evaluations ?? []}
+            course={{ courseId: course.courseId }}
+            section={sectionKey}
+            onComplete={() => {
+              setAllTabsLocked(false);
+              setThirdTabCompleted(true);
+            }}
+          />
+        )}
       </div>
 
-      {/* 🔹 Modal de confirmación */}
+      {/* Modal */}
       {showEvalModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-2xl shadow-lg p-6 w-full max-w-md flex flex-col items-center text-center">
-            <h3 className="text-lg font-semibold text-gray-800 mb-4">
+            <h3 className="text-lg font-semibold mb-4">
               ¿Desea proceder con la presentación de la evaluación?
             </h3>
             <div className="flex items-center gap-2 mb-6 justify-center">
@@ -479,12 +457,7 @@ const ContentSection = ({ title, onBack, course }: ContentSectionProps) => {
                 Cancelar
               </button>
               <button
-                onClick={() => {
-                  setActiveTab("Evaluación");
-                  setEvaluationLocked(true);
-                  setAllTabsLocked(true); // block all tabs until grade is complete
-                  setShowEvalModal(false);
-                }}
+                onClick={confirmEvalModal}
                 className="px-4 py-2 rounded-lg bg-primary-40 text-white hover:bg-primary-60"
               >
                 Continuar
