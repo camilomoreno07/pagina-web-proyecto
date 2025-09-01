@@ -105,6 +105,7 @@ const CourseViewStudent = ({ course, onClose }: CourseViewStudentProps) => {
       {/* Contenido dinámico */}
       {selectedCard === null ? (
         <CourseDetailsStudent
+          courseId={course.courseId}
           course={course}
           images={images}
           onBack={onClose}

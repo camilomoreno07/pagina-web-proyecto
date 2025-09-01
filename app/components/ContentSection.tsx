@@ -38,9 +38,9 @@ type Tab = (typeof TABS)[number];
 
 const SECTION_KEY_BY_TITLE: Record<
   ContentSectionProps["title"],
-  "aulaVirtual" | "tallerHabilidad" | "actividadExperiencial"
+  "aulaInvertida" | "tallerHabilidad" | "actividadExperiencial"
 > = {
-  "Antes de clase": "aulaVirtual",
+  "Antes de clase": "aulaInvertida",
   "Durante la clase": "tallerHabilidad",
   "Después de la clase": "actividadExperiencial",
 };
@@ -61,6 +61,8 @@ const ContentSection = ({ title, onBack, course }: ContentSectionProps) => {
 
   const [existingSectionGrade, setExistingSectionGrade] = useState<any | null>(null);
   const [images, setImages] = useState<Record<string, string>>({});
+
+  const [progress, setProgress] = useState<any | null>(null);
 
   const sectionKey = SECTION_KEY_BY_TITLE[title];
 
@@ -89,6 +91,30 @@ const ContentSection = ({ title, onBack, course }: ContentSectionProps) => {
         }
       })
       .catch((err) => console.error("Error fetching grade:", err));
+  }, [username, course?.courseId, sectionKey]);
+
+  // fetch existing progress
+  useEffect(() => {
+    if (!username || !course?.courseId) return;
+    const url = `http://localhost:8081/api/progress/course/${encodeURIComponent(
+      course.courseId
+    )}/student/${encodeURIComponent(username)}`;
+
+    fetch(url, { headers: { Authorization: `Bearer ${token}` } })
+      .then((res) => (res.status === 404 ? null : res.json()))
+      .then((data) => {
+        if (!data) return;
+
+        setProgress(data);
+
+        const section = data[sectionKey];
+        if (section) {
+          setInstructionsCompleted(section.instructionCompleted ?? false);
+          setCompletedContents(section.contentProgress?.contentsCompleted ?? []);
+          setThirdTabCompleted(section.evaluationCompleted ?? false);
+        }
+      })
+      .catch((err) => console.error("Error fetching progress:", err));
   }, [username, course?.courseId, sectionKey]);
 
   // init content completion state
@@ -128,13 +154,28 @@ const ContentSection = ({ title, onBack, course }: ContentSectionProps) => {
     loadImages();
   }, [course, title]);
 
-  const toggleInstructions = () => setInstructionsCompleted((p) => !p);
-  const toggleCompleted = (i: number) =>
-    setCompletedContents((prev) => {
-      const next = [...prev];
-      next[i] = !next[i];
-      return next;
+  const toggleInstructions = () => {
+    const next = !instructionsCompleted;
+    setInstructionsCompleted(next);
+
+    updateProgress({
+      instructionCompleted: next,
+      contentProgress: { contentsCompleted: completedContents },
+      evaluationCompleted: thirdTabCompleted,
     });
+  };
+
+  const toggleCompleted = (i: number) => {
+    const next = [...completedContents];
+    next[i] = !next[i];
+    setCompletedContents(next);
+
+    updateProgress({
+      instructionCompleted: instructionsCompleted,
+      contentProgress: { contentsCompleted: next },
+      evaluationCompleted: thirdTabCompleted,
+    });
+  };
 
   const getMimeTypeFromUrl = (url: string): string => {
     const lowerUrl = url.toLowerCase();
@@ -167,11 +208,36 @@ const ContentSection = ({ title, onBack, course }: ContentSectionProps) => {
     setActiveTab(tab);
   };
 
+  // Utility to update progress
+  const updateProgress = (updatedSection: any) => {
+    if (!username || !course?.courseId) return;
+
+    const newProgress = {
+      ...(progress ?? {
+        courseId: course.courseId,
+        studentId: username,
+      }),
+      [sectionKey]: updatedSection,
+    };
+
+    setProgress(newProgress);
+
+    fetch("http://localhost:8081/api/progress", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(newProgress),
+    }).catch((err) => console.error("Error updating progress:", err));
+  };
+
   const confirmEvalModal = () => {
     setActiveTab("Evaluación");
     setShowEvalModal(false);
     setAllTabsLocked(true); // block others during eval
   };
+
   return (
     <div className="w-full px-6 py-6 space-y-6 bg-white">
       <button
@@ -233,7 +299,7 @@ const ContentSection = ({ title, onBack, course }: ContentSectionProps) => {
             )}
             <div className="flex items-center gap-2 mb-2">
               <h2 className="text-sm font-semibold text-gray-500">Tiempo sugerido de estudio:</h2>
-              <p className="text-sm px-2 py-1 rounded text-green-700 bg-green-100 inline-block">
+              <p className="text-sm px-2 py-1 rounded text-gray-600 bg-gray-200 inline-block">
                 {currentSection.instructions.time} min
               </p>
             </div>
@@ -279,7 +345,7 @@ const ContentSection = ({ title, onBack, course }: ContentSectionProps) => {
                             <h2 className="text-sm font-semibold text-gray-500">
                               Tiempo sugerido de estudio:
                             </h2>
-                            <p className="text-sm px-2 py-1 rounded text-green-700 bg-green-100 inline-block">
+                            <p className="text-sm px-2 py-1 rounded text-gray-600 bg-gray-200 inline-block">
                               {content.time} min
                             </p>
                           </div>
@@ -372,7 +438,7 @@ const ContentSection = ({ title, onBack, course }: ContentSectionProps) => {
 
                         <div className="flex items-center gap-2 mb-2">
                           <h2 className="text-sm font-semibold text-gray-500">Tiempo sugerido de estudio:</h2>
-                          <p className="text-sm px-2 py-1 rounded text-green-700 bg-green-100 inline-block">
+                          <p className="text-sm px-2 py-1 rounded text-gray-600 bg-gray-200 inline-block">
                             {content?.time ?? 0} min
                           </p>
                         </div>
@@ -431,6 +497,11 @@ const ContentSection = ({ title, onBack, course }: ContentSectionProps) => {
             onComplete={() => {
               setAllTabsLocked(false);
               setThirdTabCompleted(true);
+              updateProgress({
+                instructionCompleted: instructionsCompleted,
+                contentProgress: { contentsCompleted: completedContents },
+                evaluationCompleted: true,
+              });
             }}
           />
         )}

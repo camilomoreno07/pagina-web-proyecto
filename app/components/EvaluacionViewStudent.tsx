@@ -17,7 +17,7 @@ if (token) {
 }
 
 type QuestionType = "OPEN" | "MC3" | "MC5";
-type SectionKey = "aulaVirtual" | "tallerHabilidad" | "actividadExperiencial";
+type SectionKey = "aulaInvertida" | "tallerHabilidad" | "actividadExperiencial";
 
 interface EvalItem {
   id?: string;
@@ -72,7 +72,7 @@ const EvaluacionViewStudent: React.FC<Props> = ({
   gradeId,
   onComplete,
 }) => {
-  const resolvedSection: SectionKey = section ?? "aulaVirtual";
+  const resolvedSection: SectionKey = section ?? "aulaInvertida";
 
   const items = evaluations.map((q) => {
     const options = Array.isArray(q.options) ? q.options.filter(Boolean) : [];
