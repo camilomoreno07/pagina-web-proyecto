@@ -31,11 +31,11 @@ interface StudentRow {
 
 interface GradeQuestion {
   response: string;
-  feeback?: string;
   feedback?: string;
 }
 interface GradeBlock {
   questions: GradeQuestion[];
+  grade?: string | null;
 }
 interface Grade {
   id?: string;
@@ -173,26 +173,17 @@ export default function Feedback({ course, onClose }: { course: Course | null; o
 
     try {
       let grade = await getGrade(row.username, course.courseId);
+
       if (!grade) {
-        grade = {
-          studentId: row.username,
-          courseId: course.courseId,
-          aulaVirtual: { questions: [] },
-          tallerHabilidad: { questions: [] },
-          actividadExperiencial: { questions: [] },
-        };
-      } else {
-        grade.aulaVirtual ??= { questions: [] };
-        grade.tallerHabilidad ??= { questions: [] };
-        grade.actividadExperiencial ??= { questions: [] };
+        grade = null;
       }
 
       const evs = courseEvaluationsFor(course, activeKey);
       const block = gradeBlockFor(grade, activeKey) ?? { questions: [] };
       const qs: GradeQuestion[] = [...(block.questions ?? [])];
-      while (qs.length < evs.length) qs.push({ response: "", feeback: "" });
+      while (qs.length < evs.length) qs.push({ response: "", feedback: "" });
 
-      const prefill = qs.map((q) => q.feeback ?? q.feedback ?? "");
+      const prefill = qs.map((q) => q.feedback ?? "");
       setEditorGrade(grade);
       setEditorText(prefill);
     } finally {
@@ -202,18 +193,40 @@ export default function Feedback({ course, onClose }: { course: Course | null; o
 
   /** Guardar feedback */
   const onSaveFeedback = async () => {
-    if (!course || !editorStudent || !editorGrade) return;
+    if (!course || !editorStudent) return;
     setEditorLoading(true);
     try {
       const evs = courseEvaluationsFor(course, editorMoment);
-      const current = JSON.parse(JSON.stringify(editorGrade)) as Grade;
+      // clone existing or create new Grade
+      const current: Grade = editorGrade
+        ? JSON.parse(JSON.stringify(editorGrade))
+        : {
+          studentId: editorStudent.username,
+          courseId: course.courseId,
+        };
 
-      const block = gradeBlockFor(current, editorMoment) ?? { questions: [] };
-      const qs: GradeQuestion[] = [...(block.questions ?? [])];
-      while (qs.length < evs.length) qs.push({ response: "", feeback: "" });
+      // prepare questions only if we have evaluations
+      if (evs.length > 0) {
+        const block = gradeBlockFor(current, editorMoment) ?? { questions: [] };
+        const qs: GradeQuestion[] = [...(block.questions ?? [])];
+        while (qs.length < evs.length) qs.push({ response: "", feedback: "" });
 
-      const updated = qs.map((q, i) => ({ ...q, feeback: editorText[i] ?? "" }));
-      setGradeBlockFor(current, editorMoment, { questions: updated });
+        const updated = qs.map((q, i) => ({
+          ...q,
+          feedback: editorText[i] ?? "",
+        }));
+
+        // only set the block if there’s actual feedback
+        if (updated.some((q) => (q.feedback ?? "").trim() !== "")) {
+          setGradeBlockFor(current, editorMoment, {
+            questions: updated,
+            grade: block.grade ?? null,   // keep the grade
+          });
+        } else {
+          // leave block undefined (so backend sees null)
+          setGradeBlockFor(current, editorMoment, undefined as any);
+        }
+      }
 
       let url = "http://localhost:8081/api/grades";
       let method: "POST" | "PUT" = "POST";
@@ -222,14 +235,17 @@ export default function Feedback({ course, onClose }: { course: Course | null; o
         method = "PUT";
       }
 
-      const res = await fetch(url, { method, headers: authHeaders, body: JSON.stringify(current) });
+      const res = await fetch(url, {
+        method,
+        headers: authHeaders,
+        body: JSON.stringify(current),
+      });
       if (!res.ok) throw new Error(`Guardar feedback falló: ${res.status}`);
 
       setEditorOpen(false);
-
       setGrades((prev) => ({
         ...prev,
-        [editorStudent!.username]: current,
+        [editorStudent.username]: current,
       }));
     } catch (e) {
       console.error(e);
@@ -265,7 +281,7 @@ export default function Feedback({ course, onClose }: { course: Course | null; o
       if (isCorrect) return true;
 
       // Si es incorrecta, feedback obligatorio
-      return (q.feedback ?? q.feeback ?? "").trim() !== "";
+      return (q.feedback ?? "").trim() !== "";
     });
   };
 
@@ -503,7 +519,7 @@ export default function Feedback({ course, onClose }: { course: Course | null; o
                   const evs = courseEvaluationsFor(course, editorMoment);
                   const block = gradeBlockFor(editorGrade, editorMoment) ?? { questions: [] };
                   const qs: GradeQuestion[] = [...(block.questions ?? [])];
-                  while (qs.length < evs.length) qs.push({ response: "", feeback: "" });
+                  while (qs.length < evs.length) qs.push({ response: "", feedback: "" });
 
                   return evs.map((ev, i) => {
                     const resp = qs[i]?.response ?? "";
