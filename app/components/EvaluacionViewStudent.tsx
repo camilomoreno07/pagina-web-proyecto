@@ -370,19 +370,23 @@ const EvaluacionViewStudent: React.FC<Props> = ({
                 ))}
               </div>
             ) : (
-              <input
-                type="text"
-                value={openAnswers[idx] ?? ""}
-                onChange={(e) => {
-                  if (answered || isDisabled) return;
-                  const next = [...openAnswers];
-                  next[idx] = e.target.value;
-                  setOpenAnswers(next);
-                }}
-                disabled={answered || isDisabled}
-                className="border border-gray-300 rounded px-3 py-1 text-sm flex-1 focus:outline-none focus:ring-1 focus:ring-gray-300 focus:border-gray-400"
-                placeholder="Tu respuesta..."
-              />
+              <div className="flex items-center border px-3 py-1 rounded bg-white
+             hover:bg-gray-50 hover:border-gray-400
+             focus-within:ring-1 focus-within:ring-gray-300 focus-within:border-gray-400">
+                <input
+                  type="text"
+                  value={openAnswers[idx] ?? ""}
+                  onChange={(e) => {
+                    if (answered || isDisabled) return;
+                    const next = [...openAnswers];
+                    next[idx] = e.target.value;
+                    setOpenAnswers(next);
+                  }}
+                  disabled={answered || isDisabled}
+                  className="flex-1 bg-transparent outline-none"
+                  placeholder="Tu respuesta..."
+                />
+              </div>
             )}
 
             {isActive && !answered && !finished && (
