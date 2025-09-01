@@ -41,7 +41,7 @@ interface Grade {
   id?: string;
   studentId: string;
   courseId: string;
-  aulaVirtual?: GradeBlock;
+  aulaInvertida?: GradeBlock;
   tallerHabilidad?: GradeBlock;
   actividadExperiencial?: GradeBlock;
 }
@@ -96,13 +96,13 @@ const courseEvaluationsFor = (course: Course | null, key: MomentKey): Evaluation
 
 const gradeBlockFor = (g: Grade | null, key: MomentKey): GradeBlock | undefined => {
   if (!g) return undefined;
-  if (key === "beforeClass") return g.aulaVirtual;
+  if (key === "beforeClass") return g.aulaInvertida;
   if (key === "duringClass") return g.tallerHabilidad;
   return g.actividadExperiencial;
 };
 
 const setGradeBlockFor = (g: Grade, key: MomentKey, block: GradeBlock) => {
-  if (key === "beforeClass") g.aulaVirtual = block;
+  if (key === "beforeClass") g.aulaInvertida = block;
   else if (key === "duringClass") g.tallerHabilidad = block;
   else g.actividadExperiencial = block;
 };

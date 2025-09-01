@@ -4,6 +4,19 @@ import Cookies from 'js-cookie';
 import Resumen from './Resumen';
 import { FaUser } from 'react-icons/fa';
 
+const token = Cookies.get("token");
+let username: string | null = null;
+if (token) {
+  try {
+    const payload = JSON.parse(
+      atob(token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/"))
+    );
+    username = payload.sub;
+  } catch (err) {
+    console.error("Error decoding token:", err);
+  }
+}
+
 interface User {
   id: string;
   firstname: string;
@@ -30,20 +43,82 @@ interface Course {
 }
 
 interface CourseDetailsStudentProps {
+  courseId: string;
   course: Course;
   images: Record<string, string>;
   onBack: () => void;
   onSelectCard: (section: string) => void;
 }
 
+/** ===== Nuevos tipos para progreso ===== */
+interface ContentProgress {
+  contentsCompleted: boolean[];
+}
+
+interface MomentProgress {
+  instructionCompleted: boolean;
+  contentProgress: ContentProgress;
+  evaluationCompleted: boolean;
+}
+
+interface Progress {
+  id: string;
+  courseId: string;
+  studentId: string;
+  aulaInvertida: MomentProgress;
+  tallerHabilidad: MomentProgress;
+  actividadExperiencial: MomentProgress;
+}
+
+/** ===== Helpers ===== */
+const getProgressPercentage = (moment: MomentProgress): number => {
+  if (!moment) return 0;
+  const contents = moment.contentProgress?.contentsCompleted || [];
+  const completedContents = contents.filter(Boolean).length;
+  const totalContents = contents.length;
+
+  const totalItems = 1 + totalContents + 1; // instrucciones + contenidos + evaluación
+  const completed =
+    (moment.instructionCompleted ? 1 : 0) +
+    completedContents +
+    (moment.evaluationCompleted ? 1 : 0);
+
+  return totalItems > 0 ? completed / totalItems : 0;
+};
+
+const ProgressBadge = ({ value }: { value: number }) => {
+  if (value === 0) {
+    return (
+      <p className="text-sm px-2 py-1 rounded text-gray-600 bg-gray-200 inline-block">
+        Sin Iniciar
+      </p>
+    );
+  }
+  if (value === 1) {
+    return (
+      <p className="text-sm px-2 py-1 rounded text-green-700 bg-green-100 inline-block">
+        Completado
+      </p>
+    );
+  }
+  return (
+    <p className="text-sm px-2 py-1 rounded text-yellow-700 bg-yellow-100 inline-block">
+      En Progreso
+    </p>
+  );
+};
+
 const CourseDetailsStudent = ({
+  courseId,
   course,
   images,
   onBack,
   onSelectCard,
 }: CourseDetailsStudentProps) => {
   const [professors, setProfessors] = useState<User[]>([]);
+  const [progress, setProgress] = useState<Progress | null>(null);
 
+  /** ===== Cargar profesores ===== */
   useEffect(() => {
     const fetchProfessors = async () => {
       const token = Cookies.get('token');
@@ -76,11 +151,42 @@ const CourseDetailsStudent = ({
     fetchProfessors();
   }, [course.professorIds]);
 
+  /** ===== Cargar progreso del estudiante ===== */
+  useEffect(() => {
+    const fetchProgress = async () => {
+      const token = Cookies.get('token');
+      if (!token || !username) return;
+
+      console.log(courseId);
+      console.log(username);
+
+      try {
+        const res = await fetch(
+          `http://localhost:8081/api/progress/course/${courseId}/student/${username}`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+        if (res.ok) {
+          const data: Progress = await res.json();
+          console.log(data)
+          setProgress(data);
+        }
+      } catch (err) {
+        console.error('Error al cargar progreso:', err);
+      }
+    };
+
+    fetchProgress();
+  }, [courseId]);
+
+  /** ===== Utilidades de tiempo ===== */
   const sumTime = (items?: TimeItem | TimeItem[]): number => {
     if (!items) return 0;
 
     if (Array.isArray(items)) {
-      if (items.length > 0 && items[0]?.experienceUrl) { // quitar si se desea manejar xr en minutos
+      if (items.length > 0 && (items[0] as any)?.experienceUrl) {
+        // quitar si se desea manejar xr en minutos
         return (items[0].time || 0) * 60;
       }
 
@@ -102,21 +208,27 @@ const CourseDetailsStudent = ({
   const sectionData = [
     {
       title: 'Aula Invertida',
-      description: 'Aquí podrás explorar una vista previa del contenido y las actividades que se abordarán durante la sesión presencial',
+      description:
+        'Aquí podrás explorar una vista previa del contenido y las actividades que se abordarán durante la sesión presencial',
       section: course.beforeClass,
       sectionKey: 'Antes de clase',
+      progressKey: 'aulaInvertida' as const,
     },
     {
       title: 'Taller de Habilidad',
-      description: 'En esta sección encontrarás recursos e indicaciones que te acompañarán durante las sesiones de clase',
+      description:
+        'En esta sección encontrarás recursos e indicaciones que te acompañarán durante las sesiones de clase',
       section: course.duringClass,
       sectionKey: 'Durante la clase',
+      progressKey: 'tallerHabilidad' as const,
     },
     {
       title: 'Actividad Experiencial',
-      description: 'Aquí tendrás acceso a materiales que te permitirán consolidar los conceptos vistos durante las clases',
+      description:
+        'Aquí tendrás acceso a materiales que te permitirán consolidar los conceptos vistos durante las clases',
       section: course.afterClass,
       sectionKey: 'Después de la clase',
+      progressKey: 'actividadExperiencial' as const,
     },
   ];
 
@@ -129,8 +241,9 @@ const CourseDetailsStudent = ({
 
         {/* Tarjetas de contenido */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {sectionData.map(({ title, section, description, sectionKey }, idx) => {
+          {sectionData.map(({ title, section, description, sectionKey, progressKey }, idx) => {
             const totalTime = calculateTotalTime(section);
+            const value = progress ? getProgressPercentage(progress[progressKey]) : 0;
 
             return (
               <div
@@ -139,14 +252,22 @@ const CourseDetailsStudent = ({
                 onClick={() => onSelectCard(sectionKey)}
               >
                 <h3 className="text-lg font-bold text-gray-800 mb-2">{title}</h3>
-                <hr className="border-t border-gray-200 mb-2" />
+                <div className="flex items-center gap-2 mb-2">
+                  <h2 className="text-sm font-semibold text-gray-500">Progreso:</h2>
+                  {progress ? (
+                    <ProgressBadge value={value} />
+                  ) : (
+                    <p className="text-sm text-gray-400">Cargando...</p>
+                  )}
+                </div>
+                <hr className="border-t border-gray-200 mt-2 mb-2" />
                 <div className="flex items-center gap-2 mb-2">
                   <h2 className="text-sm font-semibold text-gray-500">Tiempo estimado:</h2>
-                  <p className="text-sm px-2 py-1 rounded text-green-700 bg-green-100 inline-block">
+                  <p className="text-sm px-2 py-1 rounded text-gray-600 bg-gray-200 inline-block">
                     {totalTime} min
                   </p>
                 </div>
-                <p className="text-sm text-gray-500 mt-1 text-justify">
+                <p className="text-sm text-gray-500 mt-1 mb-4 text-justify">
                   {description}
                 </p>
               </div>
