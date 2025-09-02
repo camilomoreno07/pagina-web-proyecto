@@ -170,44 +170,50 @@ export default function ReviewExperience({
         <h3 className="text-xl font-semibold mb-4 pb-2 text-left">
           Videos Capturados Durante la Simulación
         </h3>
-        <div className="flex flex-row items-stretch rounded-lg overflow-hidden shadow-lg">
-          {/* Botón anterior */}
-          <button
-            onClick={prevVideo}
-            className="bg-primary-40 hover:bg-primary-60 text-white w-10 sm:w-12 flex items-center justify-center transition rounded-l-lg"
-          >
-            ◀
-          </button>
 
-          {/* Contenedor del video */}
-          <div className="flex flex-col items-center flex-1 bg-primary-40 px-2 sm:px-4 pt-4 pb-6">
-            <p className="font-semibold mt-1 mb-3 text-center">
-              <span className="inline-block text-sm sm:text-base px-3 py-1 rounded bg-primary-30 text-white">
-                {videoTitles[currentVideoIndex]}
-              </span>
-            </p>
-            <iframe
-              className="w-full h-48 sm:h-64 rounded-lg border-4 border-primary-60 shadow-lg"
-              src={videoUrls[currentVideoIndex].replace("watch?v=", "embed/")}
-              allowFullScreen
-            ></iframe>
-            <p className="font-semibold mt-5 text-center">
-              <span className="text-sm sm:text-base px-3 py-1 rounded bg-primary-30 text-white">
-                {currentVideoIndex + 1} / {videoUrls.length}
-              </span>
-            </p>
+        {videoUrls.length > 0 ? (
+          <div className="flex flex-row items-stretch rounded-lg overflow-hidden shadow-lg">
+            {/* Botón anterior */}
+            <button
+              onClick={prevVideo}
+              className="bg-primary-40 hover:bg-primary-60 text-white w-10 sm:w-12 flex items-center justify-center transition rounded-l-lg"
+            >
+              ◀
+            </button>
+
+            {/* Contenedor del video */}
+            <div className="flex flex-col items-center flex-1 bg-primary-40 px-2 sm:px-4 pt-4 pb-6">
+              <p className="font-semibold mt-1 mb-3 text-center">
+                <span className="inline-block text-sm sm:text-base px-3 py-1 rounded bg-primary-30 text-white">
+                  {videoTitles[currentVideoIndex]}
+                </span>
+              </p>
+              <iframe
+                className="w-full h-48 sm:h-64 rounded-lg border-4 border-primary-60 shadow-lg"
+                src={videoUrls[currentVideoIndex].replace("watch?v=", "embed/")}
+                allowFullScreen
+              ></iframe>
+              <p className="font-semibold mt-5 text-center">
+                <span className="text-sm sm:text-base px-3 py-1 rounded bg-primary-30 text-white">
+                  {currentVideoIndex + 1} / {videoUrls.length}
+                </span>
+              </p>
+            </div>
+
+            {/* Botón siguiente */}
+            <button
+              onClick={nextVideo}
+              className="bg-primary-40 hover:bg-primary-60 text-white w-10 sm:w-12 flex items-center justify-center transition rounded-r-lg"
+            >
+              ▶
+            </button>
           </div>
-
-          {/* Botón siguiente */}
-          <button
-            onClick={nextVideo}
-            className="bg-primary-40 hover:bg-primary-60 text-white w-10 sm:w-12 flex items-center justify-center transition rounded-r-lg"
-          >
-            ▶
-          </button>
-        </div>
+        ) : (
+          <div className="w-full min-h-[100px] border border-dashed border-gray-300 rounded flex items-center justify-center px-4 py-6 text-center text-gray-500 text-sm italic">
+            No se capturaron videos durante esta simulación
+          </div>
+        )}
       </div>
-
 
       {/* Tabla decisiones médicas */}
       <div className="bg-white shadow p-6 rounded-lg overflow-x-auto">
