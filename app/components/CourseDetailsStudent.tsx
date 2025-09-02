@@ -59,6 +59,7 @@ interface MomentProgress {
   instructionCompleted: boolean;
   contentProgress: ContentProgress;
   evaluationCompleted: boolean;
+  omittedMoments?: number;
 }
 
 interface Progress {
@@ -73,16 +74,22 @@ interface Progress {
 /** ===== Helpers ===== */
 const getProgressPercentage = (moment: MomentProgress): number => {
   if (!moment) return 0;
+
   const contents = moment.contentProgress?.contentsCompleted || [];
   const completedContents = contents.filter(Boolean).length;
   const totalContents = contents.length;
 
-  const totalItems = 1 + totalContents + 1; // instrucciones + contenidos + evaluación
+  // Instrucción + contenidos + evaluación
+  const baseTotal = 2 + totalContents;
+
+  // Descuento por omitidos
+  const totalItems = Math.max(baseTotal - (moment.omittedMoments || 0), 0);
+
   const completed =
     (moment.instructionCompleted ? 1 : 0) +
     completedContents +
     (moment.evaluationCompleted ? 1 : 0);
-
+    
   return totalItems > 0 ? completed / totalItems : 0;
 };
 

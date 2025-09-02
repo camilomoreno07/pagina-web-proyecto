@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { FaCloudUploadAlt, FaTrash, FaSpinner } from "react-icons/fa";
 import Cookies from "js-cookie";
+import NumberStepper from "./NumberStepper"; // ⬅️ importa el stepper
 
 interface CrearExperienciaProps {
   courseData: any;

@@ -72,6 +72,12 @@ const ContentSection = ({ title, onBack, course }: ContentSectionProps) => {
     "Después de la clase": course.afterClass,
   } as const;
 
+  const titleMap = {
+    "Antes de clase": "Aula Invertida",
+    "Durante la clase": "Taller de Habilidad",
+    "Después de la clase": "Actividad Experiencial",
+  } as const;
+
   const currentSection = sectionMap[title];
 
   // fetch existing grade
@@ -162,6 +168,7 @@ const ContentSection = ({ title, onBack, course }: ContentSectionProps) => {
       instructionCompleted: next,
       contentProgress: { contentsCompleted: completedContents },
       evaluationCompleted: thirdTabCompleted,
+      ommitedContent: currentSection?.ommitedContent ?? 0,
     });
   };
 
@@ -174,6 +181,7 @@ const ContentSection = ({ title, onBack, course }: ContentSectionProps) => {
       instructionCompleted: instructionsCompleted,
       contentProgress: { contentsCompleted: next },
       evaluationCompleted: thirdTabCompleted,
+      ommitedContent: currentSection?.ommitedContent ?? 0,
     });
   };
 
@@ -187,12 +195,19 @@ const ContentSection = ({ title, onBack, course }: ContentSectionProps) => {
     return "unknown";
   };
 
+  const hasEvaluation = currentSection?.evaluations?.[0]?.question !== "NA";
+
   // tab click handler
   const handleTabClick = (tab: Tab) => {
     const isLocked = allTabsLocked && tab !== "Evaluación";
     if (isLocked) return;
 
     if (tab === "Evaluación") {
+      if (!hasEvaluation) {
+        setActiveTab("Evaluación");
+        return;
+      }
+
       if (thirdTabCompleted) {
         setActiveTab("Evaluación");
         return;
@@ -217,7 +232,10 @@ const ContentSection = ({ title, onBack, course }: ContentSectionProps) => {
         courseId: course.courseId,
         studentId: username,
       }),
-      [sectionKey]: updatedSection,
+      [sectionKey]: {
+        ...(progress?.[sectionKey] ?? {}), // keep existing ommitedContent
+        ...updatedSection,                 // overwrite with new updates
+      },
     };
 
     setProgress(newProgress);
@@ -239,114 +257,208 @@ const ContentSection = ({ title, onBack, course }: ContentSectionProps) => {
   };
 
   return (
-    <div className="w-full px-6 py-6 space-y-6 bg-white">
-      <button
-        onClick={onBack}
-        className="mb-3 text-sm text-gray-500 hover:text-primary-600 flex items-center gap-1"
-      >
-        ← Volver a detalles del curso
-      </button>
+    <>
+      <div className="w-full px-6 py-6 space-y-6 bg-white">
+        <button
+          onClick={onBack}
+          className="mb-3 text-sm text-gray-500 hover:text-primary-600 flex items-center gap-1"
+        >
+          ← Volver a detalles del curso
+        </button>
 
-      <h2 className="text-2xl font-bold text-gray-800 mb-4">{title}</h2>
+        <h2 className="text-2xl font-bold text-gray-800 mb-4">{titleMap[title]}</h2>
 
-      {/* Tabs */}
-      <div className="grid grid-cols-3 mb-6 rounded-lg overflow-hidden border border-gray-200">
-        {TABS.map((tab) => {
-          // 🔹 Disable ALL tabs when evaluation in progress
-          // 🔹 But allow "Evaluación" if already completed (for review)
-          const isDisabled =
-            allTabsLocked || (tab === "Evaluación" && !thirdTabCompleted && allTabsLocked);
+        {/* Tabs */}
+        <div className="grid grid-cols-3 mb-6 rounded-lg overflow-hidden border border-gray-200">
+          {TABS.map((tab) => {
+            // 🔹 Disable ALL tabs when evaluation in progress
+            // 🔹 But allow "Evaluación" if already completed (for review)
+            const isDisabled =
+              allTabsLocked || (tab === "Evaluación" && !thirdTabCompleted && allTabsLocked);
 
-          return (
-            <button
-              key={tab}
-              onClick={() => {
-                if (isDisabled) return;
-                handleTabClick(tab);
-              }}
-              className={clsx(
-                "py-3 text-center text-sm md:text-base font-medium transition-colors",
-                activeTab === tab
-                  ? "bg-[#EDFAFA] text-[#096874]"
-                  : "bg-white text-gray-600 hover:bg-gray-100",
-                isDisabled && "opacity-50 cursor-not-allowed"
+            return (
+              <button
+                key={tab}
+                onClick={() => {
+                  if (isDisabled) return;
+                  handleTabClick(tab);
+                }}
+                className={clsx(
+                  "py-3 text-center text-sm md:text-base font-medium transition-colors",
+                  activeTab === tab
+                    ? "bg-[#EDFAFA] text-[#096874]"
+                    : "bg-white text-gray-600 hover:bg-gray-100",
+                  isDisabled && "opacity-50 cursor-not-allowed"
+                )}
+              >
+                {tab}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Tab Content */}
+        <div className="w-full max-w-4xl mx-auto space-y-6">
+
+          {/* Instrucciones*/}
+          {activeTab === "Instrucciones" && (
+            <div className="space-y-3">
+              <h2 className="text-xl font-semibold mb-4">
+                {currentSection.instructions.instructionTitle}
+              </h2>
+              <Resumen description={currentSection.instructions.instructionDescription} />
+              {currentSection.instructions.steps?.length > 0 && (
+                <ol className="list-decimal list-inside text-gray-700 space-y-1 mt-2">
+                  {currentSection.instructions.steps
+                    .filter((step: string) => step.trim() !== "")
+                    .map((step: string, idx: number) => (
+                      <li key={idx}>{step}</li>
+                    ))}
+                </ol>
               )}
-            >
-              {tab}
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Tab Content */}
-      <div className="w-full max-w-4xl mx-auto space-y-6">
-
-        {/* Instrucciones*/}
-        {activeTab === "Instrucciones" && (
-          <div className="space-y-3">
-            <h2 className="text-xl font-semibold mb-4">
-              {currentSection.instructions.instructionTitle}
-            </h2>
-            <Resumen description={currentSection.instructions.instructionDescription} />
-            {currentSection.instructions.steps?.length > 0 && (
-              <ol className="list-decimal list-inside text-gray-700 space-y-1 mt-2">
-                {currentSection.instructions.steps
-                  .filter((step: string) => step.trim() !== "")
-                  .map((step: string, idx: number) => (
-                    <li key={idx}>{step}</li>
-                  ))}
-              </ol>
-            )}
-            <div className="flex items-center gap-2 mb-2">
-              <h2 className="text-sm font-semibold text-gray-500">Tiempo sugerido de estudio:</h2>
-              <p className="text-sm px-2 py-1 rounded text-gray-600 bg-gray-200 inline-block">
-                {currentSection.instructions.time} min
-              </p>
+              <div className="flex items-center gap-2 mb-2">
+                <h2 className="text-sm font-semibold text-gray-500">Tiempo sugerido de estudio:</h2>
+                <p className="text-sm px-2 py-1 rounded text-gray-600 bg-gray-200 inline-block">
+                  {currentSection.instructions.time} min
+                </p>
+              </div>
+              <div className="mt-4 flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="completado"
+                  checked={instructionsCompleted}
+                  onChange={toggleInstructions}
+                />
+                <label htmlFor="completado" className="text-gray-600 text-sm">
+                  Marcar como completado
+                </label>
+              </div>
             </div>
-            <div className="mt-4 flex items-center gap-2">
-              <input
-                type="checkbox"
-                id="completado"
-                checked={instructionsCompleted}
-                onChange={toggleInstructions}
-              />
-              <label htmlFor="completado" className="text-gray-600 text-sm">
-                Marcar como completado
-              </label>
-            </div>
-          </div>
-        )}
+          )}
 
-        {/* Contenido */}
-        {activeTab === "Contenido" && (
-          <div className="space-y-6">
-            {currentSection?.contents?.length ? (
-              <>
-                <div className="p-4 rounded-md space-y-4">
-                  {(() => {
-                    const content = currentSection.contents[activeContentIndex];
+          {/* Contenido */}
+          {activeTab === "Contenido" && (
+            <div className="space-y-6">
+              {currentSection?.contents?.length ? (
+                <>
+                  <div className="p-4 rounded-md space-y-4">
+                    {(() => {
+                      const content = currentSection.contents[activeContentIndex];
 
-                    // Experiencia WebGL
-                    if (content?.experienceUrl && content.experienceUrl !== "NA") {
+                      // Experiencia WebGL
+                      if (content?.experienceUrl && content.experienceUrl !== "NA") {
+                        return (
+                          <>
+                            <h4 className="text-lg font-semibold text-primary-10">
+                              {content.contentTitle}
+                            </h4>
+                            <iframe
+                              src={content.experienceUrl}
+                              className="w-full h-[500px] border rounded"
+                              allow="autoplay; fullscreen; vr"
+                            />
+                            <p className="text-sm text-primary-30 mt-2">
+                              {content.contentDescription}
+                            </p>
+                            <div className="flex items-center gap-2 mb-2">
+                              <h2 className="text-sm font-semibold text-gray-500">
+                                Tiempo sugerido de estudio:
+                              </h2>
+                              <p className="text-sm px-2 py-1 rounded text-gray-600 bg-gray-200 inline-block">
+                                {content.time*60} min
+                              </p>
+                            </div>
+                            <div className="pt-2">
+                              <label className="inline-flex items-center gap-2 text-sm text-primary-30">
+                                <input
+                                  type="checkbox"
+                                  checked={completedContents[activeContentIndex] || false}
+                                  onChange={() => toggleCompleted(activeContentIndex)}
+                                />
+                                Marcar como completado
+                              </label>
+                            </div>
+                          </>
+                        );
+                      } else if (content?.experienceUrl === "NA") {
+                        return (
+                          <ReviewExperience
+                            idEstudiante={username ?? ""}
+                            nombreCurso={course.courseName}
+                          />
+                        );
+                      }
+
+                      // Contenido normal (imagen/video/pdf/etc.)
+                      if (currentSection?.contents?.[0]?.contentTitle === "NA") {
+                        return (
+                          <div className="w-full min-h-[120px] border border-dashed border-gray-300 rounded flex items-center justify-center px-4 py-6 text-center text-gray-500 text-sm italic">
+                            Esta sección no cuenta con ningún contenido asociado
+                          </div>
+                        );
+                      }
+
+                      const mimeType = content?.imageUrl
+                        ? getMimeTypeFromUrl(content.imageUrl)
+                        : "unknown";
+                      const imageSrc = content?.imageUrl?.startsWith("blob:")
+                        ? content.imageUrl
+                        : (content?.imageUrl ? images[content.imageUrl] : "");
+
                       return (
                         <>
-                          <h4 className="text-lg font-semibold text-primary-10">
-                            {content.contentTitle}
-                          </h4>
-                          <iframe
-                            src={content.experienceUrl}
-                            className="w-full h-[500px] border rounded"
-                            allow="autoplay; fullscreen; vr"
-                          />
-                          <p className="text-sm text-primary-30 mt-2">
-                            {content.contentDescription}
-                          </p>
+                          {imageSrc && mimeType.startsWith("image/") && (
+                            <img
+                              src={imageSrc}
+                              alt="Contenido visual"
+                              className="w-full max-h-64 object-contain rounded-md mx-auto"
+                              onError={(e) => {
+                                e.currentTarget.style.display = "none";
+                              }}
+                            />
+                          )}
+
+                          {imageSrc && mimeType.startsWith("video/") && (
+                            <video
+                              src={imageSrc}
+                              controls
+                              className="w-full max-h-64 object-contain rounded-md mx-auto"
+                            />
+                          )}
+
+                          {imageSrc && mimeType.startsWith("audio/") && (
+                            <audio
+                              src={imageSrc}
+                              controls
+                              className="w-full rounded-md mx-auto"
+                            />
+                          )}
+
+                          {/* Genérico para docs */}
+                          {imageSrc &&
+                            !mimeType.startsWith("image/") &&
+                            !mimeType.startsWith("video/") &&
+                            !mimeType.startsWith("audio/") && (
+                              <div className="w-full max-w-xs bg-primary-98 rounded-xl border border-gray-200 px-6 py-5 shadow-sm">
+                                <h4 className="text-base font-medium text-primary-10 mb-2 text-center">
+                                  {content.contentTitle}
+                                </h4>
+                                <a
+                                  href={imageSrc}
+                                  download={`doc-${Date.now()}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="block text-center text-sm font-semibold text-primary-40 hover:underline"
+                                >
+                                  Descargar Documento <FaDownload className="text-base inline ml-1" />
+                                </a>
+                              </div>
+                            )}
+
                           <div className="flex items-center gap-2 mb-2">
-                            <h2 className="text-sm font-semibold text-gray-500">
-                              Tiempo sugerido de estudio:
-                            </h2>
+                            <h2 className="text-sm font-semibold text-gray-500">Tiempo sugerido de estudio:</h2>
                             <p className="text-sm px-2 py-1 rounded text-gray-600 bg-gray-200 inline-block">
-                              {content.time} min
+                              {content?.time ?? 0} min
                             </p>
                           </div>
                           <div className="pt-2">
@@ -361,175 +473,95 @@ const ContentSection = ({ title, onBack, course }: ContentSectionProps) => {
                           </div>
                         </>
                       );
-                    } else if (content?.experienceUrl === "NA") {
-                      return (
-                        <ReviewExperience
-                          idEstudiante={username ?? ""}
-                          nombreCurso={course.courseName}
-                        />
-                      );
-                    }
+                    })()}
+                  </div>
 
-                    // Contenido normal (imagen/video/pdf/etc.)
-                    if (currentSection?.contents?.[0]?.contentTitle === "NA") {
-                      return (
-                        <div className="w-full min-h-[120px] border border-dashed border-gray-300 rounded flex items-center justify-center px-4 py-6 text-center text-gray-500 text-sm italic">
-                          Esta sección no cuenta con ningún contenido asociado
-                        </div>
-                      );
-                    }
+                  {/* Navegación */}
+                  <div className="flex justify-between items-center pt-4">
+                    <button
+                      onClick={() => setActiveContentIndex((prev) => Math.max(prev - 1, 0))}
+                      disabled={activeContentIndex === 0}
+                      className="text-primary-30 px-4 py-2 border border-primary-30 rounded disabled:opacity-30"
+                    >
+                      Anterior
+                    </button>
 
-                    const mimeType = content?.imageUrl
-                      ? getMimeTypeFromUrl(content.imageUrl)
-                      : "unknown";
-                    const imageSrc = content?.imageUrl?.startsWith("blob:")
-                      ? content.imageUrl
-                      : (content?.imageUrl ? images[content.imageUrl] : "");
+                    <span className="text-sm text-primary-20">
+                      {activeContentIndex + 1} de {currentSection.contents.length}
+                    </span>
 
-                    return (
-                      <>
-                        {imageSrc && mimeType.startsWith("image/") && (
-                          <img
-                            src={imageSrc}
-                            alt="Contenido visual"
-                            className="w-full max-h-64 object-contain rounded-md mx-auto"
-                            onError={(e) => {
-                              e.currentTarget.style.display = "none";
-                            }}
-                          />
-                        )}
+                    <button
+                      onClick={() =>
+                        setActiveContentIndex((prev) => Math.min(prev + 1, currentSection.contents.length - 1))
+                      }
+                      disabled={activeContentIndex === currentSection.contents.length - 1}
+                      className="text-primary-100 bg-primary-40 px-4 py-2 rounded hover:opacity-90 disabled:opacity-30"
+                    >
+                      Siguiente
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <p className="text-primary-20">No hay contenido disponible.</p>
+              )}
+            </div>
+          )}
 
-                        {imageSrc && mimeType.startsWith("video/") && (
-                          <video
-                            src={imageSrc}
-                            controls
-                            className="w-full max-h-64 object-contain rounded-md mx-auto"
-                          />
-                        )}
+          {/* Evaluacion */}
+          {activeTab === "Evaluación" && currentSection?.evaluations?.[0]?.question !== "NA" && (
+            <EvaluacionViewStudent
+              evaluations={currentSection?.evaluations ?? []}
+              course={{ courseId: course.courseId }}
+              section={sectionKey}
+              onComplete={() => {
+                setAllTabsLocked(false);
+                setThirdTabCompleted(true);
+                updateProgress({
+                  instructionCompleted: instructionsCompleted,
+                  contentProgress: { contentsCompleted: completedContents },
+                  evaluationCompleted: true,
+                  ommitedContent: currentSection?.ommitedContent ?? 0,
+                });
+              }}
+            />
+          )}
 
-                        {imageSrc && mimeType.startsWith("audio/") && (
-                          <audio
-                            src={imageSrc}
-                            controls
-                            className="w-full rounded-md mx-auto"
-                          />
-                        )}
-
-                        {/* Genérico para docs */}
-                        {imageSrc &&
-                          !mimeType.startsWith("image/") &&
-                          !mimeType.startsWith("video/") &&
-                          !mimeType.startsWith("audio/") && (
-                            <div className="w-full max-w-xs bg-primary-98 rounded-xl border border-gray-200 px-6 py-5 shadow-sm">
-                              <h4 className="text-base font-medium text-primary-10 mb-2 text-center">
-                                {content.contentTitle}
-                              </h4>
-                              <a
-                                href={imageSrc}
-                                download={`doc-${Date.now()}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="block text-center text-sm font-semibold text-primary-40 hover:underline"
-                              >
-                                Descargar Documento <FaDownload className="text-base inline ml-1" />
-                              </a>
-                            </div>
-                          )}
-
-                        <div className="flex items-center gap-2 mb-2">
-                          <h2 className="text-sm font-semibold text-gray-500">Tiempo sugerido de estudio:</h2>
-                          <p className="text-sm px-2 py-1 rounded text-gray-600 bg-gray-200 inline-block">
-                            {content?.time ?? 0} min
-                          </p>
-                        </div>
-                        <div className="pt-2">
-                          <label className="inline-flex items-center gap-2 text-sm text-primary-30">
-                            <input
-                              type="checkbox"
-                              checked={completedContents[activeContentIndex] || false}
-                              onChange={() => toggleCompleted(activeContentIndex)}
-                            />
-                            Marcar como completado
-                          </label>
-                        </div>
-                      </>
-                    );
-                  })()}
-                </div>
-
-                {/* Navegación */}
-                <div className="flex justify-between items-center pt-4">
-                  <button
-                    onClick={() => setActiveContentIndex((prev) => Math.max(prev - 1, 0))}
-                    disabled={activeContentIndex === 0}
-                    className="text-primary-30 px-4 py-2 border border-primary-30 rounded disabled:opacity-30"
-                  >
-                    Anterior
-                  </button>
-
-                  <span className="text-sm text-primary-20">
-                    {activeContentIndex + 1} de {currentSection.contents.length}
-                  </span>
-
-                  <button
-                    onClick={() =>
-                      setActiveContentIndex((prev) => Math.min(prev + 1, currentSection.contents.length - 1))
-                    }
-                    disabled={activeContentIndex === currentSection.contents.length - 1}
-                    className="text-primary-100 bg-primary-40 px-4 py-2 rounded hover:opacity-90 disabled:opacity-30"
-                  >
-                    Siguiente
-                  </button>
-                </div>
-              </>
-            ) : (
-              <p className="text-primary-20">No hay contenido disponible.</p>
-            )}
-          </div>
-        )}
-
-        {/* Evaluacion */}
-        {activeTab === "Evaluación" && currentSection?.evaluations?.[0]?.question !== "NA" && (
-          <EvaluacionViewStudent
-            evaluations={currentSection?.evaluations ?? []}
-            course={{ courseId: course.courseId }}
-            section={sectionKey}
-            onComplete={() => {
-              setAllTabsLocked(false);
-              setThirdTabCompleted(true);
-              updateProgress({
-                instructionCompleted: instructionsCompleted,
-                contentProgress: { contentsCompleted: completedContents },
-                evaluationCompleted: true,
-              });
-            }}
-          />
-        )}
+          {/* Placeholder when no evaluation */}
+          {activeTab === "Evaluación" && !hasEvaluation && (
+            <div className="w-full min-h-[120px] border border-dashed border-gray-300 rounded flex items-center justify-center px-4 py-6 text-center text-gray-500 text-sm italic">
+              Esta sección no cuenta con una evaluación de conocimientos
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Modal */}
-      {showEvalModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-2xl shadow-lg p-6 w-full max-w-md flex flex-col items-center text-center">
-            <h3 className="text-lg font-semibold mb-4">
+      {hasEvaluation && showEvalModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 h-screen w-screen px-4">
+          <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6 w-full max-w-sm sm:max-w-md md:max-w-lg lg:max-w-xl flex flex-col items-center text-center overflow-y-auto max-h-[90vh]">
+            <h3 className="text-sm sm:text-base md:text-lg font-semibold mb-4">
               ¿Desea proceder con la presentación de la evaluación?
             </h3>
-            <div className="flex items-center gap-2 mb-6 justify-center">
-              <h2 className="text-sm font-semibold text-gray-500">Tiempo estimado:</h2>
-              <p className="text-sm px-2 py-1 rounded text-green-700 bg-green-100 inline-block">
+
+            <div className="flex flex-col sm:flex-row items-center gap-2 mb-6 justify-center">
+              <h2 className="text-xs sm:text-sm font-semibold text-gray-500">
+                Tiempo estimado:
+              </h2>
+              <p className="text-xs sm:text-sm px-2 py-1 rounded text-green-700 bg-green-100 inline-block">
                 {selectedEvalTime} min
               </p>
             </div>
-            <div className="flex gap-3">
+
+            <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
               <button
                 onClick={() => setShowEvalModal(false)}
-                className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100"
+                className="px-3 sm:px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100 text-sm sm:text-base w-full sm:w-auto"
               >
                 Cancelar
               </button>
               <button
                 onClick={confirmEvalModal}
-                className="px-4 py-2 rounded-lg bg-primary-40 text-white hover:bg-primary-60"
+                className="px-3 sm:px-4 py-2 rounded-lg bg-primary-40 text-white hover:bg-primary-60 text-sm sm:text-base w-full sm:w-auto"
               >
                 Continuar
               </button>
@@ -537,7 +569,9 @@ const ContentSection = ({ title, onBack, course }: ContentSectionProps) => {
           </div>
         </div>
       )}
-    </div>
+
+
+    </>
   );
 };
 

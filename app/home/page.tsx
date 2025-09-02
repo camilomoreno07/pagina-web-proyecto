@@ -36,14 +36,15 @@ type WizardData = any;
 
 const AddNewCourseCard = ({ onClick }: { onClick: () => void }) => (
   <div
-    onClick={onClick}
-    className="w-64 h-64 flex flex-col items-center justify-center border-2 border-dashed border-primary-40 rounded cursor-pointer hover:bg-primary-95 transition"
-  >
-    <span className="text-4xl text-primary-40 mb-4">+</span>
-    <span className="text-lg font-bold text-primary-40">
-      Agregar nuevo curso
-    </span>
-  </div>
+  onClick={onClick}
+  className="w-80 h-80 flex flex-col items-center justify-center rounded-lg shadow-md cursor-pointer hover:shadow-lg hover:scale-105 transition-transform bg-white border-2 border-dashed border-primary-50"
+>
+  <span className="text-4xl text-primary-40 mb-4 font-bold">+</span>
+  <span className="text-lg font-semibold text-gray-800 text-center">
+    Agregar nuevo curso
+  </span>
+</div>
+
 );
 
 const Dashboard = () => {
