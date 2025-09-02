@@ -392,7 +392,16 @@ const EvaluacionViewStudent: React.FC<Props> = ({
             {isActive && !answered && !finished && (
               <button
                 onClick={() => handleCheck(idx)}
-                className="mt-2 text-sm bg-gray-600 hover:bg-gray-700 text-white px-4 py-1.5 rounded shadow-sm transition"
+                disabled={
+                  (q._type === "OPEN" && openAnswers[idx].trim() === "") ||
+                  ((q._type === "MC3" || q._type === "MC5") && selectedOptIdx[idx] === -1)
+                }
+                className={`mt-2 text-sm px-4 py-1.5 rounded shadow-sm transition
+      ${((q._type === "OPEN" && openAnswers[idx].trim() === "") ||
+                    ((q._type === "MC3" || q._type === "MC5") && selectedOptIdx[idx] === -1))
+                    ? "bg-gray-300 cursor-not-allowed text-white"
+                    : "bg-gray-600 hover:bg-gray-700 text-white"
+                  }`}
               >
                 Corroborar
               </button>
@@ -400,12 +409,23 @@ const EvaluacionViewStudent: React.FC<Props> = ({
 
             {answered && (
               <div
-                className={`mt-4 p-3 rounded ${isCorrectQ[idx] ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
+                className={`mt-4 p-3 rounded ${(q._type === "OPEN" && openAnswers[idx].trim() === "") ||
+                    ((q._type === "MC3" || q._type === "MC5") && selectedOptIdx[idx] === -1)
+                    ? "bg-orange-100 text-orange-800"
+                    : isCorrectQ[idx]
+                      ? "bg-green-100 text-green-800"
+                      : "bg-red-100 text-red-800"
                   }`}
               >
                 <p className="flex items-center gap-2">
                   {isCorrectQ[idx] ? <FaCheckCircle /> : <FaTimesCircle />}
-                  {isCorrectQ[idx] ? "¡Correcto!" : "Incorrecto."}
+                  {(q._type === "OPEN" && openAnswers[idx].trim() === "") ||
+                    ((q._type === "MC3" || q._type === "MC5") && selectedOptIdx[idx] === -1)
+                    ? "No respondiste esta pregunta"
+                    : isCorrectQ[idx]
+                      ? "¡Correcto!"
+                      : "Incorrecto."
+                  }
                 </p>
                 {feedbacks[idx] && (
                   <p className="mt-1 text-sm text-gray-700">

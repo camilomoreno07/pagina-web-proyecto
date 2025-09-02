@@ -532,9 +532,11 @@ export default function Feedback({ course, onClose }: { course: Course | null; o
                     return (
                       <div
                         key={i}
-                        className={`rounded-lg p-4 shadow-sm ${isCorrect
-                          ? "bg-green-50 border border-green-400"
-                          : "bg-red-50 border border-red-400"
+                        className={`rounded-lg p-4 shadow-sm ${resp.trim() === ""
+                          ? "bg-orange-50 border border-orange-400"
+                          : isCorrect
+                            ? "bg-green-50 border border-green-400"
+                            : "bg-red-50 border border-red-400"
                           }`}
                       >
                         <p className="font-bold text-lg text-gray-600 mb-2">Pregunta {i + 1}</p>
@@ -542,13 +544,25 @@ export default function Feedback({ course, onClose }: { course: Course | null; o
                         <p className="mb-2 text-gray-800 text-justify">{ev.question}</p>
 
                         <hr
-                          className={`my-2 border-t ${isCorrect ? "border-green-400" : "border-red-400"
+                          className={`my-2 border-t ${resp.trim() === ""
+                            ? "border-orange-400"
+                            : isCorrect
+                              ? "border-green-400"
+                              : "border-red-400"
                             }`}
                         />
 
                         <p className="text-sm mb-2 text-gray-600">
-                          <span className="font-semibold">Respuesta del estudiante:</span>{" "}
-                          {resp || "—"}
+                          {resp.trim() !== "" ? (
+                            <>
+                              <span className="font-semibold">Respuesta del estudiante:</span>{" "}
+                              {resp}
+                            </>
+                          ) : (
+                            <span className="font-semibold">
+                              — El estudiante no respondió esta pregunta —
+                            </span>
+                          )}
                         </p>
 
                         {corrects.length > 0 && (
@@ -560,10 +574,7 @@ export default function Feedback({ course, onClose }: { course: Course | null; o
 
                         {!isCorrect && (
                           <>
-                            <hr
-                              className={`my-2 border-t ${isCorrect ? "border-green-400" : "border-red-400"
-                                }`}
-                            />
+                            <hr className="my-2 border-t border-red-400" />
                             <p className="text-sm mb-2 text-gray-600">
                               <span className="font-semibold">Retroalimentación:</span>
                             </p>
