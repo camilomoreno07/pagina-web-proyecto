@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from "react";
 import clsx from "clsx";
 import Cookies from "js-cookie";
-import { FaDownload } from "react-icons/fa";
+import { FaDownload, FaFileAlt } from "react-icons/fa";
 import Resumen from "./Resumen";
 import ReviewExperience from "../components/ReviewExperience";
 import EvaluacionViewStudent from "../components/EvaluacionViewStudent";
@@ -342,7 +342,7 @@ const ContentSection = ({ title, onBack, course }: ContentSectionProps) => {
                     ))}
                 </ol>
               )}
-              <div className="flex items-center gap-2 mb-2">
+              <div className="flex flex-wrap items-center gap-2 mb-2">
                 <h2 className="text-sm font-semibold text-gray-500">
                   Tiempo sugerido de estudio:
                 </h2>
@@ -374,16 +374,37 @@ const ContentSection = ({ title, onBack, course }: ContentSectionProps) => {
                   const globalIndex = currentSection.contents.findIndex((c: any) => c === content);
 
                   return (
-                    <div key={module} className="mb-8 pt-6">
-
+                    <div
+                      key={module}
+                      className="border-2 border-gray-300 rounded-2xl p-6 mb-8 bg-gray-50 shadow-sm"
+                    >
+                      {/* === MODULE NAME === */}
                       {module !== "NA" && (
-                        <h3 className="text-xl font-bold text-primary-40 bg-gray-50 mb-4 border-t border-b py-4 text-center">
-                          {module}
-                        </h3>
+                        <div className="flex items-center gap-3 mb-6 bg-gray-100 border-l-4 border-primary-40 rounded-lg p-3 shadow-sm">
+                          <FaFileAlt className="text-primary-40 text-lg ml-2" />
+
+                          <h3
+                            className="flex-1 text-lg font-semibold tracking-wide text-gray-800"
+                          >
+                            {module ?? ""}
+                          </h3>
+                        </div>
                       )}
 
-                      {/* Bloque del contenido */}
-                      <div className="p-4 rounded-md space-y-4">
+                      {module === "NA" && content?.experienceUrl && content.experienceUrl !== "NA" && (
+                        <div className="flex items-center gap-3 mb-6 bg-gray-100 border-l-4 border-primary-40 rounded-lg p-3 shadow-sm">
+                          <FaFileAlt className="text-primary-40 text-lg ml-2" />
+
+                          <h3
+                            className="flex-1 text-lg font-semibold tracking-wide text-gray-800"
+                          >
+                            Simulación Web del Caso de Estudio
+                          </h3>
+                        </div>
+                      )}
+
+                      {/* === CONTENT BLOCK === */}
+                      <div className="p-4 rounded-md space-y-4 bg-white border border-gray-200 shadow-sm">
                         {(() => {
                           // Experiencia WebGL
                           if (content?.experienceUrl && content.experienceUrl !== "NA") {
@@ -400,7 +421,7 @@ const ContentSection = ({ title, onBack, course }: ContentSectionProps) => {
                                 <p className="text-sm text-primary-30 mt-2">
                                   {content.contentDescription}
                                 </p>
-                                <div className="flex items-center gap-2 mb-2">
+                                <div className="flex flex-wrap items-center gap-2 mb-2">
                                   <h2 className="text-sm font-semibold text-gray-500">
                                     Tiempo sugerido de estudio:
                                   </h2>
@@ -429,7 +450,7 @@ const ContentSection = ({ title, onBack, course }: ContentSectionProps) => {
                             );
                           }
 
-                          // Contenido normal (imagen/video/pdf/etc.)
+                          // Contenido normal
                           if (currentSection?.contents?.[0]?.contentTitle === "NA") {
                             return (
                               <div className="w-full min-h-[120px] border border-dashed border-gray-300 rounded flex items-center justify-center px-4 py-6 text-center text-gray-500 text-sm italic">
@@ -447,6 +468,13 @@ const ContentSection = ({ title, onBack, course }: ContentSectionProps) => {
 
                           return (
                             <>
+                              <h4 className="text-lg font-semibold text-primary-10 text-center">
+                                {content.contentTitle}
+                              </h4>
+                              <hr />
+                              <p className="text-sm text-primary-30 mt-2 text-center">
+                                {content.contentDescription}
+                              </p>
                               {imageSrc && mimeType.startsWith("image/") && (
                                 <img
                                   src={imageSrc}
@@ -479,7 +507,7 @@ const ContentSection = ({ title, onBack, course }: ContentSectionProps) => {
                                 !mimeType.startsWith("image/") &&
                                 !mimeType.startsWith("video/") &&
                                 !mimeType.startsWith("audio/") && (
-                                  <div className="w-full max-w-xs bg-primary-98 rounded-xl border border-gray-200 px-6 py-5 shadow-sm">
+                                  <div className="w-full max-w-xs mx-auto bg-primary-98 rounded-xl border border-gray-200 px-6 py-5 shadow-sm">
                                     <h4 className="text-base font-medium text-primary-10 mb-2 text-center">
                                       {content.contentTitle}
                                     </h4>
@@ -495,8 +523,10 @@ const ContentSection = ({ title, onBack, course }: ContentSectionProps) => {
                                   </div>
                                 )}
 
-                              <div className="flex items-center gap-2 mb-2">
-                                <h2 className="text-sm font-semibold text-gray-500">Tiempo sugerido de estudio:</h2>
+                              <div className="flex flex-wrap items-center gap-2 mb-2">
+                                <h2 className="text-sm font-semibold text-gray-500">
+                                  Tiempo sugerido de estudio:
+                                </h2>
                                 <p className="text-sm px-2 py-1 rounded text-gray-600 bg-gray-200 inline-block">
                                   {content?.time ?? 0} min
                                 </p>
@@ -516,7 +546,7 @@ const ContentSection = ({ title, onBack, course }: ContentSectionProps) => {
                         })()}
                       </div>
 
-                      {/* Navegación por módulo */}
+                      {/* === NAVIGATION === */}
                       <div className="flex justify-between items-center pt-4">
                         <button
                           onClick={() => handlePrev(module)}

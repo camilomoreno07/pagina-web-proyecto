@@ -1,7 +1,7 @@
 // components/CrearInstrucciones.tsx
 "use client";
 import { useState, useEffect } from "react";
-import { FaTrash } from "react-icons/fa";
+import { FaTrash, FaPlus} from "react-icons/fa";
 import NumberStepper from "./NumberStepper"; // ⬅️ importa el stepper
 
 interface CrearInstruccionesProps {
@@ -121,7 +121,7 @@ export default function CrearInstrucciones({
               <button
                 type="button"
                 onClick={() => removeStep(index)}
-                className="text-primary-40 hover:text-primary-50"
+                className="p-2 rounded-full bg-primary-80 text-primary-40 transition hover:bg-red-500 hover:text-white"
               >
                 <FaTrash className="w-5 h-5" />
               </button>
@@ -131,9 +131,11 @@ export default function CrearInstrucciones({
           <button
             type="button"
             onClick={addStep}
-            className="mt-2 p-2 border-2 border-primary-40 text-primary-40 bg-white rounded-lg font-semibold flex items-center justify-center"
+            className="flex items-center gap-2 px-4 py-2 border-2 border-primary-40 text-primary-40 bg-white 
+             rounded-xl mt-3 font-medium shadow-sm hover:bg-primary-40 hover:text-white 
+             active:scale-95 transition"
           >
-            <span className="text-2xl leading-none">+</span> Agregar paso
+            <FaPlus /> Agregar paso
           </button>
         </div>
       </div>

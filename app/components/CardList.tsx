@@ -65,7 +65,7 @@ export default function CardList({
     },
     {
       id: 2,
-      title: course.isPublic ? "Briefing" : "Subir contenido",
+      title: course.isPublic ? "Briefing" : (name === "afterClass" ? "Subir simulación":"Subir contenido"),
       isFilled: getContentStatus(currentData.contents),
     },
     {
