@@ -1,26 +1,30 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import {
   FaCloudUploadAlt,
   FaEdit,
   FaTrash,
   FaPlus,
   FaCheck,
-  FaFilePdf,
-  FaFileWord,
+  FaDownload,
   FaFileAlt,
+  FaBan,
+  FaEye
 } from "react-icons/fa";
 import Cookies from "js-cookie";
 import NumberStepper from "./NumberStepper";
 
+interface Content {
+  contentTitle: string;
+  contentDescription: string;
+  time: number;
+  imageUrl: string | null;
+  completed: boolean;
+  moduleName: string;
+}
+
 interface SubirContenidoProps {
   courseData: any;
   setCourseData: (data: any) => void;
-  handleInputChange: (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >
-  ) => void;
-  name: string;
   hasSimulation: boolean;
 }
 
@@ -29,33 +33,25 @@ export default function SubirContenido({
   setCourseData,
   hasSimulation,
 }: SubirContenidoProps) {
-  const [contents, setContents] = useState<any[]>([]);
+  // images map: key = url (backend url or preview objectURL), value = localObjectURL (for display)
   const [images, setImages] = useState<Record<string, string>>({});
 
+  // ensure contents array exists
+  const contents: Content[] = courseData?.contents ?? [];
+
+  // preload protected images (only for http(s) backend urls)
   useEffect(() => {
-    if (courseData?.contents) {
-      setContents(courseData.contents);
-      courseData.contents.forEach((c: any) => {
+    (async () => {
+      for (let c of contents) {
         if (typeof c.imageUrl === "string" && c.imageUrl.startsWith("http")) {
-          loadProtectedImage(c.imageUrl);
+          await loadProtectedImage(c.imageUrl);
         }
-      });
-    }
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [courseData?.contents]);
 
-  const deleteImageFromBackend = async (url?: string | null) => {
-    if (!url || !url.includes("/media/files/")) return;
-    const filename = url.split("/media/files/")[1];
-    try {
-      await fetch(`http://localhost:8081/media/files/${filename}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${Cookies.get("token")}` },
-      });
-    } catch {
-      console.warn("No se pudo eliminar la imagen:", filename);
-    }
-  };
-
+  /** =============== IMAGE HELPERS ================= */
   const uploadImageToBackend = async (file: File): Promise<string | null> => {
     const formData = new FormData();
     formData.append("file", file);
@@ -75,159 +71,173 @@ export default function SubirContenido({
   };
 
   const loadProtectedImage = async (url: string) => {
-    if (images[url]) return;
-    const r = await fetch(url, {
-      headers: { Authorization: `Bearer ${Cookies.get("token")}` },
-    });
-    if (!r.ok) return;
-    const blob = await r.blob();
-    setImages((p) => ({ ...p, [url]: URL.createObjectURL(blob) }));
-  };
-
-  const addContent = () => {
-    const newContent = {
-      contentTitle: "",
-      contentDescription: "",
-      time: 1,
-      imageUrl: null,
-      completed: false,
-    };
-    const updated = [...(courseData?.contents || []), newContent];
-    setCourseData({ ...courseData, contents: updated });
-    setContents(updated);
-  };
-
-  const updateContent = (idx: number, field: string, value: any) => {
-    const next = [...contents];
-    next[idx] = { ...next[idx], [field]: value };
-    setCourseData({ ...courseData, contents: next });
-    setContents(next);
-  };
-
-  const removeContent = async (idx: number) => {
-    await deleteImageFromBackend(contents[idx].imageUrl);
-    const next = contents.filter((_, i) => i !== idx);
-    setCourseData({ ...courseData, contents: next });
-    setContents(next);
-  };
-
-  const handleImageUpload = async (
-    idx: number,
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const previewUrl = URL.createObjectURL(file);
-    updateContent(idx, "imageUrl", previewUrl);
-
-    const realUrl = await uploadImageToBackend(file);
-    if (realUrl) {
-      updateContent(idx, "imageUrl", realUrl);
-    } else {
-      alert("Error al subir imagen");
+    if (!url || images[url]) return;
+    if (!url.startsWith("http")) return; // only fetch remote/protected urls
+    try {
+      const r = await fetch(url, {
+        headers: { Authorization: `Bearer ${Cookies.get("token")}` },
+      });
+      if (!r.ok) return;
+      const blob = await r.blob();
+      const local = URL.createObjectURL(blob);
+      setImages((p) => ({ ...p, [url]: local }));
+    } catch (err) {
+      console.warn("No se pudo cargar protected image", url, err);
     }
+  };
+
+  const getMimeTypeFromUrl = (url: string | null): string => {
+    if (!url) return "unknown";
+    const lowerUrl = url.toLowerCase().split("?")[0];
+    if (lowerUrl.match(/\.(jpg|jpeg|png|gif|svg|webp)$/)) return "image/*";
+    if (lowerUrl.match(/\.(mp4|webm|mov)$/)) return "video/*";
+    if (lowerUrl.match(/\.(mp3|wav|ogg)$/)) return "audio/*";
+    if (lowerUrl.endsWith(".pdf") || lowerUrl.endsWith(".doc") || lowerUrl.endsWith(".docx") || lowerUrl.endsWith(".txt"))
+      return "document/*";
+    return "unknown";
   };
 
   const renderPreview = (url: string | null) => {
     if (!url) return null;
-
-    const lowerUrl = url.toLowerCase();
     const mimeType = getMimeTypeFromUrl(url);
 
-    loadProtectedImage(lowerUrl);
-
-    console.log(lowerUrl);
-    console.log(mimeType);
+    // for backend http urls we may have converted to a local object URL in images[url]
+    const src = images[url] ?? url;
 
     if (mimeType.startsWith("image/")) {
       return (
         <img
-          src={images[url]}
-          alt="Vista previa local"
+          src={src}
+          alt="Vista previa"
           className="w-full h-full object-cover rounded-lg"
         />
       );
     } else if (mimeType.startsWith("video/")) {
       return (
-        <video
-          src={images[url]}
-          controls
-          className="w-full h-full object-cover rounded-lg"
-        />
+        <video src={src} controls className="w-full h-full object-cover rounded-lg" />
       );
     } else if (mimeType.startsWith("audio/")) {
-      return (
-        <audio src={images[url]} controls className="w-full rounded-lg"></audio>
-      );
+      return <audio src={src} controls className="w-full rounded-lg" />;
     } else {
       return <FaFileAlt className="text-gray-500 text-7xl" />;
     }
   };
 
-  const getMimeTypeFromUrl = (url: string): string => {
-    const lowerUrl = url.toLowerCase();
+  // update a content in the flat array by index
+  const updateContentByIndex = (index: number, field: keyof Content, value: any) => {
+    const updated = [...contents];
+    updated[index] = { ...updated[index], [field]: value };
+    setCourseData({ ...courseData, contents: updated });
+  };
 
-    if (lowerUrl.endsWith(".pdf")) return "application/pdf";
-    if (lowerUrl.endsWith(".doc")) return "application/msword";
-    if (lowerUrl.endsWith(".docx"))
-      return "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
-    if (lowerUrl.endsWith(".xls")) return "application/vnd.ms-excel";
-    if (lowerUrl.endsWith(".xlsx"))
-      return "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
-    if (lowerUrl.endsWith(".ppt")) return "application/vnd.ms-powerpoint";
-    if (lowerUrl.endsWith(".pptx"))
-      return "application/vnd.openxmlformats-officedocument.presentationml.presentation";
+  const deleteContentByIndex = (index: number) => {
+    const updated = contents.filter((_, i) => i !== index);
+    setCourseData({ ...courseData, contents: updated });
+  };
 
-    if (lowerUrl.endsWith(".jpg") || lowerUrl.endsWith(".jpeg"))
-      return "image/jpeg";
-    if (lowerUrl.endsWith(".png")) return "image/png";
-    if (lowerUrl.endsWith(".gif")) return "image/gif";
-    if (lowerUrl.endsWith(".svg")) return "image/svg+xml";
-    if (lowerUrl.endsWith(".webp")) return "image/webp";
+  // handle file upload for a specific content index
+  const handleImageUpload = async (contentIndex: number, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
 
-    if (lowerUrl.endsWith(".mp4")) return "video/mp4";
-    if (lowerUrl.endsWith(".webm")) return "video/webm";
-    if (lowerUrl.endsWith(".mov")) return "video/quicktime";
+    // set temporary preview using local object URL
+    const previewUrl = URL.createObjectURL(file);
+    updateContentByIndex(contentIndex, "imageUrl", previewUrl);
+    // store preview in images so renderPreview can show it
+    setImages((p) => ({ ...p, [previewUrl]: previewUrl }));
 
-    if (lowerUrl.endsWith(".mp3")) return "audio/mpeg";
-    if (lowerUrl.endsWith(".wav")) return "audio/wav";
-    if (lowerUrl.endsWith(".ogg")) return "audio/ogg";
+    const realUrl = await uploadImageToBackend(file);
+    if (realUrl) {
+      // replace preview with real URL in content
+      updateContentByIndex(contentIndex, "imageUrl", realUrl);
+      // preload protected image (so we have an object URL in images map)
+      if (realUrl.startsWith("http")) await loadProtectedImage(realUrl);
+    } else {
+      alert("Error al subir archivo");
+    }
+  };
 
-    if (lowerUrl.endsWith(".zip")) return "application/zip";
-    if (lowerUrl.endsWith(".rar")) return "application/vnd.rar";
-    if (lowerUrl.endsWith(".7z")) return "application/x-7z-compressed";
+  /** =============== GROUPING FOR RENDER ================= */
+  // produce grouped structure preserving original indices: { [moduleName]: Array<{ item: Content, idx: number }> }
+  const grouped = (() => {
+    const acc: Record<string, Array<{ item: Content; idx: number }>> = {};
+    contents.forEach((c, idx) => {
+      const key = c.moduleName && c.moduleName.trim() !== "" ? c.moduleName : "SIN_SECCION";
+      if (!acc[key]) acc[key] = [];
+      acc[key].push({ item: c, idx });
+    });
+    return acc;
+  })();
 
-    if (lowerUrl.endsWith(".txt")) return "text/plain";
-    if (lowerUrl.endsWith(".csv")) return "text/csv";
-    if (lowerUrl.endsWith(".json")) return "application/json";
+  /** =============== ACTIONS ================= */
+  // Add a "section" placeholder (an empty content that expects moduleName)
+  const addSection = () => {
+    const newContent: Content = {
+      contentTitle: "",
+      contentDescription: "",
+      time: 1,
+      imageUrl: null,
+      completed: false,
+      moduleName: "",
+    };
+    setCourseData({ ...courseData, contents: [...contents, newContent] });
+  };
 
-    return "unknown";
+  // Add a content into a given moduleName (moduleName could be "SIN_SECCION")
+  const addContentToModule = (moduleName: string) => {
+    const newContent: Content = {
+      contentTitle: "",
+      contentDescription: "",
+      time: 1,
+      imageUrl: null,
+      completed: false,
+      moduleName: moduleName === "SIN_SECCION" ? "" : moduleName,
+    };
+    setCourseData({ ...courseData, contents: [...contents, newContent] });
+  };
+
+  const normalizeModuleName = (name?: string | null) =>
+    name && name.trim() !== "" ? name : "SIN_SECCION";
+
+  // rename module: update all contents that match oldName
+  const renameModule = (oldName: string, newName: string) => {
+    const updated = contents.map((c) =>
+      normalizeModuleName(c.moduleName) === oldName
+        ? { ...c, moduleName: newName }
+        : c
+    );
+    setCourseData({ ...courseData, contents: updated });
+  };
+
+  // remove whole module (all contents with that moduleName)
+  const removeModule = (moduleName: string) => {
+    const updated = contents.filter(
+      (c) => normalizeModuleName(c.moduleName) !== moduleName
+    );
+    setCourseData({ ...courseData, contents: updated });
   };
 
   const omitContents = () => {
-    const omitted = [
+    const omitted: Content[] = [
       {
         contentTitle: "NA",
         contentDescription: "NA",
         time: 0,
         imageUrl: null,
         completed: false,
+        moduleName: "NA",
       },
     ];
     setCourseData({ ...courseData, contents: omitted });
-    setContents(omitted);
   };
 
   const cancelOmission = () => {
     setCourseData({ ...courseData, contents: [] });
-    setContents([]);
   };
 
+  /** =============== RENDER ================= */
   const isOmitted =
-    courseData?.contents?.length === 1 &&
-    courseData.contents[0].contentTitle === "NA" &&
-    courseData.contents[0].contentDescription === "NA";
+    courseData.contents.length === 1 && courseData.contents[0].contentTitle === "NA";
 
   return (
     <div>
@@ -251,149 +261,255 @@ export default function SubirContenido({
         </div>
       ) : (
         <>
-          {contents.map((c, i) => (
+          {Object.entries(grouped).map(([moduleName, items], sIdx) => (
             <div
-              key={i}
-              className="p-4 border border-gray-300 rounded-lg mb-4 shadow relative"
+              key={sIdx}
+              className="border-2 border-gray-300 rounded-2xl p-6 mb-8 bg-gray-50 shadow-sm"
             >
-              <div className="flex flex-col md:flex-row gap-4">
-                <div className="flex-1 space-y-3">
-                  {!c.completed && (
-                    <div className="absolute top-2 right-2 flex gap-2">
-                      <button
-                        onClick={() => updateContent(i, "completed", true)}
-                        className="flex items-center gap-2 p-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
-                      >
-                        <FaCheck size={16} />
-                        <span className="text-sm">Listo</span>
-                      </button>
-                      <button
-                        onClick={() => removeContent(i)}
-                        className="flex items-center gap-2 p-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
-                      >
-                        <FaTrash size={16} />
-                        <span className="text-sm">Eliminar</span>
-                      </button>
-                    </div>
-                  )}
+              {/* === MODULE NAME === */}
+              <div className="flex items-center gap-3 mb-6 bg-gray-100 border-l-4 border-primary-40 rounded-lg p-3 shadow-sm">
+                <FaFileAlt className="text-primary-40 text-lg ml-2" />
 
-                  {c.completed ? (
-                    <>
-                      <div className="flex justify-between items-center">
-                        <h4 className="text-lg font-bold">{c.contentTitle}</h4>
-                      </div>
-                      <p className="text-gray-600">{c.contentDescription}</p>
-                      <p className="text-sm text-gray-500">
-                        Tiempo: {c.time} min
-                      </p>
-                    </>
-                  ) : (
-                    <>
-                      <label className="block font-medium mb-1">
-                        Título del contenido
-                      </label>
-                      <input
-                        type="text"
-                        value={c.contentTitle}
-                        onChange={(e) =>
-                          updateContent(i, "contentTitle", e.target.value)
-                        }
-                        className="w-full p-2 border border-gray-300 rounded-lg bg-gray-50"
-                      />
-                      <label className="block font-medium mb-1">
-                        Descripción del contenido
-                      </label>
-                      <textarea
-                        value={c.contentDescription}
-                        onChange={(e) =>
-                          updateContent(i, "contentDescription", e.target.value)
-                        }
-                        className="w-full p-2 border border-gray-300 rounded-lg bg-gray-50"
-                        rows={3}
-                      />
+                <input
+                  type="text"
+                  value={moduleName === "SIN_SECCION" ? "" : moduleName}
+                  onChange={(e) => renameModule(moduleName, e.target.value)}
+                  placeholder="Debes ingresar un nombre para la sección"
+                  className={`flex-1 text-lg font-semibold tracking-wide bg-transparent border-b-2 
+      border-transparent focus:border-primary-40 hover:border-gray-400 transition-colors duration-200 
+      focus:outline-none cursor-text
+      ${!moduleName || moduleName === "SIN_SECCION"
+                      ? "text-red-500 placeholder-red-400"
+                      : "text-gray-800"
+                    }`}
+                />
 
-                      <label className="block font-medium mb-1">
-                        Tiempo de estudio
-                      </label>
-                      <NumberStepper
-                        value={c.time}
-                        onChange={(next) => updateContent(i, "time", next)}
-                        min={1}
-                        max={30} // límite superior (puedes ajustarlo)
-                        step={1}
-                        suffix="min"
-                      />
-                    </>
-                  )}
-                </div>
-
-                <div className="w-full md:w-64 flex justify-center items-center">
-                  {c.completed ? (
-                    <div className="relative w-full h-40 flex items-center justify-center bg-white border border-gray-300 rounded-lg">
-                      {renderPreview(c.imageUrl)}
-                    </div>
-                  ) : (
-                    <label className="relative w-full h-40 flex flex-col items-center justify-center bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:bg-gray-200 transition">
-                      {c.imageUrl ? (
-                        <div className="relative w-full h-full flex items-center justify-center">
-                          {renderPreview(c.imageUrl)}
-                          <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity rounded-lg">
-                            <FaEdit className="text-white text-3xl" />
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="flex flex-col items-center">
-                          <FaCloudUploadAlt className="text-gray-400 text-4xl mb-2" />
-                          <span className="text-gray-600 text-sm text-center">
-                            Dele click para cargar archivo
-                          </span>
-                        </div>
-                      )}
-                      <input
-                        type="file"
-                        accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.txt"
-                        onChange={(e) => handleImageUpload(i, e)}
-                        className="hidden"
-                      />
-                    </label>
-                  )}
-                </div>
+                <button
+                  onClick={() => removeModule(moduleName)}
+                  className="p-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition"
+                  title="Eliminar sección"
+                >
+                  <FaTrash />
+                </button>
               </div>
 
-              {c.completed && (
-                <div className="flex justify-center mt-4">
-                  <button
-                    onClick={() => removeContent(i)}
-                    className="flex items-center gap-2 p-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
-                  >
-                    <FaTrash size={16} />
-                    <span className="text-sm">Eliminar</span>
-                  </button>
+              {/* === CONTENTS INSIDE SECTION === */}
+              {items.map(({ item: c, idx }) => (
+                <div
+                  key={idx}
+                  className="p-5 border border-gray-300 rounded-xl mb-5 bg-white shadow-md"
+                >
+                  {/* CONTENT FIELDS */}
+                  {!c.completed ? (
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      {/* FORM FIELDS */}
+                      <div className="md:col-span-2 space-y-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-600 mb-1">
+                            Título del contenido
+                          </label>
+                          <input
+                            type="text"
+                            value={c.contentTitle}
+                            onChange={(e) =>
+                              updateContentByIndex(idx, "contentTitle", e.target.value)
+                            }
+                            placeholder="Título del contenido"
+                            className="w-full p-2 border border-gray-300 rounded-lg text-sm"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-600 mb-1">
+                            Descripción del contenido
+                          </label>
+                          <textarea
+                            value={c.contentDescription}
+                            onChange={(e) =>
+                              updateContentByIndex(idx, "contentDescription", e.target.value)
+                            }
+                            placeholder="Descripción del contenido"
+                            className="w-full p-2 border border-gray-300 rounded-lg text-sm"
+                            rows={3}
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-600 mb-1">
+                            Tiempo de estudio
+                          </label>
+                          <NumberStepper
+                            value={c.time}
+                            onChange={(next) => updateContentByIndex(idx, "time", next)}
+                            min={1}
+                            max={30}
+                            step={1}
+                            suffix="min"
+                          />
+                        </div>
+                      </div>
+
+                      {/* UPLOAD PREVIEW */}
+                      <div className="flex justify-center items-center">
+                        <label className="relative w-full h-40 flex flex-col items-center justify-center 
+    bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer 
+    hover:bg-gray-200 transition overflow-hidden">
+
+                          {c.imageUrl ? (
+                            <div className="w-full h-40 rounded-lg overflow-hidden border bg-white flex items-center justify-center relative">
+                              {renderPreview(c.imageUrl)}
+
+                              {/* === INTERACTION-BLOCKING OVERLAY === */}
+                              <div className="absolute inset-0 bg-black/30 flex flex-col items-center justify-center">
+                                <FaCloudUploadAlt className="text-white text-5xl mb-1" />
+                                <span className="text-white text-l text-center">
+                                  Click para cargar archivo
+                                </span>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="flex flex-col items-center">
+                              <FaCloudUploadAlt className="text-gray-400 text-5xl mb-1" />
+                              <span className="text-gray-600 text-l text-center">
+                                Click para cargar archivo
+                              </span>
+                            </div>
+                          )}
+
+                          <input
+                            type="file"
+                            accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.txt"
+                            onChange={(e) => handleImageUpload(idx, e)}
+                            className="hidden"
+                          />
+                        </label>
+                      </div>
+                    </div>
+                  ) : (
+                    /* === PREVIEW MODE === */
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      <div className="md:col-span-2 space-y-2">
+                        <h4 className="font-bold text-gray-800">{c.contentTitle}</h4>
+                        <p className="text-gray-700 text-sm text-justify">{c.contentDescription}</p>
+                        <p className="text-sm text-gray-500">Tiempo estimado: {c.time} min</p>
+                      </div>
+
+                      {/* FILE PREVIEW */}
+                      <div className="flex justify-center items-center">
+                        {c.imageUrl ? (
+                          (() => {
+                            const mime = getMimeTypeFromUrl(c.imageUrl);
+
+                            if (
+                              mime?.startsWith("image/") ||
+                              mime?.startsWith("video/") ||
+                              mime?.startsWith("audio/")
+                            ) {
+                              // Media → normal preview
+                              return (
+                                <div className="w-full h-40 rounded-lg overflow-hidden border bg-white flex items-center justify-center">
+                                  {renderPreview(c.imageUrl)}
+                                </div>
+                              );
+                            } else {
+                              // Docs → styled card
+                              return (
+                                <div className="w-full max-w-xs bg-primary-98 rounded-xl border border-gray-200 px-6 py-5 shadow-sm">
+                                  <h4 className="text-base font-medium text-primary-10 mb-2 text-center">
+                                    {c.contentTitle || "Sin título"}
+                                  </h4>
+                                  <a
+                                    href={images[c.imageUrl] ?? c.imageUrl}
+                                    download={`doc-${Date.now()}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="block text-center text-sm font-semibold text-primary-40 hover:underline"
+                                  >
+                                    Descargar Documento{" "}
+                                    <FaDownload className="text-base inline ml-1" />
+                                  </a>
+                                </div>
+                              );
+                            }
+                          })()
+                        ) : (
+                          <p className="text-gray-400 text-sm">Sin archivo adjunto</p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* ACTIONS */}
+                  <div className="flex justify-end gap-2 mt-4 border-t pt-3">
+                    {!c.completed ? (
+                      <button
+                        onClick={() => updateContentByIndex(idx, "completed", true)}
+                        className="flex items-center gap-1 px-3 py-1 bg-primary-40 text-white rounded hover:bg-primary-50 text-sm"
+                        title="Previsualizar"
+                      >
+                        <FaEye /> Previsualizar
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => updateContentByIndex(idx, "completed", false)}
+                        className="flex items-center gap-1 px-3 py-1 bg-primary-40 text-white rounded hover:bg-primary-50 text-sm"
+                        title="Editar"
+                      >
+                        <FaEdit /> Editar
+                      </button>
+                    )}
+
+                    <button
+                      onClick={() => deleteContentByIndex(idx)}
+                      className="flex items-center gap-1 px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 text-sm"
+                      title="Eliminar contenido"
+                    >
+                      <FaTrash /> Eliminar
+                    </button>
+                  </div>
                 </div>
-              )}
+              ))}
+
+              {/* === BUTTON ADD CONTENT === */}
+              <button
+                type="button"
+                onClick={() => addContentToModule(moduleName)}
+                className="flex items-center gap-2 px-4 py-2 border-2 border-primary-40 text-primary-40 bg-white 
+             rounded-xl mt-3 font-medium shadow-sm hover:bg-primary-40 hover:text-white 
+             active:scale-95 transition"
+              >
+                <FaPlus className="text-sm" /> Agregar Contenido
+              </button>
             </div>
           ))}
 
-          <div className="flex flex-col sm:flex-row gap-4 mt-4">
+          {/* === BUTTONS ADD/OMIT SECTION === */}
+          <div className="flex justify-center gap-4 mt-6">
             <button
               type="button"
-              onClick={addContent}
-              className="p-2 border-2 border-primary-40 text-primary-40 bg-white rounded-lg font-semibold flex items-center justify-center"
+              onClick={addSection}
+              className="flex items-center gap-2 px-4 py-2 border-2 border-primary-40 text-primary-40 bg-white 
+             rounded-xl mt-3 font-medium shadow-sm hover:bg-primary-40 hover:text-white 
+             active:scale-95 transition"
             >
-              <FaPlus className="text-2xl leading-none mr-2" /> Agregar
-              Contenido
+              <FaPlus className="mr-2" /> Agregar Sección
             </button>
 
             <button
               type="button"
               onClick={omitContents}
-              className="px-4 py-2 bg-gray-400 text-white rounded hover:bg-gray-500 transition"
+              className="flex items-center gap-2 px-4 py-2 border-2 border-gray-200 text-white bg-gray-400 
+             rounded-xl mt-3 font-medium shadow-sm hover:bg-gray-600 hover:text-white 
+             active:scale-95 transition"
             >
-              Omitir contenido
+              <FaBan className="mr-2" /> Omitir Contenido
             </button>
           </div>
         </>
       )}
     </div>
   );
+
+
+
 }

@@ -256,6 +256,35 @@ const ContentSection = ({ title, onBack, course }: ContentSectionProps) => {
     setAllTabsLocked(true); // block others during eval
   };
 
+  // Content Modules
+
+  // Track carousel index per module
+  const [activeIndexes, setActiveIndexes] = useState<Record<string, number>>({});
+
+  // Group contents by moduleName
+  const groupedContents =
+    currentSection?.contents?.reduce((acc: Record<string, any[]>, content: any) => {
+      const module = content.moduleName || "NA";
+      if (!acc[module]) acc[module] = [];
+      acc[module].push(content);
+      return acc;
+    }, {}) || {};
+
+  // Navigation handlers per module
+  const handleNext = (module: string, length: number) => {
+    setActiveIndexes((prev) => ({
+      ...prev,
+      [module]: Math.min((prev[module] ?? 0) + 1, length - 1),
+    }));
+  };
+
+  const handlePrev = (module: string) => {
+    setActiveIndexes((prev) => ({
+      ...prev,
+      [module]: Math.max((prev[module] ?? 0) - 1, 0),
+    }));
+  };
+
   return (
     <>
       <div className="w-full px-6 py-6 space-y-6 bg-white">
@@ -271,8 +300,6 @@ const ContentSection = ({ title, onBack, course }: ContentSectionProps) => {
         {/* Tabs */}
         <div className="grid grid-cols-3 mb-6 rounded-lg overflow-hidden border border-gray-200">
           {TABS.map((tab) => {
-            // 🔹 Disable ALL tabs when evaluation in progress
-            // 🔹 But allow "Evaluación" if already completed (for review)
             const isDisabled =
               allTabsLocked || (tab === "Evaluación" && !thirdTabCompleted && allTabsLocked);
 
@@ -299,8 +326,7 @@ const ContentSection = ({ title, onBack, course }: ContentSectionProps) => {
 
         {/* Tab Content */}
         <div className="w-full max-w-4xl mx-auto space-y-6">
-
-          {/* Instrucciones*/}
+          {/* Instrucciones */}
           {activeTab === "Instrucciones" && (
             <div className="space-y-3">
               <h2 className="text-xl font-semibold mb-4">
@@ -317,7 +343,9 @@ const ContentSection = ({ title, onBack, course }: ContentSectionProps) => {
                 </ol>
               )}
               <div className="flex items-center gap-2 mb-2">
-                <h2 className="text-sm font-semibold text-gray-500">Tiempo sugerido de estudio:</h2>
+                <h2 className="text-sm font-semibold text-gray-500">
+                  Tiempo sugerido de estudio:
+                </h2>
                 <p className="text-sm px-2 py-1 rounded text-gray-600 bg-gray-200 inline-block">
                   {currentSection.instructions.time} min
                 </p>
@@ -338,176 +366,188 @@ const ContentSection = ({ title, onBack, course }: ContentSectionProps) => {
 
           {/* Contenido */}
           {activeTab === "Contenido" && (
-            <div className="space-y-6">
-              {currentSection?.contents?.length ? (
-                <>
-                  <div className="p-4 rounded-md space-y-4">
-                    {(() => {
-                      const content = currentSection.contents[activeContentIndex];
+            <div className="space-y-10">
+              {Object.keys(groupedContents).length ? (
+                Object.entries(groupedContents).map(([module, contents]) => {
+                  const activeIndex = activeIndexes[module] ?? 0;
+                  const content = contents[activeIndex];
+                  const globalIndex = currentSection.contents.findIndex((c: any) => c === content);
 
-                      // Experiencia WebGL
-                      if (content?.experienceUrl && content.experienceUrl !== "NA") {
-                        return (
-                          <>
-                            <h4 className="text-lg font-semibold text-primary-10">
-                              {content.contentTitle}
-                            </h4>
-                            <iframe
-                              src={content.experienceUrl}
-                              className="w-full h-[500px] border rounded"
-                              allow="autoplay; fullscreen; vr"
-                            />
-                            <p className="text-sm text-primary-30 mt-2">
-                              {content.contentDescription}
-                            </p>
-                            <div className="flex items-center gap-2 mb-2">
-                              <h2 className="text-sm font-semibold text-gray-500">
-                                Tiempo sugerido de estudio:
-                              </h2>
-                              <p className="text-sm px-2 py-1 rounded text-gray-600 bg-gray-200 inline-block">
-                                {content.time*60} min
-                              </p>
-                            </div>
-                            <div className="pt-2">
-                              <label className="inline-flex items-center gap-2 text-sm text-primary-30">
-                                <input
-                                  type="checkbox"
-                                  checked={completedContents[activeContentIndex] || false}
-                                  onChange={() => toggleCompleted(activeContentIndex)}
-                                />
-                                Marcar como completado
-                              </label>
-                            </div>
-                          </>
-                        );
-                      } else if (content?.experienceUrl === "NA") {
-                        return (
-                          <ReviewExperience
-                            idEstudiante={username ?? ""}
-                            nombreCurso={course.courseName}
-                          />
-                        );
-                      }
+                  return (
+                    <div key={module} className="mb-8 pt-6">
 
-                      // Contenido normal (imagen/video/pdf/etc.)
-                      if (currentSection?.contents?.[0]?.contentTitle === "NA") {
-                        return (
-                          <div className="w-full min-h-[120px] border border-dashed border-gray-300 rounded flex items-center justify-center px-4 py-6 text-center text-gray-500 text-sm italic">
-                            Esta sección no cuenta con ningún contenido asociado
-                          </div>
-                        );
-                      }
+                      {module !== "NA" && (
+                        <h3 className="text-xl font-bold text-primary-40 bg-gray-50 mb-4 border-t border-b py-4 text-center">
+                          {module}
+                        </h3>
+                      )}
 
-                      const mimeType = content?.imageUrl
-                        ? getMimeTypeFromUrl(content.imageUrl)
-                        : "unknown";
-                      const imageSrc = content?.imageUrl?.startsWith("blob:")
-                        ? content.imageUrl
-                        : (content?.imageUrl ? images[content.imageUrl] : "");
-
-                      return (
-                        <>
-                          {imageSrc && mimeType.startsWith("image/") && (
-                            <img
-                              src={imageSrc}
-                              alt="Contenido visual"
-                              className="w-full max-h-64 object-contain rounded-md mx-auto"
-                              onError={(e) => {
-                                e.currentTarget.style.display = "none";
-                              }}
-                            />
-                          )}
-
-                          {imageSrc && mimeType.startsWith("video/") && (
-                            <video
-                              src={imageSrc}
-                              controls
-                              className="w-full max-h-64 object-contain rounded-md mx-auto"
-                            />
-                          )}
-
-                          {imageSrc && mimeType.startsWith("audio/") && (
-                            <audio
-                              src={imageSrc}
-                              controls
-                              className="w-full rounded-md mx-auto"
-                            />
-                          )}
-
-                          {/* Genérico para docs */}
-                          {imageSrc &&
-                            !mimeType.startsWith("image/") &&
-                            !mimeType.startsWith("video/") &&
-                            !mimeType.startsWith("audio/") && (
-                              <div className="w-full max-w-xs bg-primary-98 rounded-xl border border-gray-200 px-6 py-5 shadow-sm">
-                                <h4 className="text-base font-medium text-primary-10 mb-2 text-center">
+                      {/* Bloque del contenido */}
+                      <div className="p-4 rounded-md space-y-4">
+                        {(() => {
+                          // Experiencia WebGL
+                          if (content?.experienceUrl && content.experienceUrl !== "NA") {
+                            return (
+                              <>
+                                <h4 className="text-lg font-semibold text-primary-10">
                                   {content.contentTitle}
                                 </h4>
-                                <a
-                                  href={imageSrc}
-                                  download={`doc-${Date.now()}`}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="block text-center text-sm font-semibold text-primary-40 hover:underline"
-                                >
-                                  Descargar Documento <FaDownload className="text-base inline ml-1" />
-                                </a>
-                              </div>
-                            )}
-
-                          <div className="flex items-center gap-2 mb-2">
-                            <h2 className="text-sm font-semibold text-gray-500">Tiempo sugerido de estudio:</h2>
-                            <p className="text-sm px-2 py-1 rounded text-gray-600 bg-gray-200 inline-block">
-                              {content?.time ?? 0} min
-                            </p>
-                          </div>
-                          <div className="pt-2">
-                            <label className="inline-flex items-center gap-2 text-sm text-primary-30">
-                              <input
-                                type="checkbox"
-                                checked={completedContents[activeContentIndex] || false}
-                                onChange={() => toggleCompleted(activeContentIndex)}
+                                <iframe
+                                  src={content.experienceUrl}
+                                  className="w-full h-[500px] border rounded"
+                                  allow="autoplay; fullscreen; vr"
+                                />
+                                <p className="text-sm text-primary-30 mt-2">
+                                  {content.contentDescription}
+                                </p>
+                                <div className="flex items-center gap-2 mb-2">
+                                  <h2 className="text-sm font-semibold text-gray-500">
+                                    Tiempo sugerido de estudio:
+                                  </h2>
+                                  <p className="text-sm px-2 py-1 rounded text-gray-600 bg-gray-200 inline-block">
+                                    {content.time * 60} min
+                                  </p>
+                                </div>
+                                <div className="pt-2">
+                                  <label className="inline-flex items-center gap-2 text-sm text-primary-30">
+                                    <input
+                                      type="checkbox"
+                                      checked={completedContents[globalIndex] || false}
+                                      onChange={() => toggleCompleted(globalIndex)}
+                                    />
+                                    Marcar como completado
+                                  </label>
+                                </div>
+                              </>
+                            );
+                          } else if (content?.experienceUrl === "NA") {
+                            return (
+                              <ReviewExperience
+                                idEstudiante={username ?? ""}
+                                nombreCurso={course.courseName}
                               />
-                              Marcar como completado
-                            </label>
-                          </div>
-                        </>
-                      );
-                    })()}
-                  </div>
+                            );
+                          }
 
-                  {/* Navegación */}
-                  <div className="flex justify-between items-center pt-4">
-                    <button
-                      onClick={() => setActiveContentIndex((prev) => Math.max(prev - 1, 0))}
-                      disabled={activeContentIndex === 0}
-                      className="text-primary-30 px-4 py-2 border border-primary-30 rounded disabled:opacity-30"
-                    >
-                      Anterior
-                    </button>
+                          // Contenido normal (imagen/video/pdf/etc.)
+                          if (currentSection?.contents?.[0]?.contentTitle === "NA") {
+                            return (
+                              <div className="w-full min-h-[120px] border border-dashed border-gray-300 rounded flex items-center justify-center px-4 py-6 text-center text-gray-500 text-sm italic">
+                                Esta sección no cuenta con ningún contenido asociado
+                              </div>
+                            );
+                          }
 
-                    <span className="text-sm text-primary-20">
-                      {activeContentIndex + 1} de {currentSection.contents.length}
-                    </span>
+                          const mimeType = content?.imageUrl
+                            ? getMimeTypeFromUrl(content.imageUrl)
+                            : "unknown";
+                          const imageSrc = content?.imageUrl?.startsWith("blob:")
+                            ? content.imageUrl
+                            : (content?.imageUrl ? images[content.imageUrl] : "");
 
-                    <button
-                      onClick={() =>
-                        setActiveContentIndex((prev) => Math.min(prev + 1, currentSection.contents.length - 1))
-                      }
-                      disabled={activeContentIndex === currentSection.contents.length - 1}
-                      className="text-primary-100 bg-primary-40 px-4 py-2 rounded hover:opacity-90 disabled:opacity-30"
-                    >
-                      Siguiente
-                    </button>
-                  </div>
-                </>
+                          return (
+                            <>
+                              {imageSrc && mimeType.startsWith("image/") && (
+                                <img
+                                  src={imageSrc}
+                                  alt="Contenido visual"
+                                  className="w-full max-h-64 object-contain rounded-md mx-auto"
+                                  onError={(e) => {
+                                    e.currentTarget.style.display = "none";
+                                  }}
+                                />
+                              )}
+
+                              {imageSrc && mimeType.startsWith("video/") && (
+                                <video
+                                  src={imageSrc}
+                                  controls
+                                  className="w-full max-h-64 object-contain rounded-md mx-auto"
+                                />
+                              )}
+
+                              {imageSrc && mimeType.startsWith("audio/") && (
+                                <audio
+                                  src={imageSrc}
+                                  controls
+                                  className="w-full rounded-md mx-auto"
+                                />
+                              )}
+
+                              {/* Genérico para docs */}
+                              {imageSrc &&
+                                !mimeType.startsWith("image/") &&
+                                !mimeType.startsWith("video/") &&
+                                !mimeType.startsWith("audio/") && (
+                                  <div className="w-full max-w-xs bg-primary-98 rounded-xl border border-gray-200 px-6 py-5 shadow-sm">
+                                    <h4 className="text-base font-medium text-primary-10 mb-2 text-center">
+                                      {content.contentTitle}
+                                    </h4>
+                                    <a
+                                      href={imageSrc}
+                                      download={`doc-${Date.now()}`}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="block text-center text-sm font-semibold text-primary-40 hover:underline"
+                                    >
+                                      Descargar Documento <FaDownload className="text-base inline ml-1" />
+                                    </a>
+                                  </div>
+                                )}
+
+                              <div className="flex items-center gap-2 mb-2">
+                                <h2 className="text-sm font-semibold text-gray-500">Tiempo sugerido de estudio:</h2>
+                                <p className="text-sm px-2 py-1 rounded text-gray-600 bg-gray-200 inline-block">
+                                  {content?.time ?? 0} min
+                                </p>
+                              </div>
+                              <div className="pt-2">
+                                <label className="inline-flex items-center gap-2 text-sm text-primary-30">
+                                  <input
+                                    type="checkbox"
+                                    checked={completedContents[globalIndex] || false}
+                                    onChange={() => toggleCompleted(globalIndex)}
+                                  />
+                                  Marcar como completado
+                                </label>
+                              </div>
+                            </>
+                          );
+                        })()}
+                      </div>
+
+                      {/* Navegación por módulo */}
+                      <div className="flex justify-between items-center pt-4">
+                        <button
+                          onClick={() => handlePrev(module)}
+                          disabled={activeIndex === 0}
+                          className="text-primary-30 px-4 py-2 border border-primary-30 rounded disabled:opacity-30"
+                        >
+                          Anterior
+                        </button>
+
+                        <span className="text-sm text-primary-20">
+                          {activeIndex + 1} de {contents.length}
+                        </span>
+
+                        <button
+                          onClick={() => handleNext(module, contents.length)}
+                          disabled={activeIndex === contents.length - 1}
+                          className="text-primary-100 bg-primary-40 px-4 py-2 rounded hover:opacity-90 disabled:opacity-30"
+                        >
+                          Siguiente
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })
               ) : (
                 <p className="text-primary-20">No hay contenido disponible.</p>
               )}
             </div>
           )}
 
-          {/* Evaluacion */}
+          {/* Evaluación */}
           {activeTab === "Evaluación" && currentSection?.evaluations?.[0]?.question !== "NA" && (
             <EvaluacionViewStudent
               evaluations={currentSection?.evaluations ?? []}
@@ -526,7 +566,7 @@ const ContentSection = ({ title, onBack, course }: ContentSectionProps) => {
             />
           )}
 
-          {/* Placeholder when no evaluation */}
+          {/* Placeholder cuando no hay evaluación */}
           {activeTab === "Evaluación" && !hasEvaluation && (
             <div className="w-full min-h-[120px] border border-dashed border-gray-300 rounded flex items-center justify-center px-4 py-6 text-center text-gray-500 text-sm italic">
               Esta sección no cuenta con una evaluación de conocimientos
@@ -569,8 +609,6 @@ const ContentSection = ({ title, onBack, course }: ContentSectionProps) => {
           </div>
         </div>
       )}
-
-
     </>
   );
 };
