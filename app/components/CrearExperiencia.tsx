@@ -30,7 +30,7 @@ export default function CrearExperiencia({
     const formData = new FormData();
     formData.append("file", file);
     try {
-      const response = await fetch("http://localhost:8081/media/upload/experience", {
+      const response = await fetch(`http://localhost:8081/media/upload/experience`, {
         method: "POST",
         headers: { Authorization: `Bearer ${Cookies.get("token")}` },
         body: formData,

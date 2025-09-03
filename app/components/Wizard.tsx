@@ -325,7 +325,7 @@ const Wizard = ({ course, onComplete, onCancel }: WizardProps) => {
     const token = Cookies.get("token");
 
     try {
-      const response = await fetch("http://localhost:8081/media/upload", {
+      const response = await fetch(`http://localhost:8081/media/upload`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,

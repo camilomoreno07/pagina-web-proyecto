@@ -29,7 +29,7 @@ export default function ConfigView({ onBack }: ConfigViewProps) {
     const fetchUsuarios = async () => {
       const token = Cookies.get("token");
       try {
-        const res = await fetch("http://localhost:8081/api/users", {
+        const res = await fetch(`http://localhost:8081/api/users`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (!res.ok) throw new Error(await res.text());
@@ -61,7 +61,7 @@ export default function ConfigView({ onBack }: ConfigViewProps) {
   const handleSave = async () => {
     const token = Cookies.get("token");
     try {
-      await fetch("http://localhost:8081/auth/register", {
+      await fetch(`http://localhost:8081/auth/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({
@@ -74,7 +74,7 @@ export default function ConfigView({ onBack }: ConfigViewProps) {
       });
   
       // volver a cargar la lista desde el backend
-      const res = await fetch("http://localhost:8081/api/users", {
+      const res = await fetch(`http://localhost:8081/api/users`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();

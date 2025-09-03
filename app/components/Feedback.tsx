@@ -228,7 +228,7 @@ export default function Feedback({ course, onClose }: { course: Course | null; o
         }
       }
 
-      let url = "http://localhost:8081/api/grades";
+      let url = `http://localhost:8081/api/grades`;
       let method: "POST" | "PUT" = "POST";
       if (current.id) {
         url = `http://localhost:8081/api/grades/${current.id}`;

@@ -83,7 +83,7 @@ const Dashboard = () => {
           throw new Error("No token found");
         }
 
-        const response = await fetch("http://localhost:8081/api/courses", {
+        const response = await fetch(`http://localhost:8081/api/courses`, {
           headers: { Authorization: `Bearer ${token}` },
         });
 
@@ -347,7 +347,7 @@ const Dashboard = () => {
                 try {
                   const token = Cookies.get("token");
                   const resp = await fetch(
-                    "http://localhost:8081/api/courses",
+                    `http://localhost:8081/api/courses`,
                     {
                       headers: { Authorization: `Bearer ${token}` },
                     }
