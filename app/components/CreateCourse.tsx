@@ -48,7 +48,7 @@ export default function CreateCourse({ onCancel, onComplete }: CreateCourseProps
     const fetchUsuarios = async () => {
       const token = Cookies.get("token");
       try {
-        const res = await fetch("http://localhost:8081/api/users", {
+        const res = await fetch(`http://localhost:8081/api/users`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (!res.ok) throw new Error(await res.text());
@@ -120,7 +120,7 @@ export default function CreateCourse({ onCancel, onComplete }: CreateCourseProps
     };
 
     try {
-      const res = await fetch("http://localhost:8081/api/courses", {
+      const res = await fetch(`http://localhost:8081/api/courses`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

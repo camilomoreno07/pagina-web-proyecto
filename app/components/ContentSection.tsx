@@ -240,7 +240,7 @@ const ContentSection = ({ title, onBack, course }: ContentSectionProps) => {
 
     setProgress(newProgress);
 
-    fetch("http://localhost:8081/api/progress", {
+    fetch(`http://localhost:8081/api/progress`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

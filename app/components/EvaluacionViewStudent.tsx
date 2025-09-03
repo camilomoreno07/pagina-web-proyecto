@@ -228,7 +228,7 @@ const EvaluacionViewStudent: React.FC<Props> = ({
 
       // 4. If PUT fails with 404, fall back to POST
       if (putRes.status === 404) {
-        const postRes = await fetch("http://localhost:8081/api/grades", {
+        const postRes = await fetch(`http://localhost:8081/api/grades`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
