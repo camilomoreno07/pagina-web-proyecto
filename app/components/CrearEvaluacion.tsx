@@ -84,10 +84,10 @@ export default function CrearEvaluacion({
       type === "OPEN"
         ? { ...base }
         : type === "TF"
-        ? { ...base, options: ["Verdadero", "Falso"], correctAnswer: "" }
-        : type === "MC3"
-        ? { ...base, options: ["", "", ""], correctAnswer: "" }
-        : { ...base, options: ["", "", "", "", ""], correctAnswer: "" };
+          ? { ...base, options: ["Verdadero", "Falso"], correctAnswer: "" }
+          : type === "MC3"
+            ? { ...base, options: ["", "", ""], correctAnswer: "" }
+            : { ...base, options: ["", "", "", "", ""], correctAnswer: "" };
 
     const newQuestions = [...evaluations, withType];
     setCourseData({ ...courseData, evaluations: newQuestions });
@@ -166,10 +166,10 @@ export default function CrearEvaluacion({
     !q.options
       ? "Respuesta abierta"
       : q.options.length === 2
-      ? "Verdadero / Falso"
-      : q.options.length === 3
-      ? "Selección (3)"
-      : "Selección (5)";
+        ? "Verdadero / Falso"
+        : q.options.length === 3
+          ? "Selección (3)"
+          : "Selección (5)";
 
   return (
     <div>
@@ -200,19 +200,23 @@ export default function CrearEvaluacion({
                 key={q.id ?? index}
                 className="p-6 bg-white rounded-lg shadow-md border border-gray-300 relative"
               >
-                <button
-                  onClick={() => removeQuestion(index)}
-                  className="absolute top-2 right-2 text-red-500 hover:text-red-700"
-                  aria-label={`Eliminar pregunta ${index + 1}`}
-                >
-                  <FaTrash size={20} />
-                </button>
+
 
                 <div className="flex items-center justify-between mb-2">
-                  <label className="block font-medium">Pregunta {index + 1}</label>
-                  <span className="text-xs px-2 py-1 rounded-full bg-gray-100 border border-gray-300">
-                    {typeLabel(q)}
-                  </span>
+                  <label className="block text-lg font-bold text-gray-600">Pregunta {index + 1}</label>
+
+                  <div className="flex items-center gap-3">
+                    <span className="text-xs px-2 py-1 rounded-full bg-gray-100 border border-gray-300">
+                      {typeLabel(q)}
+                    </span>
+                    <button
+                      onClick={() => removeQuestion(index)}
+                      className="p-2 rounded-full bg-red-100 text-red-500 transition hover:bg-red-500 hover:text-white"
+                      aria-label={`Eliminar pregunta ${index + 1}`}
+                    >
+                      <FaTrash size={20} />
+                    </button>
+                  </div>
                 </div>
 
                 <textarea
@@ -305,7 +309,9 @@ export default function CrearEvaluacion({
             <div className="relative">
               <button
                 onClick={() => setShowTypePicker((s) => !s)}
-                className="flex items-center gap-2 px-4 py-2 border-2 border-primary-40 text-primary-40 bg-white rounded-lg font-semibold"
+                className="flex items-center gap-2 px-4 py-2 border-2 border-primary-40 text-primary-40 bg-white 
+             rounded-xl mt-3 font-medium shadow-sm hover:bg-primary-40 hover:text-white 
+             active:scale-95 transition"
               >
                 <FaPlus /> Agregar pregunta
               </button>
@@ -325,7 +331,9 @@ export default function CrearEvaluacion({
 
             <button
               onClick={omitEvaluation}
-              className="px-4 py-2 bg-gray-400 text-white rounded hover:bg-gray-500 transition"
+              className="flex items-center gap-2 px-4 py-2 border-2 border-gray-500 text-white bg-gray-400 
+             rounded-xl mt-3 font-medium shadow-sm hover:bg-gray-600 hover:text-white 
+             active:scale-95 transition"
             >
               Omitir evaluación
             </button>

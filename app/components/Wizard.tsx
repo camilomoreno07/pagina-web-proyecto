@@ -367,9 +367,9 @@ const Wizard = ({ course, onComplete, onCancel }: WizardProps) => {
   const renderStepper = () => {
     const steps = [
       "Identificación del curso",
-      "Aula Invertida",
-      "Taller de Habilidad",
-      "Actividad Experiencial",
+      "Prebriefing", //"Aula Invertida",
+      "Briefing", //"Taller de Habilidad",
+      "Debriefing", //"Actividad Experiencial",
       "Revisión",
     ];
 
@@ -537,7 +537,7 @@ const Wizard = ({ course, onComplete, onCancel }: WizardProps) => {
             {activeCardId === null && (
               <>
                 <h2 className="text-lg mb-2 font-semibold">Primer momento</h2>
-                <h3 className="text-3xl mb-2 font-medium">Aula Invertida</h3>
+                <h3 className="text-3xl mb-2 font-medium">Prebriefing</h3>
                 <p className="mb-4">
                   Esto ayudará al estudiante para que lleve una idea de lo que
                   verá en el encuentro presencial.
@@ -568,7 +568,7 @@ const Wizard = ({ course, onComplete, onCancel }: WizardProps) => {
             {activeCardId === null && (
               <>
                 <h2 className="text-lg mb-2 font-semibold">Segundo momento</h2>
-                <h3 className="text-3xl mb-2 font-medium">Taller de Habilidad</h3>
+                <h3 className="text-3xl mb-2 font-medium">Briefing</h3>
                 <p className="mb-4">
                   Esto ayudará al estudiante a guiarse durante los espacios de
                   clase.
@@ -599,7 +599,7 @@ const Wizard = ({ course, onComplete, onCancel }: WizardProps) => {
             {activeCardId === null && (
               <>
                 <h2 className="text-lg mb-2 font-semibold">Tercer momento</h2>
-                <h3 className="text-3xl mb-2 font-medium">Actividad Experiencial</h3>
+                <h3 className="text-3xl mb-2 font-medium">Debriefing</h3>
                 <p className="mb-4">
                   Esto ayudará al estudiante a afianzar los conceptos vistos en
                   clase.
@@ -645,14 +645,15 @@ const Wizard = ({ course, onComplete, onCancel }: WizardProps) => {
 
             {/* Datos básicos */}
             <div className="mb-6">
-              <p>
-                <strong>Nombre:</strong> {courseData.courseName}
+              <p className="mb-2">
+                <strong className="text-primary-40">Nombre:</strong> {courseData.courseName}
               </p>
-              <p>
-                <strong>Descripción:</strong> {courseData.courseDescription}
+              <p className="mb-2 text-justify">
+                <strong className="text-primary-40">Descripción:</strong> {courseData.courseDescription}
               </p>
+              <hr className="mt-3 mb-3"/>
               <p>
-                <strong>Tipo de curso:</strong>{" "}
+                <strong className="text-primary-40">Tipo de curso:</strong>{" "}
                 {courseData.isPublic ? "Escenario Simulado" : "Tradicional"}
               </p>
             </div>
@@ -660,69 +661,81 @@ const Wizard = ({ course, onComplete, onCancel }: WizardProps) => {
             {/* Resumen de los momentos */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="border rounded-lg p-4">
-                <h4 className="font-bold mb-2">Aula Invertida</h4>
-                <p>
-                  Instrucciones:{" "}
-                  {courseData.beforeClass.instructions.instructionTitle ||
-                    "Sin título"}
-                </p>
-                <p>Pasos:{" "}{courseData.beforeClass.instructions.steps.length}</p>
-                <p>
-                  Contenidos:{" "}
-                  {courseData.beforeClass?.contents?.[0]?.contentTitle === "NA"
-                    ? " 0"
-                    : courseData.beforeClass?.contents?.length || 0}
-                </p>
-                <p>
-                  Evaluaciones:{" "}
-                  {courseData.beforeClass?.evaluations?.[0]?.question === "NA"
-                    ? " 0"
-                    : courseData.beforeClass?.evaluations?.length || 0}
-                </p>
+                <h4 className="font-bold text-xl mb-2">Prebriefing</h4>
+                <hr className="mb-2" />
+                <span className="font-bold text-gray-600">Instrucciones:</span>{" "}
+                {courseData.beforeClass.instructions.instructionTitle || "Sin título"}
+                <hr className="mt-2 mb-2" />
+                <ul className="list-disc list-inside space-y-1">
+                  <li>
+                    <span className="font-bold text-primary-40">Pasos:</span>{" "}
+                    {courseData.beforeClass.instructions.steps.length}
+                  </li>
+                  <li>
+                    <span className="font-bold text-primary-40">Contenidos:</span>{" "}
+                    {courseData.beforeClass?.contents?.[0]?.contentTitle === "NA"
+                      ? "0"
+                      : courseData.beforeClass?.contents?.length || 0}
+                  </li>
+                  <li>
+                    <span className="font-bold text-primary-40">Evaluaciones:</span>{" "}
+                    {courseData.beforeClass?.evaluations?.[0]?.question === "NA"
+                      ? "0"
+                      : courseData.beforeClass?.evaluations?.length || 0}
+                  </li>
+                </ul>
               </div>
 
               <div className="border rounded-lg p-4">
-                <h4 className="font-bold mb-2">Taller de Habilidad</h4>
-                <p>
-                  Instrucciones:{" "}
-                  {courseData.duringClass.instructions.instructionTitle ||
-                    "Sin título"}
-                </p>
-                <p>Pasos:{" "}{courseData.duringClass.instructions.steps.length}</p>
-                <p>
-                  Contenidos:{" "}
-                  {courseData.duringClass?.contents?.[0]?.contentTitle === "NA"
-                    ? " 0"
-                    : courseData.duringClass?.contents?.length || 0}
-                </p>
-                <p>
-                  Evaluaciones:{" "}
-                  {courseData.duringClass?.evaluations?.[0]?.question === "NA"
-                    ? " 0"
-                    : courseData.duringClass?.evaluations?.length || 0}
-                </p>
+                <h4 className="font-bold text-xl mb-2">Briefing</h4>
+                <hr className="mb-2" />
+                <span className="font-bold text-gray-600">Instrucciones:</span>{" "}
+                {courseData.duringClass.instructions.instructionTitle || "Sin título"}
+                <hr className="mt-2 mb-2" />
+                <ul className="list-disc list-inside space-y-1">
+                  <li>
+                    <span className="font-bold text-primary-40">Pasos:</span>{" "}
+                    {courseData.duringClass.instructions.steps.length}
+                  </li>
+                  <li>
+                    <span className="font-bold text-primary-40">Contenidos:</span>{" "}
+                    {courseData.duringClass?.contents?.[0]?.contentTitle === "NA"
+                      ? "0"
+                      : courseData.duringClass?.contents?.length || 0}
+                  </li>
+                  <li>
+                    <span className="font-bold text-primary-40">Evaluaciones:</span>{" "}
+                    {courseData.duringClass?.evaluations?.[0]?.question === "NA"
+                      ? "0"
+                      : courseData.duringClass?.evaluations?.length || 0}
+                  </li>
+                </ul>
               </div>
 
               <div className="border rounded-lg p-4">
-                <h4 className="font-bold mb-2">Actividad Experiencial</h4>
-                <p>
-                  Instrucciones:{" "}
-                  {courseData.afterClass.instructions.instructionTitle ||
-                    "Sin título"}
-                </p>
-                <p>Pasos:{" "}{courseData.afterClass.instructions.steps.length}</p>
-                <p>
-                  Contenidos:{" "}
-                  {courseData.afterClass?.contents?.[0]?.contentTitle === "NA"
-                    ? " 0"
-                    : courseData.afterClass?.contents?.length || 0}
-                </p>
-                <p>
-                  Evaluaciones:{" "}
-                  {courseData.afterClass?.evaluations?.[0]?.question === "NA"
-                    ? " 0"
-                    : courseData.afterClass?.evaluations?.length || 0}
-                </p>
+                <h4 className="font-bold text-xl mb-2">Debriefing</h4>
+                <hr className="mb-2" />
+                <span className="font-bold text-gray-600">Instrucciones:</span>{" "}
+                {courseData.afterClass.instructions.instructionTitle || "Sin título"}
+                <hr className="mt-2 mb-2" />
+                <ul className="list-disc list-inside space-y-1">
+                  <li>
+                    <span className="font-bold text-primary-40">Pasos:</span>{" "}
+                    {courseData.afterClass.instructions.steps.length}
+                  </li>
+                  <li>
+                    <span className="font-bold text-primary-40">Contenidos:</span>{" "}
+                    {courseData.afterClass?.contents?.[0]?.contentTitle === "NA"
+                      ? "0"
+                      : courseData.afterClass?.contents?.length || 0}
+                  </li>
+                  <li>
+                    <span className="font-bold text-primary-40">Evaluaciones:</span>{" "}
+                    {courseData.afterClass?.evaluations?.[0]?.question === "NA"
+                      ? "0"
+                      : courseData.afterClass?.evaluations?.length || 0}
+                  </li>
+                </ul>
               </div>
             </div>
 

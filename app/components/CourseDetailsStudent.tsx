@@ -214,7 +214,7 @@ const CourseDetailsStudent = ({
 
   const sectionData = [
     {
-      title: 'Aula Invertida',
+      title: 'Prebriefing',
       description:
         'Aquí podrás explorar una vista previa del contenido y las actividades que se abordarán durante la sesión presencial',
       section: course.beforeClass,
@@ -222,7 +222,7 @@ const CourseDetailsStudent = ({
       progressKey: 'aulaInvertida' as const,
     },
     {
-      title: 'Taller de Habilidad',
+      title: 'Briefing',
       description:
         'En esta sección encontrarás recursos e indicaciones que te acompañarán durante las sesiones de clase',
       section: course.duringClass,
@@ -230,7 +230,7 @@ const CourseDetailsStudent = ({
       progressKey: 'tallerHabilidad' as const,
     },
     {
-      title: 'Actividad Experiencial',
+      title: 'Debriefing',
       description:
         'Aquí tendrás acceso a materiales que te permitirán consolidar los conceptos vistos durante las clases',
       section: course.afterClass,
