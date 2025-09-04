@@ -8,7 +8,8 @@ import {
   FaDownload,
   FaFileAlt,
   FaBan,
-  FaEye
+  FaEye,
+  FaArrowUp, FaArrowDown
 } from "react-icons/fa";
 import Cookies from "js-cookie";
 import NumberStepper from "./NumberStepper";
@@ -235,6 +236,28 @@ export default function SubirContenido({
     setCourseData({ ...courseData, contents: [] });
   };
 
+  const moveModule = (moduleName: string, direction: "up" | "down") => {
+    const moduleKeys = Object.keys(grouped);
+    const index = moduleKeys.indexOf(moduleName);
+
+    if (index === -1) return;
+
+    const targetIndex = direction === "up" ? index - 1 : index + 1;
+    if (targetIndex < 0 || targetIndex >= moduleKeys.length) return;
+
+    // Swap module keys
+    const newOrder = [...moduleKeys];
+    [newOrder[index], newOrder[targetIndex]] = [newOrder[targetIndex], newOrder[index]];
+
+    // Rebuild contents array in new order
+    const newContents: Content[] = [];
+    newOrder.forEach((key) => {
+      newContents.push(...grouped[key].map(({ item }) => item));
+    });
+
+    setCourseData({ ...courseData, contents: newContents });
+  };
+
   /** =============== RENDER ================= */
   const isOmitted =
     courseData.contents.length === 1 && courseData.contents[0].contentTitle === "NA";
@@ -283,6 +306,22 @@ export default function SubirContenido({
                       : "text-gray-800"
                     }`}
                 />
+
+                <button
+                  onClick={() => moveModule(moduleName, "up")}
+                  className="p-2 bg-primary-40 text-white rounded-md hover:bg-primary-60 transition"
+                  title="Mover sección arriba"
+                >
+                  <FaArrowUp />
+                </button>
+
+                <button
+                  onClick={() => moveModule(moduleName, "down")}
+                  className="p-2 bg-primary-40 text-white rounded-md hover:bg-primary-60 transition"
+                  title="Mover sección abajo"
+                >
+                  <FaArrowDown />
+                </button>
 
                 <button
                   onClick={() => removeModule(moduleName)}
