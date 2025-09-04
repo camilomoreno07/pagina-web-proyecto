@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from "react";
 import clsx from "clsx";
 import Cookies from "js-cookie";
-import { FaDownload, FaFileAlt } from "react-icons/fa";
+import { FaDownload, FaFileAlt, FaExternalLinkAlt } from "react-icons/fa";
 import Resumen from "./Resumen";
 import ReviewExperience from "../components/ReviewExperience";
 import EvaluacionViewStudent from "../components/EvaluacionViewStudent";
@@ -391,18 +391,6 @@ const ContentSection = ({ title, onBack, course }: ContentSectionProps) => {
                         </div>
                       )}
 
-                      {module === "NA" && content?.experienceUrl && content.experienceUrl !== "NA" && (
-                        <div className="flex items-center gap-3 mb-6 bg-gray-100 border-l-4 border-primary-40 rounded-lg p-3 shadow-sm">
-                          <FaFileAlt className="text-primary-40 text-lg ml-2" />
-
-                          <h3
-                            className="flex-1 text-lg font-semibold tracking-wide text-gray-800"
-                          >
-                            Simulación Web del Caso de Estudio
-                          </h3>
-                        </div>
-                      )}
-
                       {/* === CONTENT BLOCK === */}
                       <div className="p-4 rounded-md space-y-4 bg-white border border-gray-200 shadow-sm">
                         {(() => {
@@ -410,13 +398,26 @@ const ContentSection = ({ title, onBack, course }: ContentSectionProps) => {
                           if (content?.experienceUrl && content.experienceUrl !== "NA") {
                             return (
                               <>
-                                <h4 className="text-lg font-semibold text-primary-10">
+                                <h4 className="text-lg font-semibold text-primary-10 text-center">
                                   {content.contentTitle}
                                 </h4>
+                                <hr />
+                                <div className="flex justify-center px-4">
+                                  <a
+                                    href={content.experienceUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center justify-center gap-2 w-full sm:w-auto px-6 py-4 bg-primary-40 text-white text-base font-medium rounded-lg shadow hover:bg-primary-60 transition"
+                                  >
+                                    Abrir en nueva ventana
+                                    <FaExternalLinkAlt className="w-5 h-5 flex-shrink-0" />
+                                  </a>
+                                </div>
                                 <iframe
                                   src={content.experienceUrl}
-                                  className="w-full h-[500px] border rounded"
+                                  className="w-full h-[700px] border rounded"
                                   allow="autoplay; fullscreen; vr"
+                                  allowFullScreen
                                 />
                                 <p className="text-sm text-primary-30 mt-2">
                                   {content.contentDescription}
