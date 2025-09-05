@@ -64,7 +64,7 @@ export default function CrearInstrucciones({
   return (
     <div>
       <h3 className="text-3xl font-medium mb-4">
-        {hasSimulation ? "Prebriefing" : "Crear instrucciones"}
+        Crear instrucciones
       </h3>
       <hr className="mb-4 border-gray-300" />
 

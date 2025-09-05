@@ -66,7 +66,7 @@ const Wizard = ({ course, onComplete, onCancel }: WizardProps) => {
     activityDescription: course ? course.activityDescription || "" : "",
     contentTitle: course ? course.contentTitle || "" : "",
     contentDescription: course ? course.contentDescription || "" : "",
-    isPublic: course ? course.isPublic || "" : "",
+    isPublic: false,
     startDate: course ? course.startDate || "" : "",
     imageUrl: course ? course.imageUrl || "" : "",
     files: [],
@@ -489,46 +489,6 @@ const Wizard = ({ course, onComplete, onCancel }: WizardProps) => {
               className="w-full p-2 border border-gray-300 rounded-lg bg-gray-50"
               rows={3}
             />
-
-            {/* Privacidad */}
-            <div className="flex flex-col mt-4">
-              <label htmlFor="privacy-switch" className="text-gray-700 mb-2">
-                Tipo de curso
-              </label>
-              <div className="flex items-center space-x-4">
-                <div className="relative inline-block w-10 align-middle select-none transition duration-200 ease-in">
-                  <input
-                    type="checkbox"
-                    name="isPublic"
-                    id="privacy-switch"
-                    checked={courseData.isPublic}
-                    onChange={(e) =>
-                      setCourseData({
-                        ...courseData,
-                        isPublic: e.target.checked
-                      })
-                    }
-                    className={`toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-2 border-gray-300 appearance-none cursor-pointer transition-transform duration-200 ease-in-out ${courseData.isPublic ? "translate-x-4" : "translate-x-0"
-                      }`}
-                    aria-checked={courseData.isPublic}
-                    aria-labelledby="privacy-label"
-                  />
-                  <div
-                    className={`toggle-label block overflow-hidden h-6 rounded-full cursor-pointer ${courseData.isPublic ? "bg-green-500" : "bg-gray-300"
-                      }`}
-                    id="privacy-label"
-                  ></div>
-                </div>
-                <span className="text-gray-700">
-                  {courseData.isPublic ? "Escenario Simulado" : "Tradicional"}
-                </span>
-              </div>
-              <p className="text-sm text-gray-500 mt-2">
-                {courseData.isPublic
-                  ? "Este curso incluirá componentes de simulación."
-                  : "Este curso no incluirá componentes de simulación."}
-              </p>
-            </div>
           </div>
         );
       case 2:
@@ -650,11 +610,6 @@ const Wizard = ({ course, onComplete, onCancel }: WizardProps) => {
               </p>
               <p className="mb-2 text-justify">
                 <strong className="text-primary-40">Descripción:</strong> {courseData.courseDescription}
-              </p>
-              <hr className="mt-3 mb-3"/>
-              <p>
-                <strong className="text-primary-40">Tipo de curso:</strong>{" "}
-                {courseData.isPublic ? "Escenario Simulado" : "Tradicional"}
               </p>
             </div>
 
