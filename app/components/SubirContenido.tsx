@@ -265,7 +265,7 @@ export default function SubirContenido({
   return (
     <div>
       <h3 className="text-3xl font-medium mb-4">
-        {hasSimulation ? "Briefing" : "Subir Contenido"}
+        Subir Contenido
       </h3>
       <hr className="mb-4 border-gray-300" />
 
