@@ -11,6 +11,7 @@ import {
 } from "react-icons/fa";
 import CardList from "../components/CardList";
 import SegundoCardList from "../components/SegundoCardList";
+import CourseViewTeacher from "../components/CourseViewTeacher";
 
 interface WizardProps {
   course: any | null;
@@ -586,118 +587,24 @@ const Wizard = ({ course, onComplete, onCancel }: WizardProps) => {
         );
       case 5:
         return (
-          <div>
-            <h3 className="text-3xl font-semibold mb-4">Revisión del Curso</h3>
-            <hr className="mb-4 border-gray-300" />
-
-            {/* Imagen del curso */}
-            <div className="w-full rounded-lg bg-gray-200 flex items-center justify-center overflow-hidden h-48 mb-6">
-              {previewImage || courseData.imageUrl ? (
-                <img
-                  src={previewImage || courseData.imageUrl}
-                  alt="Imagen del curso"
-                  className="w-full h-full object-cover rounded-lg"
-                />
-              ) : (
-                <span className="text-gray-500">No hay imagen cargada</span>
-              )}
-            </div>
-
-            {/* Datos básicos */}
-            <div className="mb-6">
-              <p className="mb-2">
-                <strong className="text-primary-40">Nombre:</strong> {courseData.courseName}
-              </p>
-              <p className="mb-2 text-justify">
-                <strong className="text-primary-40">Descripción:</strong> {courseData.courseDescription}
-              </p>
-            </div>
-
-            {/* Resumen de los momentos */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="border rounded-lg p-4">
-                <h4 className="font-bold text-xl mb-2">Prebriefing</h4>
-                <hr className="mb-2" />
-                <span className="font-bold text-gray-600">Instrucciones:</span>{" "}
-                {courseData.beforeClass.instructions.instructionTitle || "Sin título"}
-                <hr className="mt-2 mb-2" />
-                <ul className="list-disc list-inside space-y-1">
-                  <li>
-                    <span className="font-bold text-primary-40">Pasos:</span>{" "}
-                    {courseData.beforeClass.instructions.steps.length}
-                  </li>
-                  <li>
-                    <span className="font-bold text-primary-40">Contenidos:</span>{" "}
-                    {courseData.beforeClass?.contents?.[0]?.contentTitle === "NA"
-                      ? "0"
-                      : courseData.beforeClass?.contents?.length || 0}
-                  </li>
-                  <li>
-                    <span className="font-bold text-primary-40">Evaluaciones:</span>{" "}
-                    {courseData.beforeClass?.evaluations?.[0]?.question === "NA"
-                      ? "0"
-                      : courseData.beforeClass?.evaluations?.length || 0}
-                  </li>
-                </ul>
-              </div>
-
-              <div className="border rounded-lg p-4">
-                <h4 className="font-bold text-xl mb-2">Briefing</h4>
-                <hr className="mb-2" />
-                <span className="font-bold text-gray-600">Instrucciones:</span>{" "}
-                {courseData.duringClass.instructions.instructionTitle || "Sin título"}
-                <hr className="mt-2 mb-2" />
-                <ul className="list-disc list-inside space-y-1">
-                  <li>
-                    <span className="font-bold text-primary-40">Pasos:</span>{" "}
-                    {courseData.duringClass.instructions.steps.length}
-                  </li>
-                  <li>
-                    <span className="font-bold text-primary-40">Contenidos:</span>{" "}
-                    {courseData.duringClass?.contents?.[0]?.contentTitle === "NA"
-                      ? "0"
-                      : courseData.duringClass?.contents?.length || 0}
-                  </li>
-                  <li>
-                    <span className="font-bold text-primary-40">Evaluaciones:</span>{" "}
-                    {courseData.duringClass?.evaluations?.[0]?.question === "NA"
-                      ? "0"
-                      : courseData.duringClass?.evaluations?.length || 0}
-                  </li>
-                </ul>
-              </div>
-
-              <div className="border rounded-lg p-4">
-                <h4 className="font-bold text-xl mb-2">Debriefing</h4>
-                <hr className="mb-2" />
-                <span className="font-bold text-gray-600">Instrucciones:</span>{" "}
-                {courseData.afterClass.instructions.instructionTitle || "Sin título"}
-                <hr className="mt-2 mb-2" />
-                <ul className="list-disc list-inside space-y-1">
-                  <li>
-                    <span className="font-bold text-primary-40">Pasos:</span>{" "}
-                    {courseData.afterClass.instructions.steps.length}
-                  </li>
-                  <li>
-                    <span className="font-bold text-primary-40">Contenidos:</span>{" "}
-                    {courseData.afterClass?.contents?.[0]?.contentTitle === "NA"
-                      ? "0"
-                      : courseData.afterClass?.contents?.length || 0}
-                  </li>
-                  <li>
-                    <span className="font-bold text-primary-40">Evaluaciones:</span>{" "}
-                    {courseData.afterClass?.evaluations?.[0]?.question === "NA"
-                      ? "0"
-                      : courseData.afterClass?.evaluations?.length || 0}
-                  </li>
-                </ul>
-              </div>
-            </div>
-
-            <p className="text-sm text-gray-500 mt-6">
-              Revisa la información. Si todo está correcto, haz clic en "Crear
-              Curso".
+          <div className="bg-white shadow-md rounded-xl p-6 md:p-8">
+            <h3 className="text-3xl font-bold text-gray-800 mb-3">Revisión del Curso</h3>
+            <hr className="border-gray-200 mb-6" />
+            <p className="text-base text-gray-600 mb-4 text-justify">
+              Revisa cuidadosamente toda la información del curso como lo haría un estudiante.
             </p>
+            <p className="text-base text-gray-600 mb-7 text-justify">
+              Asegúrate de que todo esté correcto y cuando lo esté haz clic en{" "}
+              <span className="bg-gray-200 px-2 py-1 rounded font-semibold">
+                Finalizar
+              </span> para completar el proceso.
+            </p>
+            <div className="border border-gray-300 bg-gray-100 p-6 rounded-xl shadow-sm">
+              <CourseViewTeacher
+                course={courseData}
+                onClose={() => { }}
+              />
+            </div>
           </div>
         );
 
