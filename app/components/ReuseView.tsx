@@ -43,9 +43,9 @@ interface ReuseViewProps {
 }
 
 const LABELS: Record<StageKey, string> = {
-  beforeClass: "Antes de clase",
-  duringClass: "Durante la clase",
-  afterClass: "Después de clase",
+  beforeClass: "Prebriefing",
+  duringClass: "Briefing",
+  afterClass: "Debriefing",
 };
 
 const SECTION_LABELS: Record<SectionKey, string> = {

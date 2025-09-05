@@ -53,9 +53,9 @@ const authHeaders = {
   "Content-Type": "application/json",
 };
 const momentNames: Record<MomentKey, string> = {
-  beforeClass: "Aula Invertida",
-  duringClass: "Taller de Habilidad",
-  afterClass: "Actividad Experiencial",
+  beforeClass: "Prebriefing",
+  duringClass: "Briefing",
+  afterClass: "Debriefing",
 };
 const orderedMoments: MomentKey[] = ["beforeClass", "duringClass", "afterClass"];
 
