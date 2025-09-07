@@ -497,17 +497,22 @@ const Wizard = ({ course, onComplete, onCancel }: WizardProps) => {
           <div>
             {activeCardId === null && (
               <>
-                <h2 className="text-lg mb-2 font-semibold">Primer momento</h2>
-                <h3 className="text-3xl mb-2 font-medium">Prebriefing</h3>
-                <p className="mb-4">
-                  Esto ayudará al estudiante para que lleve una idea de lo que
-                  verá en el encuentro presencial.
+                <h2 className="text-lg mb-3 font-semibold text-primary-40">Primer momento</h2>
+                <h3 className="text-3xl mb-2 font-bold">Prebriefing</h3>
+                <p className="mb-4 text-justify text-gray-600">
+                  Este momento ayudará a los estudiantes a nivelarse teóricamente y a familiarizarse con los acuerdos que guiarán la simulación, de modo que estén preparados para lo que enfrentarán.
                 </p>
                 <hr className="mb-4 border-gray-300" />
-                <p className="mb-2">
-                  Agregue los siguientes elementos al material que el estudiante
-                  debe consultar antes de clase.
+                <p className="text-base text-gray-600 mb-2 text-justify">
+                  Para este momento se recomienda crear en{" "}
+                  <span className="bg-gray-200 px-2 py-1 rounded font-semibold whitespace-nowrap">
+                    Subir contenido
+                  </span> las siguientes secciones:
                 </p>
+                <ul className="list-disc pl-6 mb-2 text-gray-600">
+                  <li>Material de Apoyo</li>
+                  <li>Acuerdos</li>
+                </ul>
               </>
             )}
             <CardList
@@ -528,17 +533,22 @@ const Wizard = ({ course, onComplete, onCancel }: WizardProps) => {
           <div>
             {activeCardId === null && (
               <>
-                <h2 className="text-lg mb-2 font-semibold">Segundo momento</h2>
-                <h3 className="text-3xl mb-2 font-medium">Briefing</h3>
-                <p className="mb-4">
-                  Esto ayudará al estudiante a guiarse durante los espacios de
-                  clase.
+                <h2 className="text-lg mb-3 font-semibold text-primary-40">Segundo momento</h2>
+                <h3 className="text-3xl mb-2 font-bold">Briefing</h3>
+                <p className="mb-4 text-justify text-gray-600">
+                  Este momento ayudará a los estudiantes a comprender el contexto del caso clínico, la información necesaria sobre la situación que enfrentarán, las limitaciones de la simulación y el uso adecuado de los recursos.
                 </p>
                 <hr className="mb-4 border-gray-300" />
-                <p className="mb-4">
-                  Agregue los siguientes elementos al material que el estudiante
-                  debe consultar durante de clase.
+                <p className="text-base text-gray-600 mb-2 text-justify">
+                  Para este momento se recomienda crear en{" "}
+                  <span className="bg-gray-200 px-2 py-1 rounded font-semibold whitespace-nowrap">
+                    Subir contenido
+                  </span> las siguientes secciones:
                 </p>
+                <ul className="list-disc pl-6 mb-2 text-gray-600">
+                  <li>Ficha Técnica</li>
+                  <li>Protocolo de Uso del Simulador</li>
+                </ul>
               </>
             )}
             <CardList
@@ -559,17 +569,22 @@ const Wizard = ({ course, onComplete, onCancel }: WizardProps) => {
           <div>
             {activeCardId === null && (
               <>
-                <h2 className="text-lg mb-2 font-semibold">Tercer momento</h2>
-                <h3 className="text-3xl mb-2 font-medium">Debriefing</h3>
-                <p className="mb-4">
-                  Esto ayudará al estudiante a afianzar los conceptos vistos en
-                  clase.
+                <h2 className="text-lg mb-3 font-semibold text-primary-40">Tercer momento</h2>
+                <h3 className="text-3xl mb-2 font-bold">Debriefing</h3>
+                <p className="mb-4 text-justify text-gray-600">
+                  Este momento ayudará a los estudiantes a consolidar los conocimientos adquiridos en la simulación, orientándolos sobre qué reflexionar y cómo aprovechar los recursos disponibles para profundizar en su aprendizaje.
                 </p>
                 <hr className="mb-4 border-gray-300" />
-                <p className="mb-4">
-                  Agregue los siguientes elementos al material que el estudiante
-                  debe consultar después de clase.
+                <p className="text-base text-gray-600 mb-2 text-justify">
+                  Para este momento en{" "}
+                  <span className="bg-gray-200 px-2 py-1 rounded font-semibold whitespace-nowrap">
+                    Subir simulación
+                  </span> puedes optar por:
                 </p>
+                <ul className="list-disc pl-6 mb-2 text-gray-600">
+                  <li><strong>Subir experiencia de navegador:</strong> permite que los estudiantes repitan la simulación varias veces y se familiaricen de manera natural con el caso clínico.</li>
+                  <li><strong>Indicar que la simulación será presencial:</strong> los estudiantes podrán revisar las decisiones que tomaron una vez finalizada la actividad.</li>
+                </ul>
               </>
             )}
             <CardList
@@ -595,7 +610,7 @@ const Wizard = ({ course, onComplete, onCancel }: WizardProps) => {
             </p>
             <p className="text-base text-gray-600 mb-7 text-justify">
               Asegúrate de que todo esté correcto y cuando lo esté haz clic en{" "}
-              <span className="bg-gray-200 px-2 py-1 rounded font-semibold">
+              <span className="bg-gray-200 px-2 py-1 rounded font-semibold whitespace-nowrap">
                 Finalizar
               </span> para completar el proceso.
             </p>

@@ -216,7 +216,7 @@ const CourseDetailsStudent = ({
     {
       title: 'Prebriefing',
       description:
-        'Aquí podrás explorar una vista previa del contenido y las actividades que se abordarán durante la sesión presencial',
+        'En este espacio podrás reforzar la parte teórica y conocer los acuerdos que guiarán la simulación, de modo que llegues preparado para la experiencia.',
       section: course.beforeClass,
       sectionKey: 'Antes de clase',
       progressKey: 'aulaInvertida' as const,
@@ -224,7 +224,7 @@ const CourseDetailsStudent = ({
     {
       title: 'Briefing',
       description:
-        'En esta sección encontrarás recursos e indicaciones que te acompañarán durante las sesiones de clase',
+        'Aquí encontrarás información clave sobre el caso clínico, la situación a enfrentar, las limitaciones de la simulación y el uso adecuado de los recursos.',
       section: course.duringClass,
       sectionKey: 'Durante la clase',
       progressKey: 'tallerHabilidad' as const,
@@ -232,7 +232,7 @@ const CourseDetailsStudent = ({
     {
       title: 'Debriefing',
       description:
-        'Aquí tendrás acceso a materiales que te permitirán consolidar los conceptos vistos durante las clases',
+        'En esta sección podrás reflexionar sobre tu experiencia, consolidar lo aprendido y utilizar recursos que te ayudarán a profundizar en los conocimientos adquiridos durante la simulación.',
       section: course.afterClass,
       sectionKey: 'Después de la clase',
       progressKey: 'actividadExperiencial' as const,

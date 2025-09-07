@@ -1,7 +1,7 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import Cookies from "js-cookie";
-import { FaPen, FaEye, FaClone, FaSyncAlt } from "react-icons/fa";
+import { FaPen, FaEye, FaClone, FaSyncAlt, FaTrash } from "react-icons/fa";
 
 interface ActivityProps {
   id: string;
@@ -12,6 +12,7 @@ interface ActivityProps {
   onView?: () => void; // 👁️ feedback (opcional)
   onClone?: () => void; // 📋 clonar curso
   onRepeat?: () => void; // 🔁 reutilizar curso
+  onDelete?: () => void; // 🗑️ eliminar curso
 }
 
 const Activity = ({
@@ -23,6 +24,7 @@ const Activity = ({
   onView,
   onClone,
   onRepeat,
+  onDelete,
 }: ActivityProps) => {
   const [previewImage, setPreviewImage] = useState<string>("");
 
@@ -110,6 +112,17 @@ const Activity = ({
               title="Revisar curso"
             >
               <FaEye />
+            </button>
+          )}
+
+          {/* 🗑️ Eliminar */}
+          {onDelete && (
+            <button
+              onClick={onDelete}
+              className="p-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition"
+              title="Eliminar curso"
+            >
+              <FaTrash />
             </button>
           )}
         </div>
