@@ -1,6 +1,7 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { FaTrash } from "react-icons/fa";
 import Cookies from "js-cookie";
 
 import Activity from "../components/Activity";
@@ -36,14 +37,14 @@ type WizardData = any;
 
 const AddNewCourseCard = ({ onClick }: { onClick: () => void }) => (
   <div
-  onClick={onClick}
-  className="w-80 h-80 flex flex-col items-center justify-center rounded-lg shadow-md cursor-pointer hover:shadow-lg hover:scale-105 transition-transform bg-white border-2 border-dashed border-primary-50"
->
-  <span className="text-4xl text-primary-40 mb-4 font-bold">+</span>
-  <span className="text-lg font-semibold text-gray-800 text-center">
-    Agregar nuevo curso
-  </span>
-</div>
+    onClick={onClick}
+    className="w-80 h-80 flex flex-col items-center justify-center rounded-lg shadow-md cursor-pointer hover:shadow-lg hover:scale-105 transition-transform bg-white border-2 border-dashed border-primary-50"
+  >
+    <span className="text-4xl text-primary-40 mb-4 font-bold">+</span>
+    <span className="text-lg font-semibold text-gray-800 text-center">
+      Agregar nuevo curso
+    </span>
+  </div>
 
 );
 
@@ -60,8 +61,11 @@ const Dashboard = () => {
   const [showEditCourse, setShowEditCourse] = useState(false);
   const [showCreateCourse, setShowCreateCourse] = useState<boolean>(false);
   const [showConfig, setShowConfig] = useState(false);
-  const [showFeedback, setShowFeedback] = useState(false); // 👁️ NUEVO
+  const [showFeedback, setShowFeedback] = useState(false);
   const [showReuse, setShowReuse] = useState(false);
+
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [courseToDelete, setCourseToDelete] = useState<Course | null>(null);
 
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
 
@@ -171,6 +175,34 @@ const Dashboard = () => {
 
   const handleAddNewCourse = () => setShowCreateCourse(true);
 
+  // 🗑️ Delete handler
+
+  const openDeleteModal = (course: Course) => {
+    setCourseToDelete(course);
+    setShowDeleteModal(true);
+  };
+
+  const confirmDeleteCourse = async () => {
+    if (!courseToDelete) return;
+
+    try {
+      const token = Cookies.get("token");
+      const response = await fetch(`http://localhost:8081/api/courses/${courseToDelete.courseId}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (!response.ok) throw new Error("Failed to delete course");
+
+      setCourses((prev) => prev.filter((c) => c.courseId !== courseToDelete.courseId));
+      setCourseToDelete(null);
+      setShowDeleteModal(false);
+    } catch (error) {
+      console.error("Error deleting course:", error);
+      alert("No se pudo eliminar el curso");
+    }
+  };
+
   return (
     <div className="flex flex-col min-h-screen bg-gray-100">
       {/* Header */}
@@ -205,9 +237,8 @@ const Dashboard = () => {
       <main className="flex flex-1">
         {/* Sidebar */}
         <aside
-          className={`${
-            isSidebarOpen ? "fixed inset-0 z-50 bg-white shadow-md" : "hidden"
-          } sm:block sm:relative sm:inset-auto sm:z-auto w-full sm:w-48 bg-white shadow-md p-4 space-y-6`}
+          className={`${isSidebarOpen ? "fixed inset-0 z-50 bg-white shadow-md" : "hidden"
+            } sm:block sm:relative sm:inset-auto sm:z-auto w-full sm:w-48 bg-white shadow-md p-4 space-y-6`}
         >
           <div className="flex justify-end sm:hidden">
             <button
@@ -234,21 +265,24 @@ const Dashboard = () => {
               </li>
 
               {hasMounted && isAdmin && (
-                <li
-                  className="p-2 flex flex-row items-center rounded hover:bg-primary-95 cursor-pointer"
-                  onClick={() => {
-                    setShowConfig(true);
-                    setShowCreateCourse(false);
-                    setShowEditCourse(false);
-                    setShowWizard(false);
-                    setShowFeedback(false);
-                  }}
-                >
-                  <FaUser className="text-primary-40 text-xl mr-2" />
-                  <span className="text-primary-40 font-medium">
-                    Usuarios
-                  </span>
-                </li>
+                <>
+                  <hr></hr>
+                  <li
+                    className="p-2 flex flex-row items-center rounded hover:bg-primary-95 cursor-pointer"
+                    onClick={() => {
+                      setShowConfig(true);
+                      setShowCreateCourse(false);
+                      setShowEditCourse(false);
+                      setShowWizard(false);
+                      setShowFeedback(false);
+                    }}
+                  >
+                    <FaUser className="text-primary-40 text-xl mr-2" />
+                    <span className="text-primary-40 font-medium">
+                      Usuarios
+                    </span>
+                  </li>
+                </>
               )}
             </ul>
           </nav>
@@ -328,9 +362,9 @@ const Dashboard = () => {
               targetCourse={
                 selectedCourse
                   ? {
-                      courseId: selectedCourse.courseId,
-                      courseName: selectedCourse.courseName,
-                    }
+                    courseId: selectedCourse.courseId,
+                    courseName: selectedCourse.courseName,
+                  }
                   : (undefined as any)
               }
               onCancel={() => {
@@ -374,12 +408,12 @@ const Dashboard = () => {
                   <>
                     {courses.map((course) => (
                       <Activity
-                        key={course.courseId}
                         id={course.courseId}
                         image={course.imageUrl}
                         title={course.courseName}
                         date="2025-2"
-                        onClick={() => handleCourseClick(course)} // ✏️ Editar
+                        onClick={() => handleCourseClick(course)} // edit
+                        onDelete={() => openDeleteModal(course)} // delete
                       />
                     ))}
                     <AddNewCourseCard onClick={handleAddNewCourse} />
@@ -413,6 +447,34 @@ const Dashboard = () => {
             </section>
           )}
         </div>
+        {/* Modal para eliminar curso */}
+        {showDeleteModal && courseToDelete && (
+          <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 w-96 shadow">
+              <h3 className="text-xl font-semibold mb-4 text-center text-gray-800">
+                Eliminar curso
+              </h3>
+              <p className="text-gray-600 mb-6 text-center">
+                ¿Estás seguro de que deseas eliminar el curso{" "}
+                <span className="font-bold">{courseToDelete.courseName}</span>?
+              </p>
+              <div className="flex justify-center space-x-4">
+                <button
+                  onClick={() => setShowDeleteModal(false)}
+                  className="px-4 py-2 bg-gray-300 hover:bg-gray-500 rounded"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={confirmDeleteCourse}
+                  className="px-4 py-2 bg-red-500 hover:bg-red-700 text-white rounded"
+                >
+                  Eliminar
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );

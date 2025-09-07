@@ -138,15 +138,28 @@ export default function ConfigView({ onBack }: ConfigViewProps) {
     }
   };
 
-  // Delete user
+  // Delete user (from system + courses)
   const handleDelete = async () => {
     if (!userToDelete) return;
     const token = Cookies.get("token");
+
     try {
+      // 1. Delete user from courses
+      await fetch(
+        `http://localhost:8081/api/courses/deleteUserFromCourses/${userToDelete.username}`,
+        {
+          method: "DELETE",
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      // 2. Delete user from users collection
       await fetch(`http://localhost:8081/api/users/${userToDelete.username}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });
+
+      // 3. Refresh list and close modal
       await fetchUsuarios();
       setShowDeleteModal(false);
       setUserToDelete(null);

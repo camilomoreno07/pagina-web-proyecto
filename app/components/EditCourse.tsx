@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
+import { FaTrash, FaPlus } from "react-icons/fa";
 import Cookies from "js-cookie";
 import Select from "react-select";
 
@@ -23,6 +24,8 @@ export default function EditCourse({ course, onCancel, onComplete }: EditCourseP
   const [professors, setProfessors] = useState<Usuario[]>([]);
   const [students, setStudents] = useState<Usuario[]>([]);
   const [showModal, setShowModal] = useState(false);
+  const [showRemoveModal, setShowRemoveModal] = useState(false);
+  const [userToRemove, setUserToRemove] = useState<Usuario | null>(null);
 
   const roleStyles: Record<string, React.CSSProperties> = {
     TEACHER: { background: "#16a34a", color: "white", padding: "2px 6px", borderRadius: "4px", fontSize: "0.8rem" },
@@ -49,7 +52,6 @@ export default function EditCourse({ course, onCancel, onComplete }: EditCourseP
     const fetchUsuarios = async () => {
       const token = Cookies.get("token");
       try {
-        // Traemos todos los usuarios disponibles
         const res = await fetch(`http://localhost:8081/api/users`, {
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -57,8 +59,7 @@ export default function EditCourse({ course, onCancel, onComplete }: EditCourseP
         const data: Usuario[] = await res.json();
         const allUsers = data.filter((u) => u.role !== "ADMIN");
         setUsuarios(allUsers);
-  
-        // Convertimos usernames a usuarios completos
+
         if (course.professorIds?.length) {
           const profs = allUsers.filter((u) =>
             course.professorIds.includes(u.username)
@@ -75,10 +76,9 @@ export default function EditCourse({ course, onCancel, onComplete }: EditCourseP
         console.error("Error al obtener usuarios:", err);
       }
     };
-  
+
     fetchUsuarios();
   }, [course]);
-  
 
   const handleAddIntegrante = () => {
     if (!selectedUser) return;
@@ -122,18 +122,29 @@ export default function EditCourse({ course, onCancel, onComplete }: EditCourseP
     }
   };
 
+  const confirmRemoveUser = () => {
+    if (!userToRemove) return;
+    if (userToRemove.role === "TEACHER") {
+      setProfessors(professors.filter((p) => p.username !== userToRemove.username));
+    } else if (userToRemove.role === "STUDENT") {
+      setStudents(students.filter((s) => s.username !== userToRemove.username));
+    }
+    setUserToRemove(null);
+    setShowRemoveModal(false);
+  };
+
   return (
     <div className="bg-white p-4 max-w-5xl mx-auto w-full">
       <button onClick={onCancel} className="text-primary-40 mb-4">
         ← Salir
       </button>
 
-      <h2 className="text-2xl font-semibold mb-2">Editar curso</h2>
+      <h2 className="text-3xl font-bold mt-6 mb-4">Editar curso</h2>
       <p className="text-gray-600 mb-6">
-        Actualiza el nombre del curso y los integrantes.
+        Modifique el nombre del curso y gestione de manera sencilla a sus integrantes.
       </p>
 
-      <label className="block font-medium mb-2">Nombre del curso</label>
+      <label className="block font-semibold mb-2">Nombre del curso</label>
       <input
         type="text"
         value={courseName}
@@ -159,6 +170,7 @@ export default function EditCourse({ course, onCancel, onComplete }: EditCourseP
             <th className="border-b p-2">Apellido</th>
             <th className="border-b p-2">Usuario</th>
             <th className="border-b p-2">Rol</th>
+            <th className="border-b p-2 text-center">Acciones</th>
           </tr>
         </thead>
         <tbody>
@@ -168,6 +180,17 @@ export default function EditCourse({ course, onCancel, onComplete }: EditCourseP
               <td className="p-2">{p.lastname}</td>
               <td className="p-2">{p.username}</td>
               <td className="p-2 text-green-600 font-bold">Profesor</td>
+              <td className="p-2 text-center">
+                <button
+                  onClick={() => {
+                    setUserToRemove(p);
+                    setShowRemoveModal(true);
+                  }}
+                  className="text-gray-600 hover:text-red-500"
+                >
+                  <FaTrash />
+                </button>
+              </td>
             </tr>
           ))}
           {students.map((s, idx) => (
@@ -176,6 +199,17 @@ export default function EditCourse({ course, onCancel, onComplete }: EditCourseP
               <td className="p-2">{s.lastname}</td>
               <td className="p-2">{s.username}</td>
               <td className="p-2 text-blue-600 font-bold">Estudiante</td>
+              <td className="p-2 text-center">
+                <button
+                  onClick={() => {
+                    setUserToRemove(s);
+                    setShowRemoveModal(true);
+                  }}
+                  className="text-gray-600 hover:text-red-500"
+                >
+                  <FaTrash />
+                </button>
+              </td>
             </tr>
           ))}
         </tbody>
@@ -190,12 +224,17 @@ export default function EditCourse({ course, onCancel, onComplete }: EditCourseP
         </button>
         <button
           onClick={handleSave}
-          className="px-4 py-2 bg-primary-40 hover:bg-primary-50 text-white rounded"
+          disabled={!courseName.trim()}
+          className={`px-4 py-2 rounded text-white 
+            ${courseName.trim()
+              ? "bg-primary-40 hover:bg-primary-50"
+              : "bg-gray-300 cursor-not-allowed"}`}
         >
-          Guardar cambios
+          Guardar
         </button>
       </div>
 
+      {/* Modal para agregar */}
       {showModal && (
         <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center">
           <div className="bg-white rounded-lg p-6 w-96 shadow">
@@ -226,6 +265,36 @@ export default function EditCourse({ course, onCancel, onComplete }: EditCourseP
                 className="px-4 py-2 bg-primary-40 text-white rounded"
               >
                 Guardar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal para remover */}
+      {showRemoveModal && userToRemove && (
+        <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center">
+          <div className="bg-white rounded-lg p-6 w-96 shadow">
+            <h3 className="text-xl font-semibold mb-4 text-center">Retirar usuario</h3>
+            <p className="text-gray-700 mb-4 text-center">
+              ¿Está seguro que desea retirar del curso al usuario{" "}
+              <span className="font-semibold">
+                {userToRemove.username}
+              </span>{" "}
+              ?
+            </p>
+            <div className="flex justify-center gap-4">
+              <button
+                onClick={() => setShowRemoveModal(false)}
+                className="px-4 py-2 border rounded"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={confirmRemoveUser}
+                className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
+              >
+                Retirar del curso
               </button>
             </div>
           </div>
