@@ -244,9 +244,9 @@ const Dashboard = () => {
                     setShowFeedback(false);
                   }}
                 >
-                  <FaCog className="text-primary-40 text-xl mr-2" />
+                  <FaUser className="text-primary-40 text-xl mr-2" />
                   <span className="text-primary-40 font-medium">
-                    Configuración
+                    Usuarios
                   </span>
                 </li>
               )}
