@@ -290,7 +290,7 @@ export default function SubirContenido({
               className="border-2 border-gray-300 rounded-2xl p-6 mb-8 bg-gray-50 shadow-sm"
             >
               {/* === MODULE NAME === */}
-              <div className="flex items-center gap-3 mb-6 bg-gray-100 border-l-4 border-primary-40 rounded-lg p-3 shadow-sm">
+              <div className="flex flex-wrap items-center gap-3 mb-6 bg-gray-100 border-l-4 border-primary-40 rounded-lg p-3 shadow-sm">
                 <FaFileAlt className="text-primary-40 text-lg ml-2" />
 
                 <input

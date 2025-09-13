@@ -305,13 +305,13 @@ export default function CrearEvaluacion({
           </div>
 
           {/* Botonera */}
-          <div className="flex flex-col sm:flex-row gap-4 mt-6 relative">
-            <div className="relative">
+          <div className="flex justify-center gap-4 mt-6 relative">
+            <div className="flex flex-col sm:flex-row gap-4 items-center">
               <button
                 onClick={() => setShowTypePicker((s) => !s)}
-                className="flex items-center gap-2 px-4 py-2 border-2 border-primary-40 text-primary-40 bg-white 
-             rounded-xl mt-3 font-medium shadow-sm hover:bg-primary-40 hover:text-white 
-             active:scale-95 transition"
+                className="inline-flex items-center gap-2 px-4 py-2 border-2 border-primary-40 text-primary-40 bg-white 
+      rounded-xl font-medium shadow-sm hover:bg-primary-40 hover:text-white 
+      active:scale-95 transition"
               >
                 <FaPlus /> Agregar pregunta
               </button>
@@ -327,16 +327,16 @@ export default function CrearEvaluacion({
                   </div>
                 </div>
               )}
-            </div>
 
-            <button
-              onClick={omitEvaluation}
-              className="flex items-center gap-2 px-4 py-2 border-2 border-gray-500 text-white bg-gray-400 
-             rounded-xl mt-3 font-medium shadow-sm hover:bg-gray-600 hover:text-white 
-             active:scale-95 transition"
-            >
-              Omitir evaluación
-            </button>
+              <button
+                onClick={omitEvaluation}
+                className="inline-flex items-center gap-2 px-4 py-2 border-2 border-gray-500 text-white bg-gray-400 
+      rounded-xl font-medium shadow-sm hover:bg-gray-600 hover:text-white 
+      active:scale-95 transition"
+              >
+                Omitir evaluación
+              </button>
+            </div>
           </div>
         </>
       )}

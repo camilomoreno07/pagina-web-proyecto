@@ -89,7 +89,7 @@ const getProgressPercentage = (moment: MomentProgress): number => {
     (moment.instructionCompleted ? 1 : 0) +
     completedContents +
     (moment.evaluationCompleted ? 1 : 0);
-    
+
   return totalItems > 0 ? completed / totalItems : 0;
 };
 
@@ -124,6 +124,7 @@ const CourseDetailsStudent = ({
 }: CourseDetailsStudentProps) => {
   const [professors, setProfessors] = useState<User[]>([]);
   const [progress, setProgress] = useState<Progress | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
 
   /** ===== Cargar profesores ===== */
   useEffect(() => {
@@ -252,11 +253,33 @@ const CourseDetailsStudent = ({
             const totalTime = calculateTotalTime(section);
             const value = progress ? getProgressPercentage(progress[progressKey]) : 0;
 
+            // ====== Lock logic ======
+            let isLocked = false;
+            if (title === "Briefing") {
+              const prebriefingDone =
+                progress && getProgressPercentage(progress.aulaInvertida) === 1;
+              isLocked = !prebriefingDone;
+            } else if (title === "Debriefing") {
+              const briefingDone =
+                progress && getProgressPercentage(progress.tallerHabilidad) === 1;
+              isLocked = !briefingDone;
+            }
+
             return (
               <div
                 key={idx}
-                className="border rounded-lg p-5 bg-white hover:shadow transition cursor-pointer"
-                onClick={() => onSelectCard(sectionKey)}
+                className={`border rounded-lg p-5 bg-white transition ${isLocked
+                  ? "opacity-70 cursor-not-allowed"
+                  : "hover:shadow cursor-pointer"
+                  }`}
+                onClick={() => {
+                  if (!isLocked) {
+                    onSelectCard(sectionKey);
+                  }
+                  else {
+                    setModalOpen(true);
+                  }
+                }}
               >
                 <h3 className="text-lg font-bold text-gray-800 mb-2">{title}</h3>
                 <div className="flex items-center gap-2 mb-2">
@@ -321,6 +344,27 @@ const CourseDetailsStudent = ({
           </button>
         </div>
       </div>
+
+      {/* Modal */}
+      {modalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 h-screen w-screen px-4">
+          <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6 w-full max-w-sm sm:max-w-md md:max-w-lg flex flex-col items-center text-center overflow-y-auto max-h-[90vh]">
+            <h2 className="text-base sm:text-lg font-semibold text-gray-800 mb-4">
+              Atención
+            </h2>
+            <hr className="border-gray-300 w-full mb-4" />
+            <p className="text-sm sm:text-base text-gray-600 mb-6 leading-relaxed">
+              Cada sección se habilitará una vez completada la anterior
+            </p>
+            <button
+              onClick={() => setModalOpen(false)}
+              className="px-4 py-2 rounded-lg bg-primary-40 text-white hover:bg-primary-60 text-sm sm:text-base w-full sm:w-auto"
+            >
+              Entendido
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

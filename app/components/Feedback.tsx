@@ -161,7 +161,7 @@ export default function Feedback({ course, onClose }: { course: Course | null; o
     return () => {
       cancelled = true;
     };
-  }, [course?.courseId]);
+  }, [course?.courseId, activeKey]);
 
   /** Abrir modal */
   const onOpenEditor = async (row: StudentRow) => {

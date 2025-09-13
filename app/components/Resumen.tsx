@@ -18,7 +18,7 @@ const Resumen = ({ description }: ResumenProps) => {
       {description.length > 200 && (
         <button
           onClick={() => setShowFull(!showFull)}
-          className="mt-2 text-sm text-primary-600 hover:underline"
+          className="mt-2 text-sm text-primary-40 hover:underline"
         >
           {showFull ? 'Ver menos' : 'Ver más'}
         </button>
